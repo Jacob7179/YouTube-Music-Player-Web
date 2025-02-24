@@ -100,6 +100,7 @@
         let songUnavailable = false;
         let progressInterval;
         let isDragging = false;
+        let errorTimeout;
         let selectedVideoId = "wX_y95OrHLQ";
 
         function onYouTubeIframeAPIReady() {
@@ -131,19 +132,56 @@
         
                 // ✅ Pause rotation when audio ends
                 albumArt.classList.add("rotate-paused");
+        
+                // ✅ Auto-play the next song
+                playNextSong();
             }
-        }        
+        }                
 
         function handleVideoError(event) {
             let errorMsg = document.getElementById("errorMessage");
             errorMsg.style.display = "block"; // Show error message
             playing = false;
             songUnavailable = true;
-            
+        
             // Pause player & stop rotation
             player.pauseVideo();
             document.getElementById("playPauseBtn").innerText = "▶ Play";
             document.getElementById("albumArt").classList.add("rotate-paused");
+        
+            // ✅ Set timeout and store its reference
+            errorTimeout = setTimeout(() => {
+                errorMsg.style.display = "none"; // Hide error message
+                playNextSong();
+            }, 3000);
+        }      
+        
+        function playNextSong() {
+            let songSelector = document.getElementById("songSelector");
+            let currentIndex = songSelector.selectedIndex;
+            let nextIndex = (currentIndex + 1) % songSelector.options.length; // Loop back to first song if at end
+            songSelector.selectedIndex = nextIndex; // Select the next song
+        
+            let nextVideoId = songSelector.options[nextIndex].value;
+            let nextAlbumArtUrl = songSelector.options[nextIndex].getAttribute("data-img");
+        
+            // ✅ Update album art
+            document.getElementById("albumArt").src = nextAlbumArtUrl;
+            document.getElementById("errorMessage").style.display = "none"; // Hide error message
+            songUnavailable = false; // Reset error state
+        
+            if (player) {
+                player.loadVideoById(nextVideoId);
+                playing = true;
+                document.getElementById("playPauseBtn").innerText = "⏸ Pause";
+        
+                clearInterval(progressInterval);
+                updateProgressBar();
+        
+                // ✅ Ensure album rotates when a new song is selected
+                document.getElementById("albumArt").classList.remove("rotate-paused");
+                document.getElementById("albumArt").classList.add("rotate");
+            }
         }        
 
         document.getElementById("songSelector").addEventListener("change", function () {
@@ -153,7 +191,12 @@
         
             document.getElementById("albumArt").src = albumArtUrl;
             document.getElementById("errorMessage").style.display = "none"; // Hide error message
-            songUnavailable = false; // Reset error state
+            
+            // ✅ Cancel the timeout if a new song is selected
+            clearTimeout(errorTimeout);
+        
+            // ✅ Reset unavailable detection
+            songUnavailable = false;
         
             if (player) {
                 player.loadVideoById(videoId);
@@ -249,13 +292,19 @@
             let barWidth = progressBar.offsetWidth;
             let clickPosition = event.clientX - progressBar.getBoundingClientRect().left;
             let seekTime = (clickPosition / barWidth) * player.getDuration();
-
+        
             if (player) {
                 player.seekTo(seekTime, true);
+        
+                // ✅ Keep the paused state if it was paused before seeking
+                if (!playing) {
+                    player.pauseVideo();
+                }
+        
                 let progressPercent = (seekTime / player.getDuration()) * 100;
                 progress.style.width = progressPercent + "%";
             }
-        }
+        }        
 
         let tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
