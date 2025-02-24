@@ -27,16 +27,15 @@
                             <span class="author-name text-muted"></span>
                         </h4>
                         
-                        <!-- Progress Bar -->
-                        <div class="progress mt-2" id="progressBar">
-                            <div id="progress" class="progress-bar" style="width: 0%;"></div>
-                        </div>
-
-                        <!-- Time Display (Below Progress Bar) -->
-                        <div class="d-flex justify-content-between text-muted mt-1">
-                            <span id="currentTime">0:00</span>
-                            <span id="totalTime">0:00</span>
-                        </div>
+                        <div class="progress-container">
+                            <div class="progress mt-2" id="progressBar">
+                                <div id="progress" class="progress-bar" style="width: 0%;"></div>
+                            </div>
+                            <div class="time-display">
+                                <span id="currentTime">0:00</span>
+                                <span id="totalTime">0:00</span>
+                            </div>
+                        </div>                        
                         
                         <div class="d-flex justify-content-center mt-3 gap-2">
                             <button id="prevBtn" class="btn btn-primary rounded-circle px-3"><i class='bx bx-skip-previous' ></i></button>

@@ -62,25 +62,34 @@ body {
     background: #0056b3;
 }
 
-/* 🎵 Progress Bar */
-#progressBar {
+.progress-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.progress {
     width: 90%;
     height: 6px;
     background: #ddd;
     border-radius: 5px;
     position: relative;
     cursor: pointer;
-    margin: 15px auto;
+    margin: 5px auto; /* Reduce space for better alignment */
     display: block;
 }
 
-#progress {
-    height: 100%;
-    width: 0%;
-    background: #007bff;
-    border-radius: 5px;
-    transition: width 0.1s linear;
+.time-display {
+    display: flex;
+    justify-content: space-between;
+    width: 90%;
+    font-size: 14px;
+    margin-top: 2px; /* Reduce space between progress bar and time */
 }
+
 
 /* 🎵 Song Selector */
 select {
@@ -433,4 +442,14 @@ select {
 
 #togglePlayerBtn:active {
     transform: scale(0.9); /* Shrink effect on click */
+}
+
+/* 🎵 General Button Styling */
+.card .btn {
+    transition: transform 0.1s ease-in-out, background-color 0.3s;
+}
+
+/* 🎵 Click Animation (Shrink Effect) */
+.card .btn:active {
+    transform: scale(0.9);
 }
