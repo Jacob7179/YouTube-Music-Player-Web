@@ -11,7 +11,7 @@
 </head>
 <body>
     <div id="background"></div>
-    <div class="container" style="margin-top: 26%;">
+    <div class="container">
         <div class="row justify-content-center align-items-stretch">        
             <!-- Card 1: Music Player -->
             <div class="col-md-3 col-12 d-flex">
@@ -62,7 +62,7 @@
                             <box-icon name='volume-low'></box-icon>
                             <input type="range" id="volumeControl" class="form-range" min="0" max="100" value="100">
                             <box-icon name='volume-full'></box-icon>
-                        </div>
+                        </div>     
     
                         <p id="errorMessage" class="text-danger mt-2">⚠ This song is unavailable.</p>
                     </div>
@@ -613,10 +613,47 @@
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
         document.getElementById("volumeControl").addEventListener("input", function () {
+            let volume = this.value;
             if (player) {
-                player.setVolume(this.value);
+                player.setVolume(volume);
             }
+            
+            // Animate volume bar fill dynamically
+            this.style.background = `linear-gradient(to right, #007bff ${volume}%, #ddd ${volume}%)`;
+        
+            // Update progress bar color based on volume level
+            let progressBar = document.getElementById("progress");
+            let colorIntensity = Math.floor((volume / 100) * 255); // Adjust intensity based on volume
+            progressBar.style.backgroundColor = `rgb(${255 - colorIntensity}, ${colorIntensity}, 255)`;
         });
+        
+        // Function to animate progress bar fill smoothly
+        function updateProgressBar() {
+            clearInterval(progressInterval);
+            progressInterval = setInterval(() => {
+                if (player && player.getCurrentTime && !isDragging) {
+                    let currentTime = player.getCurrentTime();
+                    let duration = player.getDuration();
+                    
+                    if (duration > 0) {
+                        let progressPercent = (currentTime / duration) * 100;
+                        let progressBar = document.getElementById("progress");
+        
+                        // Animate progress bar fill
+                        progressBar.style.width = progressPercent + "%";
+        
+                        // Update progress bar color based on volume level
+                        let volumeLevel = document.getElementById("volumeControl").value;
+                        let colorIntensity = Math.floor((volumeLevel / 100) * 255);
+                        progressBar.style.backgroundColor = `rgb(${255 - colorIntensity}, ${colorIntensity}, 255)`;
+        
+                        // Update time display
+                        document.getElementById("currentTime").innerText = formatTime(currentTime);
+                        document.getElementById("totalTime").innerText = formatTime(duration);
+                    }
+                }
+            }, 1000);
+        }        
 
         let repeatSong = false; // Track repeat mode
 
