@@ -15,7 +15,7 @@
         <div class="row justify-content-center align-items-stretch">        
             <!-- Card 1: Music Player -->
             <div class="col-md-3 col-12 d-flex">
-                <div class="card shadow-lg w-100 h-100" style="min-height: 650px;"> <!-- Added min-height -->
+                <div class="card shadow-lg w-100 h-100" style="max-height: 890px;"> <!-- Added min-height -->
                     <div class="card-body text-center d-flex flex-column">
                         <h5 class="card-title fw-bold">🎵 YouTube Music Player</h5>
     
@@ -65,10 +65,6 @@
                             <box-icon name='volume-full'></box-icon>
                         </div>
     
-                        <div id="playerContainer" style="display: none;">
-                            <div id="player"></div>
-                        </div>
-    
                         <p id="errorMessage" class="text-danger mt-2">⚠ This song is unavailable.</p>
                     </div>
                 </div>
@@ -86,7 +82,7 @@
                             <span>Author Name</span>
                         </div>
 
-                        <ul id="songList" class="list-group overflow-auto" style="min-height: 620px; max-height: 620px;">
+                        <ul id="songList" class="list-group overflow-auto" style="max-height: 620px;">
 
                             <!-- Japanese Song -->
                             <li class="list-group-item d-flex justify-content-between align-items-center" data-video="wX_y95OrHLQ" data-img="https://i.ytimg.com/vi/wX_y95OrHLQ/hqdefault.jpg">
@@ -228,6 +224,16 @@
                     <h5 class="card-title">YouTube Music Player</h5>
                     <p class="card-text">Click the link below to visit the repository.</p>
                     <a href="https://github.com/Jacob7179/YouTube-Music-Player-Web" target="_blank" class="btn btn-primary">Visit GitHub</a>
+                </div>
+            </div>
+
+            <div class="card shadow-lg">
+                <div class="card-body text-center">
+                    <h5 class="card-title fw-bold">🎥 Video Player</h5>
+                    <button id="togglePlayerBtn" class="btn btn-primary">Show Player</button>
+                    <div id="playerContainer" class="mt-3" style="display: none;">
+                        <div id="player"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -648,7 +654,19 @@
                 albumArt.classList.remove("rotate-paused");
                 albumArt.classList.add("rotate");
             }
-        }        
+        }
+
+        document.getElementById("togglePlayerBtn").addEventListener("click", function () {
+            let playerContainer = document.getElementById("playerContainer");
+        
+            if (playerContainer.style.display === "none") {
+                playerContainer.style.display = "block";
+                this.innerText = "Hide Player";
+            } else {
+                playerContainer.style.display = "none";
+                this.innerText = "Show Player";
+            }
+        });        
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/boxicons@2.1.4/dist/boxicons.js"></script>

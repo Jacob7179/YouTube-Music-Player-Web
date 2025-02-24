@@ -412,3 +412,25 @@ select {
 #volumeControl:active::-moz-range-track {
     background: #aaa !important; /* Stays grey */
 }
+
+#playerContainer iframe {
+    width: 260px;
+    height: 170px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+#togglePlayerBtn {
+    background-color: #007bff;
+    border-color: #007bff;
+    transition: transform 0.1s ease-in-out;
+}
+
+#togglePlayerBtn:hover {
+    background-color: #0056b3; /* Darker shade for hover effect */
+    border-color: #0056b3;
+}
+
+#togglePlayerBtn:active {
+    transform: scale(0.9); /* Shrink effect on click */
+}
