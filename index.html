@@ -11,9 +11,8 @@
 </head>
 <body>
     <div id="background"></div>
-    <div class="container" style="padding-top: 80px;">
-        <div class="row col-md-12 col-6 justify-content-center align-items-stretch"> <!-- Ensures equal height -->
-        
+    <div class="container" style="margin-top: 26%;">
+        <div class="row justify-content-center align-items-stretch">        
             <!-- Card 1: Music Player -->
             <div class="col-md-3 col-12 d-flex">
                 <div class="card shadow-lg w-100 h-100" style="min-height: 650px;"> <!-- Added min-height -->
@@ -211,6 +210,27 @@
                 </div>
             </div>
         </div>
+    
+        <div class="d-flex justify-content-center align-items-start flex-wrap" style="margin-top: 20px; gap: 20px; padding-bottom: 20px;">
+            <!-- GitHub Profile Card -->
+            <div class="card" style="width: 18rem;">
+                <div class="card-body text-center">
+                    <img src="https://github.com/Jacob7179.png" alt="GitHub Profile" class="rounded-circle img-fluid" style="width: 100px; height: 100px; object-fit: cover;">
+                    <h5 class="card-title mt-2">Jacob7179</h5>
+                    <p class="card-text">Check out my GitHub profile for more projects.</p>
+                    <a href="https://github.com/Jacob7179" target="_blank" class="btn btn-dark">Visit Profile</a>
+                </div>
+            </div>
+        
+            <!-- YouTube Music Player Repository Card -->
+            <div class="card" style="width: 18rem;">
+                <div class="card-body text-center">
+                    <h5 class="card-title">YouTube Music Player</h5>
+                    <p class="card-text">Click the link below to visit the repository.</p>
+                    <a href="https://github.com/Jacob7179/YouTube-Music-Player-Web" target="_blank" class="btn btn-primary">Visit GitHub</a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -269,19 +289,26 @@
         function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
             updateBackgroundImage(albumArtUrl);
             let albumArt = document.getElementById("albumArt");
-            
-            // ✅ Stop rotation animation before resetting
-            albumArt.classList.remove("rotate");
         
-            // ✅ Reset rotation angle
-            albumArt.style.transform = "rotate(0deg)";
+            // ✅ Step 1: Apply fade-out effect before changing the image
+            albumArt.style.transition = "opacity 0.5s ease-in-out";
+            albumArt.style.opacity = "0";
         
-            // ✅ Restart rotation animation after a small delay
+            // ✅ Step 2: Delay the image change until fade-out is complete
             setTimeout(() => {
-                albumArt.classList.add("rotate");
-            }, 100);
+                albumArt.src = albumArtUrl; // Change album art
         
-            albumArt.src = albumArtUrl;
+                // ✅ Step 3: Apply fade-in effect after changing the image
+                setTimeout(() => {
+                    albumArt.style.opacity = "1"; // Fade-in effect
+                }, 100); // Small delay ensures smooth transition
+            }, 500); // Match this duration with the fade-out effect
+        
+            // ✅ Reset and restart rotation animation
+            albumArt.classList.remove("rotate"); // Stop rotation
+            setTimeout(() => {
+                albumArt.classList.add("rotate"); // Restart rotation after image loads
+            }, 600); // Restart animation slightly after fade-in starts
         
             if (selectedSong) {
                 let songName = selectedSong.querySelector(".song").innerText;
@@ -308,12 +335,6 @@
         
             playing = true;
             document.getElementById("playPauseBtn").innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>";
-        
-            albumArt.classList.remove("rotate-paused");
-            albumArt.classList.add("rotate");
-        
-            clearInterval(progressInterval);
-            updateProgressBar();
         }        
         
         function playNextSong() {
@@ -440,24 +461,24 @@
             if (player) {
                 if (playing) {
                     player.pauseVideo();
-                    this.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>"; //Play button
+                    this.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>"; // ✅ Play button
                     clearInterval(progressInterval);
-        
-                    // Pause rotation but keep current position
                     albumArt.classList.add("rotate-paused");
-        
                 } else {
                     player.playVideo();
-                    this.innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>"; //Pause button
+                    this.innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>"; // ✅ Pause button
                     updateProgressBar();
-        
-                    // Resume rotation if not paused manually
                     albumArt.classList.remove("rotate-paused");
                     albumArt.classList.add("rotate");
+        
+                    // ✅ If bx-revision is showing, reset it to Play/Pause
+                    if (this.innerHTML.includes("bx-revision")) {
+                        this.innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>";
+                    }
                 }
                 playing = !playing;
             }
-        });
+        });        
 
         document.getElementById("prevBtn").addEventListener("click", playPreviousSong);
         document.getElementById("nextBtn").addEventListener("click", playNextSong);
@@ -504,23 +525,34 @@
                 if (player && player.getCurrentTime && !isDragging) {
                     let currentTime = player.getCurrentTime();
                     let duration = player.getDuration();
+                    
                     if (duration > 0) {
                         let progressPercent = (currentTime / duration) * 100;
                         document.getElementById("progress").style.width = progressPercent + "%";
-        
+                
                         // ✅ Update time display
                         document.getElementById("currentTime").innerText = formatTime(currentTime);
                         document.getElementById("totalTime").innerText = formatTime(duration);
                     }
         
-                    if (player.getPlayerState() === 0) {
+                    // ✅ If video ends
+                    if (player.getPlayerState() === 0) { // 0 = ENDED
                         clearInterval(progressInterval);
-                        document.getElementById("playPauseBtn").innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
+                        let playPauseBtn = document.getElementById("playPauseBtn");
+                        let autoPlayToggle = document.getElementById("autoPlayToggle").checked;
+        
+                        if (!autoPlayToggle) {
+                            // ✅ Auto-Play is OFF → Show "bx bx-revision"
+                            playPauseBtn.innerHTML = "<i class='bx bx-revision' style='color: white; font-size: 24px;'></i>";
+                        } else {
+                            // ✅ Auto-Play is ON → Set Play icon
+                            playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
+                        }
                         playing = false;
                     }
                 }
             }, 1000);
-        }
+        }        
         
         function formatTime(seconds) {
             let mins = Math.floor(seconds / 60);
@@ -594,20 +626,17 @@
             let autoPlay = document.getElementById("autoPlayToggle").checked;
         
             if (event.data === 0) { // ✅ 0 means video ended
-                playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
                 playing = false;
                 albumArt.classList.add("rotate-paused");
         
                 if (repeatSong) {
                     player.seekTo(0); // ✅ Restart the current song
-                    if (autoPlay) {
-                        player.playVideo(); // ✅ Play again only if Auto-Play is ON
-                    } else {
-                        // ✅ Stay on the same song but don't play if Auto-Play is OFF
-                        player.pauseVideo();
-                    }
+                    player.playVideo(); // ✅ Always play again when Repeat is ON
                 } else if (autoPlay) {
                     playNextSong(); // ✅ Play next song if Auto-Play is ON
+                } else {
+                    // ✅ Show bx-revision when the song ends and Auto-Play is OFF
+                    playPauseBtn.innerHTML = "<i class='bx bx-revision' style='color: white; font-size: 24px;'></i>";
                 }
             } else if (event.data === 2) { // ✅ 2 means PAUSED
                 playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
@@ -619,7 +648,7 @@
                 albumArt.classList.remove("rotate-paused");
                 albumArt.classList.add("rotate");
             }
-        }
+        }        
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/boxicons@2.1.4/dist/boxicons.js"></script>
