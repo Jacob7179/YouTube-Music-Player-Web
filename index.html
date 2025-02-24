@@ -4,95 +4,214 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Music Player</title>
-    <style>
-        body {
-            text-align: center;
-            font-family: Arial, sans-serif;
-        }
-        #albumArt {
-            width: 300px;
-            height: 300px;
-            object-fit: cover;
-            border-radius: 50%; /* Makes it circular */
-            margin-bottom: 10px;
-        }        
-        #playerContainer {
-            position: absolute;
-            width: 0;
-            height: 0;
-            overflow: hidden;
-        }
-        .controls {
-            margin-top: 10px;
-        }
-        #progressBar {
-            width: 300px;
-            height: 5px;
-            background: #ddd;
-            margin: 10px auto;
-            position: relative;
-            cursor: pointer;
-        }
-        #progress {
-            height: 100%;
-            width: 0%;
-            background: #007bff;
-            position: absolute;
-            transition: width 0.1s linear;
-        }
-        #errorMessage {
-            color: red;
-            font-size: 14px;
-            margin-top: 10px;
-            display: none;
-        }
-
-        @keyframes rotate {
-            from {
-                transform: rotate(0deg);
-            }
-            to {
-                transform: rotate(360deg);
-            }
-        }
-        
-        .rotate {
-            animation: rotate 5s linear infinite;
-        }
-        
-        /* Pause rotation but keep current position */
-        .rotate-paused {
-            animation-play-state: paused;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="icon" href="Jacob_profile_picture_icon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
 </head>
 <body>
-    <h2>🎵 YouTube Music Player</h2>
+    <div id="background"></div>
+    <div class="container" style="padding-top: 80px;">
+        <div class="row col-md-12 col-6 justify-content-center align-items-stretch"> <!-- Ensures equal height -->
+        
+            <!-- Card 1: Music Player -->
+            <div class="col-md-3 col-12 d-flex">
+                <div class="card shadow-lg w-100 h-100" style="min-height: 650px;"> <!-- Added min-height -->
+                    <div class="card-body text-center d-flex flex-column">
+                        <h5 class="card-title fw-bold">🎵 YouTube Music Player</h5>
+    
+                        <img id="albumArt" src="https://via.placeholder.com/300" alt="Album Art" class="img-fluid rounded-circle shadow" style="max-width: 250px;">
+    
+                        <h4 id="nowPlaying" class="text-center mt-3">
+                            <!-- <span class="status">Not Playing</span> <br> -->
+                            <span class="song-title">Loading...</span> <br>
+                            <span class="author-name text-muted"></span>
+                        </h4>
+                        
+                        <!-- Progress Bar -->
+                        <div class="progress mt-2" id="progressBar">
+                            <div id="progress" class="progress-bar" style="width: 0%;"></div>
+                        </div>
 
-    <img id="albumArt" src="https://via.placeholder.com/300" alt="Album Art">
+                        <!-- Time Display (Below Progress Bar) -->
+                        <div class="d-flex justify-content-between text-muted mt-1">
+                            <span id="currentTime">0:00</span>
+                            <span id="totalTime">0:00</span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-center mt-3 gap-2">
+                            <button id="prevBtn" class="btn btn-primary rounded-circle px-3"><i class='bx bx-skip-previous' ></i></button>
+                            <button id="playPauseBtn" class="btn btn-success rounded-circle px-4"><i class='bx bx-play'></i></button>
+                            <button id="nextBtn" class="btn btn-primary rounded-circle px-3"><i class='bx bx-skip-next' ></i></button>
+                        </div>
+    
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="auto-play-toggle d-flex align-items-center gap-2">
+                                <label class="switch">
+                                    <input type="checkbox" id="autoPlayToggle" checked>
+                                    <span class="slider"></span>
+                                </label>
+                                <span>Auto-Play</span>
+                            </div>       
+                        
+                            <div class="d-flex align-items-center gap-2">
+                                <button id="repeatBtn" class="btn btn-secondary rounded-circle"><i class='bx bx-repeat' ></i></button>
+                                <span class="fw-bold">Repeat</span>
+                            </div>                            
+                        </div>
+    
+                        <div class="d-flex align-items-center gap-3 mt-4">
+                            <box-icon name='volume-low'></box-icon>
+                            <input type="range" id="volumeControl" class="form-range" min="0" max="100" value="100">
+                            <box-icon name='volume-full'></box-icon>
+                        </div>
+    
+                        <div id="playerContainer" style="display: none;">
+                            <div id="player"></div>
+                        </div>
+    
+                        <p id="errorMessage" class="text-danger mt-2">⚠ This song is unavailable.</p>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Card 2: Song Selector -->
+            <div class="col-md-8 col-12 mt-4 mt-md-0">
+                <div class="card shadow-lg">
+                    <div class="card-body">
+                        <h5 class="card-title text-center fw-bold">🎶 Select Song</h5>
 
-    <div id="progressBar">
-        <div id="progress"></div>
+                        <!-- Song List Headers -->
+                        <div class="d-flex justify-content-between px-3 fw-bold border-bottom pb-2">
+                            <span>Song Name</span>
+                            <span>Author Name</span>
+                        </div>
+
+                        <ul id="songList" class="list-group overflow-auto" style="min-height: 620px; max-height: 620px;">
+
+                            <!-- Japanese Song -->
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="wX_y95OrHLQ" data-img="https://i.ytimg.com/vi/wX_y95OrHLQ/hqdefault.jpg">
+                                <span class="song">Starlight Traveler</span>
+                                <span class="author text-muted">D-D-Dice · aaaa</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="qvk4Rl7r2GY" data-img="https://i.ytimg.com/vi/qvk4Rl7r2GY/hqdefault.jpg">
+                                <span class="song">百花繚乱</span>
+                                <span class="author text-muted">幾田りら (Lilas Ikuta)</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="q4CbHfW3Ji8" data-img="https://i.ytimg.com/vi/q4CbHfW3Ji8/hqdefault.jpg">
+                                <span class="song">スパークル - Sparkle</span>
+                                <span class="author text-muted">幾田りら (Lilas Ikuta)</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="kerzepq4imY" data-img="https://i.ytimg.com/vi/kerzepq4imY/hqdefault.jpg">
+                                <span class="song">もしも明日が</span>
+                                <span class="author text-muted">Warabe (わらべ)</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="U4pM3yB9KtU" data-img="https://i.ytimg.com/vi/U4pM3yB9KtU/hqdefault.jpg">
+                                <span class="song">MUGEN</span>
+                                <span class="author text-muted">MY FIRST STORY</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="jg-uSq64Ru8" data-img="https://i.ytimg.com/vi/jg-uSq64Ru8/hqdefault.jpg">
+                                <span class="song">Omokage (produced by Vaundy)</span>
+                                <span class="author text-muted">milet · Aimer · Lilas Ikuta</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="OxiyIW2y1bg" data-img="https://i.ytimg.com/vi/OxiyIW2y1bg/hqdefault.jpg">
+                                <span class="song">Her Blue Sky</span>
+                                <span class="author text-muted">空の青さを知る人よ</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="zP2uM7_EV1I" data-img="https://i.ytimg.com/vi/zP2uM7_EV1I/hqdefault.jpg">
+                                <span class="song">カメレオン (Chameleon)</span>
+                                <span class="author text-muted">King Gnu</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="Auq8qj7uuF0" data-img="https://i.ytimg.com/vi/Auq8qj7uuF0/hqdefault.jpg">
+                                <span class="song">Shiori</span>
+                                <span class="author text-muted">SEKAI NO OWARI</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="12IZ8oyF6X4" data-img="https://i.ytimg.com/vi/12IZ8oyF6X4/hqdefault.jpg">
+                                <span class="song">Shuhasu</span>
+                                <span class="author text-muted">SEKAI NO OWARI</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="jTTuA0msOyg" data-img="https://i.ytimg.com/vi/jTTuA0msOyg/hqdefault.jpg">
+                                <span class="song">Present</span>
+                                <span class="author text-muted">SEKAI NO OWARI</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="gZFGA41Slh0" data-img="https://i.ytimg.com/vi/gZFGA41Slh0/hqdefault.jpg">
+                                <span class="song">Illumination</span>
+                                <span class="author text-muted">SEKAI NO OWARI</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="QlyW9kYHTDo" data-img="https://i.ytimg.com/vi/QlyW9kYHTDo/hqdefault.jpg">
+                                <span class="song">Time Machine</span>
+                                <span class="author text-muted">SEKAI NO OWARI</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="zOkIe3RcTCs" data-img="https://i.ytimg.com/vi/zOkIe3RcTCs/hqdefault.jpg">
+                                <span class="song">LADY</span>
+                                <span class="author text-muted">米津玄師 Kenshi Yonezu</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="Ci_zad39Uhw" data-img="https://i.ytimg.com/vi/Ci_zad39Uhw/hqdefault.jpg">
+                                <span class="song">粛聖!! ロリ神レクイエム☆</span>
+                                <span class="author text-muted">しぐれうい</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="eSW2LVbPThw" data-img="https://i.ytimg.com/vi/eSW2LVbPThw/hqdefault.jpg">
+                                <span class="song">Rabbit Hole feat. Hatsune Miku</span>
+                                <span class="author text-muted">DECO*27</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="uKxyLmbOc0Q" data-img="https://i.ytimg.com/vi/uKxyLmbOc0Q/hqdefault.jpg">
+                                <span class="song">Renai Circulation「恋愛サーキュレーション」</span>
+                                <span class="author text-muted">＊なみりん (*Namirin)</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="RWFW1OSlMkM" data-img="https://i.ytimg.com/vi/RWFW1OSlMkM/hqdefault.jpg">
+                                <span class="song">seisyun complex</span>
+                                <span class="author text-muted">kessoku band</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="YjrSkBjDVEw" data-img="https://i.ytimg.com/vi/YjrSkBjDVEw/hqdefault.jpg">
+                                <span class="song">Fukashigi no KARTE</span>
+                                <span class="author text-muted">Mai Sakurajima(CV:Asami Seto) · Tomoe Koga(CV:Nao Toyama) · Rio Futaba(CV:Atsumi Tanezaki) · Nodoka Toyohama(CV:Maaya Uchida) · Kaede Azusagawa(CV:Yurika Kubo) · Shoko Makinohara(CV:Inori Minase)</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="IRsobBUcvCs" data-img="https://i.ytimg.com/vi/IRsobBUcvCs/hqdefault.jpg">
+                                <span class="song">DROPS (feat. Such)</span>
+                                <span class="author text-muted">Zekk · poplavor · Such</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="XkNai2JPIK8" data-img="https://i.ytimg.com/vi/XkNai2JPIK8/hqdefault.jpg">
+                                <span class="song">導火</span>
+                                <span class="author text-muted">Tsukuyomi / YurryCanon</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="G96Qa5QoEfI" data-img="https://i.ytimg.com/vi/G96Qa5QoEfI/hqdefault.jpg">
+                                <span class="song">百花の約束 (feat. 夕凪夜)</span>
+                                <span class="author text-muted">駒木優 / relier (Yu Komaki · Yoru Younagi)</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="eF_wT8KwXlI" data-img="https://i.ytimg.com/vi/eF_wT8KwXlI/hqdefault.jpg">
+                                <span class="song">Psyched Fevereiro</span>
+                                <span class="author text-muted">t+pazolite</span>
+                            </li>
+
+                            <!-- Chinese Song -->
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="N-RZKm29Qz8" data-img="https://i.ytimg.com/vi/N-RZKm29Qz8/hqdefault.jpg">
+                                <span class="song">浪人琵琶</span>
+                                <span class="author text-muted">胡66</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="YPdRwoIZgVs" data-img="https://i.ytimg.com/vi/YPdRwoIZgVs/hqdefault.jpg">
+                                <span class="song">日落大道</span>
+                                <span class="author text-muted">梁博</span>
+                            </li>
+
+                            <!-- English Song -->
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="ekr2nIex040" data-img="https://i.ytimg.com/vi/ekr2nIex040/hqdefault.jpg">
+                                <span class="song">APT.</span>
+                                <span class="author text-muted">ROSÉ & Bruno Mars</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="hJqYc62NCKo" data-img="https://i.ytimg.com/vi/hJqYc62NCKo/hqdefault.jpg">
+                                <span class="song">We'll Meet Again</span>
+                                <span class="author text-muted">TheFatRat & Laura Brehm</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="dpT-TeRYFvY" data-img="https://i.ytimg.com/vi/dpT-TeRYFvY/hqdefault.jpg">
+                                <span class="song">All For Love</span>
+                                <span class="author text-muted">Tungevaag · Raaban · Richard Smitt</span>
+                            </li>
+                        </ul>                        
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <div class="controls">
-        <button id="playPauseBtn">▶ Play</button>
-    </div>
-
-    <select id="songSelector">
-        <option value="wX_y95OrHLQ" data-img="https://i.ytimg.com/vi/wX_y95OrHLQ/hqdefault.jpg">Starlight Traveler · D-D-Dice · aaaa</option>
-        <option value="hJqYc62NCKo" data-img="https://i.ytimg.com/vi/hJqYc62NCKo/hqdefault.jpg">TheFatRat & Laura Brehm - We'll Meet Again</option>
-        <option value="dpT-TeRYFvY" data-img="https://i.ytimg.com/vi/dpT-TeRYFvY/hqdefault.jpg">All For Love · Tungevaag · Raaban · Richard Smitt</option>
-        <option value="kerzepq4imY" data-img="https://i.ytimg.com/vi/kerzepq4imY/hqdefault.jpg">Warabe (わらべ) - もしも明日が</option>
-        <option value="jg-uSq64Ru8" data-img="https://i.ytimg.com/vi/jg-uSq64Ru8/hqdefault.jpg">Omokage (produced by Vaundy) · milet · Aimer · Lilas Ikuta</option>
-        <option value="ekr2nIex040" data-img="https://i.ytimg.com/vi/ekr2nIex040/hqdefault.jpg">ROSÉ & Bruno Mars - APT.</option>
-    </select>
-
-    <div id="playerContainer">
-        <div id="player"></div>
-    </div>
-
-    <p id="errorMessage">⚠ This song is unavailable.</p>
 
     <script>
         let player;
@@ -123,99 +242,195 @@
             });
         }
         
-        function handlePlayerStateChange(event) {
-            let albumArt = document.getElementById("albumArt");
-        
-            if (event.data === 0) { // ✅ 0 means video ended
-                document.getElementById("playPauseBtn").innerText = "▶ Play";
-                playing = false;
-        
-                // ✅ Pause rotation when audio ends
-                albumArt.classList.add("rotate-paused");
-        
-                // ✅ Auto-play the next song
-                playNextSong();
-            }
-        }                
-
         function handleVideoError(event) {
             let errorMsg = document.getElementById("errorMessage");
             errorMsg.style.display = "block"; // Show error message
             playing = false;
             songUnavailable = true;
         
-            // Pause player & stop rotation
-            player.pauseVideo();
-            document.getElementById("playPauseBtn").innerText = "▶ Play";
+            if (player && player.pauseVideo) {
+                player.pauseVideo();
+            }
+        
+            playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
             document.getElementById("albumArt").classList.add("rotate-paused");
         
-            // ✅ Set timeout and store its reference
+            // ✅ Allow skipping only if Auto-Play is enabled
+            clearTimeout(errorTimeout);
             errorTimeout = setTimeout(() => {
                 errorMsg.style.display = "none"; // Hide error message
-                playNextSong();
+        
+                if (document.getElementById("autoPlayToggle").checked) { 
+                    playNextSong(); // ✅ Only play next song if Auto-Play is ON
+                }
             }, 3000);
-        }      
-        
-        function playNextSong() {
-            let songSelector = document.getElementById("songSelector");
-            let currentIndex = songSelector.selectedIndex;
-            let nextIndex = (currentIndex + 1) % songSelector.options.length; // Loop back to first song if at end
-            songSelector.selectedIndex = nextIndex; // Select the next song
-        
-            let nextVideoId = songSelector.options[nextIndex].value;
-            let nextAlbumArtUrl = songSelector.options[nextIndex].getAttribute("data-img");
-        
-            // ✅ Update album art
-            document.getElementById("albumArt").src = nextAlbumArtUrl;
-            document.getElementById("errorMessage").style.display = "none"; // Hide error message
-            songUnavailable = false; // Reset error state
-        
-            if (player) {
-                player.loadVideoById(nextVideoId);
-                playing = true;
-                document.getElementById("playPauseBtn").innerText = "⏸ Pause";
-        
-                clearInterval(progressInterval);
-                updateProgressBar();
-        
-                // ✅ Ensure album rotates when a new song is selected
-                document.getElementById("albumArt").classList.remove("rotate-paused");
-                document.getElementById("albumArt").classList.add("rotate");
-            }
         }        
-
-        document.getElementById("songSelector").addEventListener("change", function () {
-            const videoId = this.value;
-            const albumArtUrl = this.options[this.selectedIndex].getAttribute("data-img");
+        
+        function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
+            updateBackgroundImage(albumArtUrl);
             let albumArt = document.getElementById("albumArt");
-        
-            document.getElementById("albumArt").src = albumArtUrl;
-            document.getElementById("errorMessage").style.display = "none"; // Hide error message
             
-            // ✅ Cancel the timeout if a new song is selected
-            clearTimeout(errorTimeout);
+            // ✅ Stop rotation animation before resetting
+            albumArt.classList.remove("rotate");
         
-            // ✅ Reset unavailable detection
+            // ✅ Reset rotation angle
+            albumArt.style.transform = "rotate(0deg)";
+        
+            // ✅ Restart rotation animation after a small delay
+            setTimeout(() => {
+                albumArt.classList.add("rotate");
+            }, 100);
+        
+            albumArt.src = albumArtUrl;
+        
+            if (selectedSong) {
+                let songName = selectedSong.querySelector(".song").innerText;
+                let authorName = selectedSong.querySelector(".author").innerText;
+                document.querySelector("#nowPlaying .song-title").innerText = songName;
+                document.querySelector("#nowPlaying .author-name").innerText = authorName;
+            }
+        
+            clearTimeout(errorTimeout);
+            document.getElementById("errorMessage").style.display = "none";
             songUnavailable = false;
         
-            if (player) {
+            if (typeof player === "undefined" || !player.loadVideoById) {
+                document.getElementById("playerContainer").innerHTML = `<div id="player"></div>`;
+                onYouTubeIframeAPIReady();
+                setTimeout(() => {
+                    player.loadVideoById(videoId);
+                    player.playVideo();
+                }, 1000);
+            } else {
                 player.loadVideoById(videoId);
-                playing = true;
-                document.getElementById("playPauseBtn").innerText = "⏸ Pause";
+                player.playVideo();
+            }
         
-                clearInterval(progressInterval);
-                updateProgressBar();
+            playing = true;
+            document.getElementById("playPauseBtn").innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>";
         
-                // ✅ Ensure album rotates when a new song is selected
-                albumArt.classList.remove("rotate-paused");
-                albumArt.classList.add("rotate");
+            albumArt.classList.remove("rotate-paused");
+            albumArt.classList.add("rotate");
+        
+            clearInterval(progressInterval);
+            updateProgressBar();
+        }        
+        
+        function playNextSong() {
+            let songItems = document.querySelectorAll("#songList li");
+            let currentSong = document.querySelector("#songList li.selected");
+        
+            let currentIndex = Array.from(songItems).indexOf(currentSong);
+            let nextIndex = (currentIndex + 1) % songItems.length;
+        
+            let nextSong = songItems[nextIndex];
+            nextSong.classList.add("selected");
+            currentSong.classList.remove("selected");
+        
+            let nextVideoId = nextSong.getAttribute("data-video");
+            let nextAlbumArtUrl = nextSong.getAttribute("data-img");
+        
+            // ✅ Ensure "Now Playing" updates correctly
+            loadNewVideo(nextVideoId, nextAlbumArtUrl, nextSong);
+        
+            nextSong.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }        
+        
+        // Handle song list selection
+        document.querySelectorAll("#songList li").forEach(item => {
+            item.addEventListener("click", function () {
+                document.querySelectorAll("#songList li").forEach(li => li.classList.remove("selected"));
+                this.classList.add("selected");
+
+                let videoId = this.getAttribute("data-video");
+                let albumArtUrl = this.getAttribute("data-img");
+
+                loadNewVideo(videoId, albumArtUrl);
+
+                // ✅ Ensure song list auto-focuses on the newly selected song
+                this.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            });
+        });
+        
+        document.querySelectorAll("#songList li").forEach(item => {
+            item.addEventListener("click", function () {
+                // Remove highlight from previous selection
+                document.querySelectorAll("#songList li").forEach(li => li.classList.remove("selected"));
+        
+                // Highlight selected song
+                this.classList.add("selected");
+        
+                // Update album art
+                let albumArt = document.getElementById("albumArt");
+                albumArt.src = this.getAttribute("data-img");
+        
+                // Play new song
+                let videoId = this.getAttribute("data-video");
+                if (player) {
+                    player.loadVideoById(videoId);
+                    playing = true;
+                    document.getElementById("playPauseBtn").innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>";
+                }
+            });
+        });
+
+        function updateBackgroundImage(imageUrl) {
+            let background = document.getElementById("background");
+            background.style.backgroundImage = `url(${imageUrl})`;
+        }
+        
+        // Apply background change when clicking a song
+        document.querySelectorAll("#songList li").forEach((item, index) => {
+            // Add numbering
+            let numberSpan = document.createElement("span");
+            numberSpan.classList.add("song-number");
+            numberSpan.textContent = (index + 1) + ".\u00A0"; 
+            item.prepend(numberSpan);
+        
+            // Handle song selection
+            item.addEventListener("click", function () {
+                let videoId = this.getAttribute("data-video");
+                let albumArtUrl = this.getAttribute("data-img");
+        
+                loadNewVideo(videoId, albumArtUrl, this);
+            });
+        });
+        
+        // Set default selected song on page load
+        document.addEventListener("DOMContentLoaded", function () {
+            let firstSong = document.querySelector("#songList li");
+        
+            if (firstSong) {
+                document.querySelectorAll("#songList li").forEach(li => li.classList.remove("selected"));
+                firstSong.classList.add("selected");
+        
+                let firstImage = firstSong.getAttribute("data-img");
+                let firstSongName = firstSong.querySelector(".song").innerText;
+                let firstAuthorName = firstSong.querySelector(".author").innerText;
+        
+                if (firstImage) {
+                    document.getElementById("albumArt").src = firstImage;
+                    document.getElementById("background").style.backgroundImage = `url(${firstImage})`;
+                }
+        
+                // ✅ Correctly set the first song as "Now Playing"
+                //document.querySelector("#nowPlaying .status").innerText = "Now Playing:";
+                document.querySelector("#nowPlaying .song-title").innerText = firstSongName;
+                document.querySelector("#nowPlaying .author-name").innerText = firstAuthorName;
             }
         });        
+        
+        // Set default selected song
+        document.querySelector("#songList li").classList.add("selected");        
 
         window.onload = function() {
-            const defaultOption = document.getElementById("songSelector").options[0];
-            document.getElementById("albumArt").src = defaultOption.getAttribute("data-img");
-        };
+            let firstSong = document.querySelector("#songList li");
+            if (firstSong) {
+                firstSong.classList.add("selected");
+                let albumArtUrl = firstSong.getAttribute("data-img");
+                document.getElementById("albumArt").src = albumArtUrl;
+            }
+        };        
 
         document.getElementById("playPauseBtn").addEventListener("click", function () {
             if (songUnavailable) return; // Prevent play if song is unavailable
@@ -225,7 +440,7 @@
             if (player) {
                 if (playing) {
                     player.pauseVideo();
-                    this.innerText = "▶ Play";
+                    this.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>"; //Play button
                     clearInterval(progressInterval);
         
                     // Pause rotation but keep current position
@@ -233,7 +448,7 @@
         
                 } else {
                     player.playVideo();
-                    this.innerText = "⏸ Pause";
+                    this.innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>"; //Pause button
                     updateProgressBar();
         
                     // Resume rotation if not paused manually
@@ -244,6 +459,45 @@
             }
         });
 
+        document.getElementById("prevBtn").addEventListener("click", playPreviousSong);
+        document.getElementById("nextBtn").addEventListener("click", playNextSong);
+
+        function playPreviousSong() {
+            let songItems = document.querySelectorAll("#songList li");
+            let currentSong = document.querySelector("#songList li.selected");
+
+            let currentIndex = Array.from(songItems).indexOf(currentSong);
+            let prevIndex = (currentIndex - 1 + songItems.length) % songItems.length;
+
+            let prevSong = songItems[prevIndex];
+            prevSong.classList.add("selected");
+            currentSong.classList.remove("selected");
+
+            let prevVideoId = prevSong.getAttribute("data-video");
+            let prevAlbumArtUrl = prevSong.getAttribute("data-img");
+
+            loadNewVideo(prevVideoId, prevAlbumArtUrl, prevSong);
+            prevSong.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+
+        function playNextSong() {
+            let songItems = document.querySelectorAll("#songList li");
+            let currentSong = document.querySelector("#songList li.selected");
+
+            let currentIndex = Array.from(songItems).indexOf(currentSong);
+            let nextIndex = (currentIndex + 1) % songItems.length;
+
+            let nextSong = songItems[nextIndex];
+            nextSong.classList.add("selected");
+            currentSong.classList.remove("selected");
+
+            let nextVideoId = nextSong.getAttribute("data-video");
+            let nextAlbumArtUrl = nextSong.getAttribute("data-img");
+
+            loadNewVideo(nextVideoId, nextAlbumArtUrl, nextSong);
+            nextSong.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+
         function updateProgressBar() {
             clearInterval(progressInterval);
             progressInterval = setInterval(() => {
@@ -253,16 +507,26 @@
                     if (duration > 0) {
                         let progressPercent = (currentTime / duration) * 100;
                         document.getElementById("progress").style.width = progressPercent + "%";
+        
+                        // ✅ Update time display
+                        document.getElementById("currentTime").innerText = formatTime(currentTime);
+                        document.getElementById("totalTime").innerText = formatTime(duration);
                     }
-
+        
                     if (player.getPlayerState() === 0) {
                         clearInterval(progressInterval);
-                        document.getElementById("playPauseBtn").innerText = "▶ Play";
+                        document.getElementById("playPauseBtn").innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
                         playing = false;
                     }
                 }
             }, 1000);
         }
+        
+        function formatTime(seconds) {
+            let mins = Math.floor(seconds / 60);
+            let secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+        }        
 
         const progressBar = document.getElementById("progressBar");
         const progress = document.getElementById("progress");
@@ -310,6 +574,54 @@
         tag.src = "https://www.youtube.com/iframe_api";
         let firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        document.getElementById("volumeControl").addEventListener("input", function () {
+            if (player) {
+                player.setVolume(this.value);
+            }
+        });
+
+        let repeatSong = false; // Track repeat mode
+
+        document.getElementById("repeatBtn").addEventListener("click", function () {
+            repeatSong = !repeatSong;
+            this.classList.toggle("active", repeatSong); // Toggle active class
+        });
+        
+        function handlePlayerStateChange(event) {
+            let albumArt = document.getElementById("albumArt");
+            let playPauseBtn = document.getElementById("playPauseBtn");
+            let autoPlay = document.getElementById("autoPlayToggle").checked;
+        
+            if (event.data === 0) { // ✅ 0 means video ended
+                playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
+                playing = false;
+                albumArt.classList.add("rotate-paused");
+        
+                if (repeatSong) {
+                    player.seekTo(0); // ✅ Restart the current song
+                    if (autoPlay) {
+                        player.playVideo(); // ✅ Play again only if Auto-Play is ON
+                    } else {
+                        // ✅ Stay on the same song but don't play if Auto-Play is OFF
+                        player.pauseVideo();
+                    }
+                } else if (autoPlay) {
+                    playNextSong(); // ✅ Play next song if Auto-Play is ON
+                }
+            } else if (event.data === 2) { // ✅ 2 means PAUSED
+                playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
+                playing = false;
+                albumArt.classList.add("rotate-paused");
+            } else if (event.data === 1) { // ✅ 1 means PLAYING
+                playPauseBtn.innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>";
+                playing = true;
+                albumArt.classList.remove("rotate-paused");
+                albumArt.classList.add("rotate");
+            }
+        }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/boxicons@2.1.4/dist/boxicons.js"></script>
 </body>
 </html>

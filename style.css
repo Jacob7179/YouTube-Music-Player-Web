@@ -1,0 +1,415 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 90vh;
+    background: #f7f7f7;
+    font-family: Arial, sans-serif;
+}
+
+/* 🎵 Music Player Card */
+.music-player {
+    width: 350px;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+/* 🎵 Album Art */
+#albumArt {
+    width: 250px;
+    height: 250px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 🎵 Controls */
+.controls {
+    padding-top: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}        
+
+/* Play/Pause Button */
+#playPauseBtn, #prevBtn, #nextBtn {
+    width: 70px;
+    height: 70px;
+    border: none;
+    border-radius: 50%;
+    background: #007bff;
+    color: white;
+    font-size: 26px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s, transform 0.1s;
+    padding: 10px;
+    line-height: 1; /* Ensures vertical centering */
+}
+
+#playPauseBtn:active, #prevBtn:active, #nextBtn:active {
+    transform: scale(0.9);
+}        
+
+#playPauseBtn:hover, #prevBtn:hover, #nextBtn:hover {
+    background: #0056b3;
+}
+
+/* 🎵 Progress Bar */
+#progressBar {
+    width: 90%;
+    height: 6px;
+    background: #ddd;
+    border-radius: 5px;
+    position: relative;
+    cursor: pointer;
+    margin: 15px auto;
+    display: block;
+}
+
+#progress {
+    height: 100%;
+    width: 0%;
+    background: #007bff;
+    border-radius: 5px;
+    transition: width 0.1s linear;
+}
+
+/* 🎵 Song Selector */
+select {
+    width: 100%;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+/* 🎵 Hide YouTube Player */
+.player-container {
+    display: flex;
+    gap: 20px;
+}
+
+.song-selector {
+    width: 800px;
+    background: white;
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+/* 🎵 Error Message */
+#errorMessage {
+    color: red;
+    font-size: 14px;
+    margin-top: 10px;
+    display: none;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.rotate {
+    animation: rotate 5s linear infinite;
+}
+
+.rotate-paused {
+    animation-play-state: paused;
+}
+
+.volume-control {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Adjust spacing */
+}
+
+.volume-control input[type="range"] {
+    flex-grow: 1; /* Makes slider take available space */
+}
+
+/* Remove border from the song list container */
+#songList {
+    border: none !important;
+    border-radius: 0 !important;
+}
+
+/* Add horizontal lines between songs */
+#songList .list-group-item {
+    border-bottom: 1px solid #ddd !important; /* Light grey separator */
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    padding: 10px 15px; /* Adjust spacing for better readability */
+}
+
+/* Remove border from the last item to avoid extra line */
+#songList .list-group-item:last-child {
+    border-bottom: none !important;
+}
+
+#songList li {
+    display: flex;
+    justify-content: space-between; /* Creates left-right separation */
+    align-items: center;
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #ddd;
+    transition: background 0.3s;
+}
+
+#songList li:last-child {
+    border-bottom: none;
+}
+
+#songList li:hover {
+    background: #f0f0f0;
+}
+
+#songList li.selected {
+    background: #007bff;
+    color: white;
+    font-weight: bold;
+}
+
+.song {
+    flex: 1;
+    text-align: left;  /* Align song name to the left */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 50%;
+}
+
+.author {
+    flex: 1;
+    text-align: right; /* Align author name to the right */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 50%;
+}
+#background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    filter: blur(20px); /* Adjust blur intensity */
+    z-index: -1; /* Send background behind everything */
+    transition: background-image 0.5s ease-in-out;
+}
+
+/* 🎵 Auto-Play Toggle Styling */
+.auto-play-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* 🎵 Switch Container */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 25px;
+}
+
+/* 🎵 Hide Default Checkbox */
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* 🎵 Slider */
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 25px;
+}
+
+/* 🎵 Slider Circle */
+.slider::before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 4px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+/* 🎵 Toggle ON */
+.switch input:checked + .slider {
+    background-color: #007bff;
+}
+
+/* 🎵 Move Circle when ON */
+.switch input:checked + .slider::before {
+    transform: translateX(24px);
+}
+
+/* 🎵 Repeat Button Styling */
+/* 🎵 Controls Container */
+.controls-container {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center horizontally */
+    gap: 15px; /* Adjust spacing */
+    margin-top: 10px;
+}
+
+/* 🎵 Auto-Play Toggle */
+.auto-play-toggle, .repeat-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* 🎵 Repeat Button */
+/* Add scale animation effect */
+#repeatBtn {
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 50%;
+    background: #ccc;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.1s; /* Smooth animation */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Active state (when clicked) */
+#repeatBtn:active {
+    transform: scale(0.9); /* Slight shrink effect */
+}
+
+/* Active styling when repeat mode is on */
+#repeatBtn.active {
+    background: #007bff; /* Blue when active */
+    transform: scale(1.1); /* Slight increase in size */
+    transition: background 0.3s, transform 0.1s;
+}
+
+#nowPlaying {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10px;
+    line-height: 0.8; /* Reduce line height to bring text closer */
+}
+
+#nowPlaying .status {
+    font-size: 20px;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 2px; /* Reduce space below "Now Playing" */
+}
+
+#nowPlaying .song-title {
+    font-size: 18px;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 2px; /* Reduce space below Song Name */
+}
+
+#nowPlaying .author-name {
+    font-size: 14px;
+    font-weight: normal;
+    color: #666;
+    display: block;
+}        
+
+#volumeControl {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: #aaa; /* Default grey */
+    border-radius: 5px;
+    outline: none;
+    border: none;
+    transition: none; /* Remove animation effect */
+}
+
+/* Prevent color change on click */
+#volumeControl:focus, 
+#volumeControl:active {
+    background: #aaa !important; /* Force grey */
+}
+
+/* Chrome, Safari, Edge */
+#volumeControl::-webkit-slider-runnable-track {
+    background: #aaa; /* Default grey */
+    height: 6px;
+    border-radius: 5px;
+}
+
+#volumeControl::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #666; /* Darker grey thumb */
+    border-radius: 50%;
+    cursor: pointer;
+    margin-top: -4px;
+}
+
+/* Firefox */
+#volumeControl::-moz-range-track {
+    background: #aaa; /* Default grey */
+    height: 6px;
+    border-radius: 5px;
+}
+
+#volumeControl::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #666; /* Darker grey thumb */
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+/* Prevent background color change on click in all browsers */
+#volumeControl:focus::-webkit-slider-runnable-track,
+#volumeControl:active::-webkit-slider-runnable-track {
+    background: #aaa !important; /* Stays grey */
+}
+
+#volumeControl:focus::-moz-range-track,
+#volumeControl:active::-moz-range-track {
+    background: #aaa !important; /* Stays grey */
+}
