@@ -11,7 +11,7 @@
 </head>
 <body>
     <div id="background"></div>
-    <div class="container" style="margin-top: 26%;">
+    <div class="container">
         <div class="row justify-content-center align-items-stretch">        
             <!-- Card 1: Music Player -->
             <div class="col-md-3 col-12 d-flex">
@@ -19,7 +19,9 @@
                     <div class="card-body text-center d-flex flex-column">
                         <h5 class="card-title fw-bold">🎵 YouTube Music Player</h5>
     
-                        <img id="albumArt" src="https://via.placeholder.com/300" alt="Album Art" class="img-fluid rounded-circle shadow" style="max-width: 250px;">
+                        <div class="album-art-container">
+                            <img id="albumArt" src="https://via.placeholder.com/300" alt="Album Art" class="img-fluid shadow">
+                        </div>                        
     
                         <h4 id="nowPlaying" class="text-center mt-3">
                             <!-- <span class="status">Not Playing</span> <br> -->
@@ -35,7 +37,7 @@
                                 <span id="currentTime">0:00</span>
                                 <span id="totalTime">0:00</span>
                             </div>
-                        </div>                        
+                        </div>
                         
                         <div class="d-flex justify-content-center mt-3 gap-2">
                             <button id="prevBtn" class="btn btn-primary rounded-circle px-3"><i class='bx bx-skip-previous' ></i></button>
@@ -295,25 +297,15 @@
             updateBackgroundImage(albumArtUrl);
             let albumArt = document.getElementById("albumArt");
         
-            // ✅ Step 1: Apply fade-out effect before changing the image
+            // ✅ Fade-out effect before changing the image
             albumArt.style.transition = "opacity 0.5s ease-in-out";
             albumArt.style.opacity = "0";
         
-            // ✅ Step 2: Delay the image change until fade-out is complete
+            // ✅ Change the image with a fade-in effect
             setTimeout(() => {
-                albumArt.src = albumArtUrl; // Change album art
-        
-                // ✅ Step 3: Apply fade-in effect after changing the image
-                setTimeout(() => {
-                    albumArt.style.opacity = "1"; // Fade-in effect
-                }, 100); // Small delay ensures smooth transition
-            }, 500); // Match this duration with the fade-out effect
-        
-            // ✅ Reset and restart rotation animation
-            albumArt.classList.remove("rotate"); // Stop rotation
-            setTimeout(() => {
-                albumArt.classList.add("rotate"); // Restart rotation after image loads
-            }, 600); // Restart animation slightly after fade-in starts
+                albumArt.src = albumArtUrl;
+                albumArt.style.opacity = "1";
+            }, 500);
         
             if (selectedSong) {
                 let songName = selectedSong.querySelector(".song").innerText;
@@ -338,8 +330,16 @@
                 player.playVideo();
             }
         
+            // ✅ Reset Progress Bar and Timer when selecting a new song
+            document.getElementById("progress").style.width = "0%";
+            document.getElementById("currentTime").innerText = "0:00";
+            document.getElementById("totalTime").innerText = "0:00";
+        
             playing = true;
             document.getElementById("playPauseBtn").innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>";
+        
+            // ✅ Start tracking progress for the new song
+            updateProgressBar();
         }        
         
         function playNextSong() {
@@ -365,18 +365,21 @@
         // Handle song list selection
         document.querySelectorAll("#songList li").forEach(item => {
             item.addEventListener("click", function () {
+                // ✅ Remove highlight from previous selection
                 document.querySelectorAll("#songList li").forEach(li => li.classList.remove("selected"));
+        
+                // ✅ Highlight selected song
                 this.classList.add("selected");
-
+        
                 let videoId = this.getAttribute("data-video");
                 let albumArtUrl = this.getAttribute("data-img");
-
-                loadNewVideo(videoId, albumArtUrl);
-
-                // ✅ Ensure song list auto-focuses on the newly selected song
-                this.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        
+                loadNewVideo(videoId, albumArtUrl, this);
+        
+                // ✅ Ensure the progress bar updates for the new song
+                updateProgressBar();
             });
-        });
+        });        
         
         document.querySelectorAll("#songList li").forEach(item => {
             item.addEventListener("click", function () {
@@ -530,27 +533,25 @@
                 if (player && player.getCurrentTime && !isDragging) {
                     let currentTime = player.getCurrentTime();
                     let duration = player.getDuration();
-                    
+        
                     if (duration > 0) {
                         let progressPercent = (currentTime / duration) * 100;
                         document.getElementById("progress").style.width = progressPercent + "%";
-                
-                        // ✅ Update time display
+        
+                        // ✅ Update time display correctly
                         document.getElementById("currentTime").innerText = formatTime(currentTime);
                         document.getElementById("totalTime").innerText = formatTime(duration);
                     }
         
-                    // ✅ If video ends
+                    // ✅ If video ends, handle accordingly
                     if (player.getPlayerState() === 0) { // 0 = ENDED
                         clearInterval(progressInterval);
                         let playPauseBtn = document.getElementById("playPauseBtn");
                         let autoPlayToggle = document.getElementById("autoPlayToggle").checked;
         
                         if (!autoPlayToggle) {
-                            // ✅ Auto-Play is OFF → Show "bx bx-revision"
                             playPauseBtn.innerHTML = "<i class='bx bx-revision' style='color: white; font-size: 24px;'></i>";
                         } else {
-                            // ✅ Auto-Play is ON → Set Play icon
                             playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
                         }
                         playing = false;

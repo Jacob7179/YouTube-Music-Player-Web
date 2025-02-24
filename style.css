@@ -1,10 +1,14 @@
-body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 90vh;
-    background: #f7f7f7;
+html, body {
+    margin-top: 20px;
+    height: auto;
+    overflow-y: auto;
     font-family: Arial, sans-serif;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    padding-bottom: 20px;
 }
 
 /* 🎵 Music Player Card */
@@ -17,14 +21,22 @@ body {
     text-align: center;
 }
 
-/* 🎵 Album Art */
+/* 🎵 Center Album Art */
+.album-art-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
 #albumArt {
     width: 250px;
     height: 250px;
     object-fit: cover;
     border-radius: 50%;
-    transition: opacity 0.5s ease-in-out; /* Smooth fade effect */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
 }
+
 
 /* 🎵 Controls */
 .controls {
