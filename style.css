@@ -465,3 +465,20 @@ select {
 .card .btn:active {
     transform: scale(0.9);
 }
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.rotate {
+    animation: rotate 5s linear infinite;
+}
+
+.rotate-paused {
+    animation-play-state: paused;
+}

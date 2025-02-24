@@ -294,19 +294,35 @@
         }        
         
         function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
-            updateBackgroundImage(albumArtUrl);
             let albumArt = document.getElementById("albumArt");
         
             // ✅ Fade-out effect before changing the image
             albumArt.style.transition = "opacity 0.5s ease-in-out";
             albumArt.style.opacity = "0";
         
-            // ✅ Change the image with a fade-in effect
+            // ✅ Reset rotation
             setTimeout(() => {
-                albumArt.src = albumArtUrl;
-                albumArt.style.opacity = "1";
+                albumArt.classList.remove("rotate");
+                albumArt.style.transform = "rotate(0deg)"; // Reset rotation
+        
+                // ✅ Change the image (or wait if no new image)
+                if (albumArtUrl) {
+                    albumArt.src = albumArtUrl;
+                }
+        
+                // ✅ Wait for the new image to load before fading in
+                albumArt.onload = () => {
+                    setTimeout(() => {
+                        albumArt.style.opacity = "1"; // Fade-in effect
+                        albumArt.classList.add("rotate"); // Resume rotation
+                    }, 200);
+                };
             }, 500);
         
+            // ✅ Update background image
+            updateBackgroundImage(albumArtUrl);
+        
+            // ✅ Update song details
             if (selectedSong) {
                 let songName = selectedSong.querySelector(".song").innerText;
                 let authorName = selectedSong.querySelector(".author").innerText;
@@ -314,10 +330,12 @@
                 document.querySelector("#nowPlaying .author-name").innerText = authorName;
             }
         
+            // ✅ Hide error message
             clearTimeout(errorTimeout);
             document.getElementById("errorMessage").style.display = "none";
             songUnavailable = false;
         
+            // ✅ Load and play the new video
             if (typeof player === "undefined" || !player.loadVideoById) {
                 document.getElementById("playerContainer").innerHTML = `<div id="player"></div>`;
                 onYouTubeIframeAPIReady();
@@ -330,7 +348,7 @@
                 player.playVideo();
             }
         
-            // ✅ Reset Progress Bar and Timer when selecting a new song
+            // ✅ Reset progress bar and timer
             document.getElementById("progress").style.width = "0%";
             document.getElementById("currentTime").innerText = "0:00";
             document.getElementById("totalTime").innerText = "0:00";
@@ -338,7 +356,7 @@
             playing = true;
             document.getElementById("playPauseBtn").innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>";
         
-            // ✅ Start tracking progress for the new song
+            // ✅ Start tracking progress
             updateProgressBar();
         }        
         
@@ -362,44 +380,24 @@
             nextSong.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }        
         
-        // Handle song list selection
+        // Handle song list selection (Click to Play)
         document.querySelectorAll("#songList li").forEach(item => {
             item.addEventListener("click", function () {
                 // ✅ Remove highlight from previous selection
                 document.querySelectorAll("#songList li").forEach(li => li.classList.remove("selected"));
-        
-                // ✅ Highlight selected song
+
+                // ✅ Highlight the clicked song
                 this.classList.add("selected");
-        
+
+                // ✅ Get video details
                 let videoId = this.getAttribute("data-video");
                 let albumArtUrl = this.getAttribute("data-img");
-        
+
+                // ✅ Load new video with animation
                 loadNewVideo(videoId, albumArtUrl, this);
-        
+
                 // ✅ Ensure the progress bar updates for the new song
                 updateProgressBar();
-            });
-        });        
-        
-        document.querySelectorAll("#songList li").forEach(item => {
-            item.addEventListener("click", function () {
-                // Remove highlight from previous selection
-                document.querySelectorAll("#songList li").forEach(li => li.classList.remove("selected"));
-        
-                // Highlight selected song
-                this.classList.add("selected");
-        
-                // Update album art
-                let albumArt = document.getElementById("albumArt");
-                albumArt.src = this.getAttribute("data-img");
-        
-                // Play new song
-                let videoId = this.getAttribute("data-video");
-                if (player) {
-                    player.loadVideoById(videoId);
-                    playing = true;
-                    document.getElementById("playPauseBtn").innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>";
-                }
             });
         });
 
