@@ -183,6 +183,8 @@ body.dark-mode .btn-dark-mode-toggle:hover {
     align-items: center;
     justify-content: center;
     flex-direction: column;
+    overflow-x: auto; /* Enable horizontal scrolling */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling for iOS */
 }
 
 .progress {
