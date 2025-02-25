@@ -579,28 +579,14 @@
                 if (player && player.getCurrentTime && !isDragging) {
                     let currentTime = player.getCurrentTime();
                     let duration = player.getDuration();
-        
+            
                     if (duration > 0) {
                         let progressPercent = (currentTime / duration) * 100;
-                        document.getElementById("progress").style.width = progressPercent + "%";
+                        let progressElement = document.getElementById("progress");
         
-                        // ✅ Update time display correctly
-                        document.getElementById("currentTime").innerText = formatTime(currentTime);
-                        document.getElementById("totalTime").innerText = formatTime(duration);
-                    }
-        
-                    // ✅ If video ends, handle accordingly
-                    if (player.getPlayerState() === 0) { // 0 = ENDED
-                        clearInterval(progressInterval);
-                        let playPauseBtn = document.getElementById("playPauseBtn");
-                        let autoPlayToggle = document.getElementById("autoPlayToggle").checked;
-        
-                        if (!autoPlayToggle) {
-                            playPauseBtn.innerHTML = "<i class='bx bx-revision' style='color: white; font-size: 24px;'></i>";
-                        } else {
-                            playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
-                        }
-                        playing = false;
+                        // Ensure progress bar width can scroll on mobile
+                        progressElement.style.width = Math.max(progressPercent, 100) + "%";
+                        progressBar.scrollLeft = progressElement.offsetWidth; // Auto-scroll to current progress
                     }
                 }
             }, 1000);
@@ -616,11 +602,38 @@
         const progress = document.getElementById("progress");
 
         progressBar.addEventListener("mousedown", function(event) {
-            if (songUnavailable) return; // Don't seek if song is unavailable
+            if (songUnavailable) return;
             isDragging = true;
             seek(event);
         });
-
+        
+        // Enable touch scroll for mobile
+        progressBar.addEventListener("touchstart", function(event) {
+            if (songUnavailable) return;
+            isDragging = true;
+            seek(event.touches[0]);
+        });
+        
+        document.addEventListener("mousemove", function(event) {
+            if (isDragging) {
+                seek(event);
+            }
+        });
+        
+        document.addEventListener("touchmove", function(event) {
+            if (isDragging) {
+                seek(event.touches[0]);
+            }
+        });
+        
+        document.addEventListener("mouseup", function() {
+            isDragging = false;
+        });
+        
+        document.addEventListener("touchend", function() {
+            isDragging = false;
+        });
+        
         document.addEventListener("mousemove", function(event) {
             if (isDragging) {
                 seek(event);
