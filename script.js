@@ -1,0 +1,570 @@
+let player;
+let playing = false;
+let songUnavailable = false;
+let progressInterval;
+let isDragging = false;
+let errorTimeout;
+let selectedVideoId = "wX_y95OrHLQ";
+
+function onYouTubeIframeAPIReady() {
+    player = new YT.Player('player', {
+        videoId: selectedVideoId,
+        playerVars: {
+            autoplay: 0,
+            controls: 0,
+            modestbranding: 1,
+            showinfo: 0,
+            rel: 0
+        },
+        events: {
+            'onReady': () => {
+                player.setVolume(100);
+            },
+            'onStateChange': handlePlayerStateChange, // ✅ Detect video state changes
+            'onError': handleVideoError
+        }
+    });
+}
+
+function handleVideoError(event) {
+    let errorMsg = document.getElementById("errorMessage");
+    errorMsg.style.display = "block"; // Show error message
+    playing = false;
+    songUnavailable = true;
+
+    if (player && player.pauseVideo) {
+        player.pauseVideo();
+    }
+
+    playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
+    document.getElementById("albumArt").classList.add("rotate-paused");
+
+    // ✅ Allow skipping only if Auto-Play is enabled
+    clearTimeout(errorTimeout);
+    errorTimeout = setTimeout(() => {
+        errorMsg.style.display = "none"; // Hide error message
+
+        if (document.getElementById("autoPlayToggle").checked) { 
+            playNextSong(); // ✅ Only play next song if Auto-Play is ON
+        }
+    }, 3000);
+}        
+
+function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
+    let albumArt = document.getElementById("albumArt");
+
+    // ✅ Fade-out effect before changing the image
+    albumArt.style.transition = "opacity 0.5s ease-in-out";
+    albumArt.style.opacity = "0";
+
+    // ✅ Reset rotation
+    setTimeout(() => {
+        albumArt.classList.remove("rotate");
+        albumArt.style.transform = "rotate(0deg)"; // Reset rotation
+
+        // ✅ Change the image (or wait if no new image)
+        if (albumArtUrl) {
+            albumArt.src = albumArtUrl;
+        }
+
+        // ✅ Wait for the new image to load before fading in
+        albumArt.onload = () => {
+            setTimeout(() => {
+                albumArt.style.opacity = "1"; // Fade-in effect
+                albumArt.classList.add("rotate"); // Resume rotation
+            }, 200);
+        };
+    }, 500);
+
+    // ✅ Update background image
+    updateBackgroundImage(albumArtUrl);
+
+    // ✅ Update song details
+    if (selectedSong) {
+        let songName = selectedSong.querySelector(".song").innerText;
+        let authorName = selectedSong.querySelector(".author").innerText;
+        document.querySelector("#nowPlaying .song-title").innerText = songName;
+        document.querySelector("#nowPlaying .author-name").innerText = authorName;
+    }
+
+    // ✅ Hide error message
+    clearTimeout(errorTimeout);
+    document.getElementById("errorMessage").style.display = "none";
+    songUnavailable = false;
+
+    // ✅ Load and play the new video
+    if (typeof player === "undefined" || !player.loadVideoById) {
+        document.getElementById("playerContainer").innerHTML = `<div id="player"></div>`;
+        onYouTubeIframeAPIReady();
+        setTimeout(() => {
+            player.loadVideoById(videoId);
+            player.playVideo();
+        }, 1000);
+    } else {
+        player.loadVideoById(videoId);
+        player.playVideo();
+    }
+
+    // ✅ Reset progress bar and timer
+    document.getElementById("progress").style.width = "0%";
+    document.getElementById("currentTime").innerText = "0:00";
+    document.getElementById("totalTime").innerText = "0:00";
+
+    playing = true;
+    document.getElementById("playPauseBtn").innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>";
+
+    // ✅ Start tracking progress
+    updateProgressBar();
+}        
+
+function playNextSong() {
+    let songItems = document.querySelectorAll("#songList li");
+    let currentSong = document.querySelector("#songList li.selected");
+
+    let currentIndex = Array.from(songItems).indexOf(currentSong);
+    let nextIndex = (currentIndex + 1) % songItems.length;
+
+    let nextSong = songItems[nextIndex];
+    nextSong.classList.add("selected");
+    currentSong.classList.remove("selected");
+
+    let nextVideoId = nextSong.getAttribute("data-video");
+    let nextAlbumArtUrl = nextSong.getAttribute("data-img");
+
+    // ✅ Ensure "Now Playing" updates correctly
+    loadNewVideo(nextVideoId, nextAlbumArtUrl, nextSong);
+
+    nextSong.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}        
+
+// Handle song list selection (Click to Play)
+document.querySelectorAll("#songList li").forEach(item => {
+    item.addEventListener("click", function () {
+        // ✅ Remove highlight from previous selection
+        document.querySelectorAll("#songList li").forEach(li => li.classList.remove("selected"));
+
+        // ✅ Highlight the clicked song
+        this.classList.add("selected");
+
+        // ✅ Get video details
+        let videoId = this.getAttribute("data-video");
+        let albumArtUrl = this.getAttribute("data-img");
+
+        // ✅ Load new video with animation
+        loadNewVideo(videoId, albumArtUrl, this);
+
+        // ✅ Ensure the progress bar updates for the new song
+        updateProgressBar();
+    });
+});
+
+function updateBackgroundImage(imageUrl) {
+    let background = document.getElementById("background");
+    background.style.backgroundImage = `url(${imageUrl})`;
+}
+
+// Apply background change when clicking a song
+document.querySelectorAll("#songList li").forEach((item, index) => {
+    // Add numbering
+    let numberSpan = document.createElement("span");
+    numberSpan.classList.add("song-number");
+    numberSpan.textContent = (index + 1) + ".\u00A0"; 
+    item.prepend(numberSpan);
+
+    // Handle song selection
+    item.addEventListener("click", function () {
+        let videoId = this.getAttribute("data-video");
+        let albumArtUrl = this.getAttribute("data-img");
+
+        loadNewVideo(videoId, albumArtUrl, this);
+    });
+});
+
+// Set default selected song on page load
+document.addEventListener("DOMContentLoaded", function () {
+    document.body.style.opacity = "1";
+    
+    let firstSong = document.querySelector("#songList li");
+
+    if (firstSong) {
+        document.querySelectorAll("#songList li").forEach(li => li.classList.remove("selected"));
+        firstSong.classList.add("selected");
+
+        let firstImage = firstSong.getAttribute("data-img");
+        let firstSongName = firstSong.querySelector(".song").innerText;
+        let firstAuthorName = firstSong.querySelector(".author").innerText;
+
+        if (firstImage) {
+            document.getElementById("albumArt").src = firstImage;
+            document.getElementById("background").style.backgroundImage = `url(${firstImage})`;
+        }
+
+        // ✅ Correctly set the first song as "Now Playing"
+        //document.querySelector("#nowPlaying .status").innerText = "Now Playing:";
+        document.querySelector("#nowPlaying .song-title").innerText = firstSongName;
+        document.querySelector("#nowPlaying .author-name").innerText = firstAuthorName;
+    }
+});        
+
+document.addEventListener("DOMContentLoaded", function () {
+    let defaultVolume = 100; // Set default volume to 100%
+    let volumeControl = document.getElementById("volumeControl");
+    let volumeProgress = document.getElementById("volumeProgress");
+    let volumeThumb = document.getElementById("volumeThumb");
+
+    function updateVolumeUI(volumeValue) {
+        // Update progress fill width
+        volumeProgress.style.width = volumeValue + "%";
+
+        // Get progress bar width
+        let progressBarWidth = document.querySelector(".volume-bar-container").offsetWidth;
+        let thumbMax = progressBarWidth - 11; // Prevent thumb from going past 100% (Half of 22px width)
+        let thumbPosition = (volumeValue / 100) * progressBarWidth;
+
+        // Make sure the thumb doesn't exceed the right boundary
+        volumeThumb.style.left = `${Math.min(thumbPosition, thumbMax)}px`;
+    }
+
+    // Set default values on page load
+    volumeControl.value = defaultVolume;
+    updateVolumeUI(defaultVolume);
+
+    // When the volume changes, update UI and player volume
+    volumeControl.addEventListener("input", function () {
+        let volumeValue = this.value;
+        if (player) {
+            player.setVolume(volumeValue);
+        }
+        updateVolumeUI(volumeValue);
+    });
+});        
+
+// Set default selected song
+document.querySelector("#songList li").classList.add("selected");        
+
+window.onload = function() {
+    let firstSong = document.querySelector("#songList li");
+    if (firstSong) {
+        firstSong.classList.add("selected");
+        let albumArtUrl = firstSong.getAttribute("data-img");
+        document.getElementById("albumArt").src = albumArtUrl;
+    }
+};        
+
+document.getElementById("playPauseBtn").addEventListener("click", function () {
+    if (songUnavailable) return; // Prevent play if song is unavailable
+
+    let albumArt = document.getElementById("albumArt");
+
+    if (player) {
+        if (playing) {
+            player.pauseVideo();
+            this.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>"; // ✅ Play button
+            clearInterval(progressInterval);
+            albumArt.classList.add("rotate-paused");
+        } else {
+            player.playVideo();
+            this.innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>"; // ✅ Pause button
+            updateProgressBar();
+            albumArt.classList.remove("rotate-paused");
+            albumArt.classList.add("rotate");
+
+            // ✅ If bx-revision is showing, reset it to Play/Pause
+            if (this.innerHTML.includes("bx-revision")) {
+                this.innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>";
+            }
+        }
+        playing = !playing;
+    }
+});        
+
+document.getElementById("prevBtn").addEventListener("click", playPreviousSong);
+document.getElementById("nextBtn").addEventListener("click", playNextSong);
+
+function playPreviousSong() {
+    let songItems = document.querySelectorAll("#songList li");
+    let currentSong = document.querySelector("#songList li.selected");
+
+    let currentIndex = Array.from(songItems).indexOf(currentSong);
+    let prevIndex = (currentIndex - 1 + songItems.length) % songItems.length;
+
+    let prevSong = songItems[prevIndex];
+    prevSong.classList.add("selected");
+    currentSong.classList.remove("selected");
+
+    let prevVideoId = prevSong.getAttribute("data-video");
+    let prevAlbumArtUrl = prevSong.getAttribute("data-img");
+
+    loadNewVideo(prevVideoId, prevAlbumArtUrl, prevSong);
+    prevSong.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function playNextSong() {
+    let songItems = document.querySelectorAll("#songList li");
+    let currentSong = document.querySelector("#songList li.selected");
+
+    let currentIndex = Array.from(songItems).indexOf(currentSong);
+    let nextIndex = (currentIndex + 1) % songItems.length;
+
+    let nextSong = songItems[nextIndex];
+    nextSong.classList.add("selected");
+    currentSong.classList.remove("selected");
+
+    let nextVideoId = nextSong.getAttribute("data-video");
+    let nextAlbumArtUrl = nextSong.getAttribute("data-img");
+
+    loadNewVideo(nextVideoId, nextAlbumArtUrl, nextSong);
+    nextSong.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function updateProgressBar() {
+    clearInterval(progressInterval);
+    progressInterval = setInterval(() => {
+        if (player && player.getCurrentTime && !isDragging) {
+            let currentTime = player.getCurrentTime();
+            let duration = player.getDuration();
+
+            if (duration > 0) {
+                let progressPercent = (currentTime / duration) * 100;
+                document.getElementById("progress").style.width = progressPercent + "%";
+
+                // ✅ Update time display correctly
+                document.getElementById("currentTime").innerText = formatTime(currentTime);
+                document.getElementById("totalTime").innerText = formatTime(duration);
+            }
+
+            // ✅ If video ends, handle accordingly
+            if (player.getPlayerState() === 0) { // 0 = ENDED
+                clearInterval(progressInterval);
+                let playPauseBtn = document.getElementById("playPauseBtn");
+                let autoPlayToggle = document.getElementById("autoPlayToggle").checked;
+
+                if (!autoPlayToggle) {
+                    playPauseBtn.innerHTML = "<i class='bx bx-revision' style='color: white; font-size: 24px;'></i>";
+                } else {
+                    playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
+                }
+                playing = false;
+            }
+        }
+    }, 1000);
+}        
+
+function formatTime(seconds) {
+    let mins = Math.floor(seconds / 60);
+    let secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+}        
+
+const progressBar = document.getElementById("progressBar");
+const progress = document.getElementById("progress");
+
+progressBar.addEventListener("mousedown", function(event) {
+    if (songUnavailable) return;
+    isDragging = true;
+    wasPlaying = playing; // Store whether video was playing before dragging
+    seek(event);
+});
+
+progressBar.addEventListener("touchstart", function(event) {
+    if (songUnavailable) return;
+    isDragging = true;
+    wasPlaying = playing; // Store playing state
+    seek(event.touches[0]);
+    event.preventDefault(); // Prevent page scrolling
+});
+
+document.addEventListener("mousemove", function(event) {
+    if (isDragging) {
+        seek(event);
+    }
+});
+
+document.addEventListener("touchmove", function(event) {
+    if (isDragging) {
+        seek(event.touches[0]);
+        event.preventDefault(); // Prevent page scrolling
+    }
+});
+
+document.addEventListener("mouseup", function() {
+    if (isDragging) {
+        isDragging = false;
+        if (!wasPlaying) {
+            player.pauseVideo(); // Keep video paused if it was paused before seeking
+        }
+    }
+});
+
+document.addEventListener("touchend", function() {
+    if (isDragging) {
+        isDragging = false;
+        if (!wasPlaying) {
+            player.pauseVideo();
+        }
+    }
+});
+
+function seek(event) {
+    let barWidth = progressBar.offsetWidth;
+    let clickPosition = event.clientX - progressBar.getBoundingClientRect().left;
+    let seekTime = (clickPosition / barWidth) * player.getDuration();
+
+    if (player) {
+        player.seekTo(seekTime, true);
+
+        if (!wasPlaying) {
+            player.pauseVideo(); // Prevent auto-play if the user was just seeking
+        }
+
+        let progressPercent = (seekTime / player.getDuration()) * 100;
+        progress.style.width = progressPercent + "%";
+    }
+}
+
+document.addEventListener("mousemove", function(event) {
+    if (isDragging) {
+        seek(event);
+    }
+});
+
+document.addEventListener("mouseup", function(event) {
+    if (isDragging) {
+        isDragging = false;
+        if (!playing) {
+            player.pauseVideo(); // Don't auto-play if the song was paused
+        }
+    }
+});
+
+let tag = document.createElement('script');
+tag.src = "https://www.youtube.com/iframe_api";
+let firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+let volumeBar = document.getElementById("volumeControl");
+let volumeProgress = document.getElementById("volumeProgress");
+let volumeThumb = document.getElementById("volumeThumb");
+let isAdjustingVolume = false;
+
+function updateVolumeUI(volumeValue) {
+    volumeProgress.style.width = volumeValue + "%";
+
+    let progressBarWidth = document.querySelector(".volume-bar-container").offsetWidth;
+    let thumbMax = progressBarWidth - 11; // Prevent thumb from going past 100%
+    let thumbPosition = (volumeValue / 100) * progressBarWidth;
+
+    volumeThumb.style.left = `${Math.min(thumbPosition, thumbMax)}px`;
+}
+
+// Handle touch start
+volumeBar.addEventListener("touchstart", function (event) {
+    isAdjustingVolume = true;
+    adjustVolume(event.touches[0]);
+    event.preventDefault(); // Prevent default scrolling
+});
+
+// Handle touch move
+volumeBar.addEventListener("touchmove", function (event) {
+    if (isAdjustingVolume) {
+        adjustVolume(event.touches[0]);
+        event.preventDefault();
+    }
+});
+
+// Handle touch end
+volumeBar.addEventListener("touchend", function () {
+    isAdjustingVolume = false;
+});
+
+function adjustVolume(event) {
+    let bar = document.querySelector(".volume-bar-container");
+    let barWidth = bar.offsetWidth;
+    let touchX = event.clientX - bar.getBoundingClientRect().left;
+    let newVolume = Math.max(0, Math.min(100, (touchX / barWidth) * 100));
+
+    volumeBar.value = newVolume;
+    if (player) {
+        player.setVolume(newVolume);
+    }
+    updateVolumeUI(newVolume);
+}
+
+// Allow volume control using scroll
+document.getElementById("volumeControl").addEventListener("wheel", function (event) {
+    event.preventDefault(); // Prevent default scrolling behavior
+    let step = event.deltaY < 0 ? 5 : -5; // Scroll up increases, scroll down decreases
+    let newValue = Math.min(100, Math.max(0, parseInt(this.value) + step)); // Keep between 0-100
+    this.value = newValue;
+
+    // Update progress fill width
+    document.getElementById("volumeProgress").style.width = newValue + "%";
+
+    // Update thumb position
+    let thumbPosition = (newValue / 100) * document.querySelector(".volume-bar-container").offsetWidth;
+    document.getElementById("volumeThumb").style.left = thumbPosition + "px";
+
+    if (player) {
+        player.setVolume(newValue);
+    }
+});        
+
+let repeatSong = false; // Track repeat mode
+
+document.getElementById("repeatBtn").addEventListener("click", function () {
+    repeatSong = !repeatSong;
+    this.classList.toggle("active", repeatSong); // Toggle active class
+});
+
+function handlePlayerStateChange(event) {
+    let albumArt = document.getElementById("albumArt");
+    let playPauseBtn = document.getElementById("playPauseBtn");
+    let autoPlay = document.getElementById("autoPlayToggle").checked;
+
+    if (event.data === 0) { // ✅ 0 means video ended
+        playing = false;
+        albumArt.classList.add("rotate-paused");
+
+        if (repeatSong) {
+            player.seekTo(0); // ✅ Restart the current song
+            player.playVideo(); // ✅ Always play again when Repeat is ON
+        } else if (autoPlay) {
+            playNextSong(); // ✅ Play next song if Auto-Play is ON
+        } else {
+            // ✅ Show bx-revision when the song ends and Auto-Play is OFF
+            playPauseBtn.innerHTML = "<i class='bx bx-revision' style='color: white; font-size: 24px;'></i>";
+        }
+    } else if (event.data === 2) { // ✅ 2 means PAUSED
+        playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
+        playing = false;
+        albumArt.classList.add("rotate-paused");
+    } else if (event.data === 1) { // ✅ 1 means PLAYING
+        playPauseBtn.innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>";
+        playing = true;
+        albumArt.classList.remove("rotate-paused");
+        albumArt.classList.add("rotate");
+    }
+}
+
+document.getElementById("togglePlayerBtn").addEventListener("click", function () {
+    let playerContainer = document.getElementById("playerContainer");
+
+    if (playerContainer.style.display === "none") {
+        playerContainer.style.display = "block";
+        this.innerText = "Hide Player";
+    } else {
+        playerContainer.style.display = "none";
+        this.innerText = "Show Player";
+    }
+});
+
+document.getElementById("darkModeToggle").addEventListener("click", function () {
+    document.body.classList.toggle("dark-mode");
+
+    // Toggle dark mode for relevant elements including Boxicons
+    document.querySelectorAll(".card, .btn-dark-mode-toggle, .author-name, box-icon")
+        .forEach(el => el.classList.toggle("dark-mode"));
+
+    // Change button text
+    this.innerHTML = document.body.classList.contains("dark-mode") ? "Disable" : "Enable";
+});            
