@@ -5,6 +5,94 @@ html, body {
     font-family: Arial, sans-serif;
 }
 
+/* Smooth Fade-In Effect */
+body {
+    opacity: 0;
+    animation: fadeIn 1s ease-in-out forwards;
+    /* Default Light Mode */
+    background-color: white;
+    color: black;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+}
+
+/* Keyframe Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Dark Mode */
+body.dark-mode {
+    background-color: black;
+    color: white;
+}
+
+/* Dark Mode for Cards */
+.card {
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+}
+
+.card.dark-mode {
+    background-color: #222;
+    color: white;
+}
+
+/* 🎛 Dark Mode Button */
+#darkModeToggle {
+    top: 20px;
+    right: 20px;
+    padding: 10px 15px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+}
+
+/* Light Mode Button */
+#darkModeToggle {
+    background-color: black;
+    color: white;
+}
+
+/* Dark Mode Button */
+body.dark-mode #darkModeToggle {
+    background-color: white;
+    color: black;
+}
+
+/* Default Light Mode Button (Black Background, White Text) */
+.btn-dark-mode-toggle {
+    background-color: black !important;
+    color: white !important;
+    border: 2px solid black !important;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border 0.8s ease-in-out;
+}
+
+/* Dark Mode - Switch to White Button */
+body.dark-mode .btn-dark-mode-toggle {
+    background-color: white !important;
+    color: black !important;
+    border: 2px solid white !important;
+}
+
+/* Hover effect for smoother interaction */
+.btn-dark-mode-toggle:hover {
+    background-color: #333 !important;
+    color: white !important;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+}
+
+body.dark-mode .btn-dark-mode-toggle:hover {
+    background-color: #ddd !important;
+    color: black !important;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+}
+
 .container {
     width: 100%;
     max-width: 1200px;
@@ -454,6 +542,11 @@ select {
 
 #togglePlayerBtn:active {
     transform: scale(0.9); /* Shrink effect on click */
+}
+
+.card {
+    border: none !important;
+    box-shadow: none !important; /* Removes shadow if needed */
 }
 
 /* 🎵 General Button Styling */
