@@ -5,6 +5,108 @@ html, body {
     font-family: Arial, sans-serif;
 }
 
+/* Smooth Fade-In Effect */
+body {
+    opacity: 0;
+    animation: fadeIn 1s ease-in-out forwards;
+    /* Default Light Mode */
+    background-color: white;
+    color: black;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+}
+
+/* Keyframe Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Dark Mode */
+body.dark-mode {
+    background-color: black;
+    color: white;
+}
+
+/* Dark Mode for Cards */
+.card {
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+}
+
+.card.dark-mode {
+    background-color: #222;
+    color: white;
+}
+
+/* Dark Mode Toggle Button */
+#darkModeToggle {
+    background-color: black;
+    color: white;
+    padding: 10px 15px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, transform 0.1s ease-in-out;
+}
+
+/* Dark Mode - Toggle to White */
+body.dark-mode #darkModeToggle {
+    background-color: white;
+    color: black;
+}
+
+/* Click Animation (Shrink Effect) */
+#darkModeToggle:active {
+    transform: scale(0.9); /* Shrinks when clicked */
+}
+
+/* Default Light Mode */
+box-icon {
+    fill: #333; /* Default dark gray color */
+    transition: fill 0.8s ease-in-out;
+}
+
+/* Dark Mode */
+body.dark-mode box-icon {
+    fill: #ddd !important; /* Lighter color for dark mode */
+}
+
+.btn-dark-mode-toggle {
+    background-color: black !important;
+    color: white !important;
+    border: 2px solid black !important;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border 0.8s ease-in-out, opacity 0.8s ease-in-out !important;
+    opacity: 1;
+}
+
+/* Dark Mode - Fade to White */
+body.dark-mode .btn-dark-mode-toggle {
+    background-color: white !important;
+    color: black !important;
+    border: 2px solid white !important;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border 0.8s ease-in-out, opacity 0.8s ease-in-out;
+}
+
+/* Fade Effect */
+.btn-dark-mode-toggle:hover {
+    opacity: 0.7;
+    transition: opacity 0.8s ease-in-out;
+}
+
+body.dark-mode .btn-dark-mode-toggle:hover {
+    opacity: 0.7;
+    transition: opacity 0.8s ease-in-out;
+}
+
 .container {
     width: 100%;
     max-width: 1200px;
@@ -374,16 +476,95 @@ select {
     display: block;
 }        
 
+/* Default Light Mode */
+.author-name {
+    color: #666; /* Light mode text */
+    transition: color 0.8s ease-in-out; /* Smooth transition */
+}
+
+/* Dark Mode */
+body.dark-mode .author-name {
+    color: #bbb !important; /* Lighter text for dark mode */
+}
+
+.volume-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 300px; /* Responsive */
+    position: relative;
+}
+
+.volume-bar-container {
+    position: relative;
+    width: 100%;
+    height: 8px;
+    background: #ddd; /* Empty bar color */
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.volume-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%; /* Full by default */
+    height: 100%;
+    background: #007bff; /* Filled color */
+    border-radius: 5px;
+    transition: width 0.1s ease-in-out;
+}
+
+.volume-thumb {
+    position: absolute;
+    top: 50%;
+    width: 22px; /* Thumb size */
+    height: 22px;
+    background: #fff;
+    border: 3px solid #007bff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: left 0.1s ease-in-out;
+    box-shadow: 0px 0px 6px rgba(0, 123, 255, 0.5);
+    right: 0; /* Ensure thumb starts at 100% */
+}
+
+/* Make thumb slightly overflow progress bar */
+.volume-bar-container {
+    position: relative;
+    width: 100%;
+    height: 10px; /* Make bar slightly thicker */
+    background: #ddd;
+    border-radius: 5px;
+    overflow: visible; /* Allow thumb to overflow */
+}
+
+.volume-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #007bff; /* Filled color */
+    border-radius: 5px;
+    transition: width 0.1s ease-in-out;
+    box-shadow: none; /* Remove any shadow */
+}
+
 #volumeControl {
     -webkit-appearance: none;
     width: 100%;
-    height: 6px;
-    background: #aaa; /* Default grey */
-    border-radius: 5px;
-    outline: none;
-    border: none;
-    transition: none; /* Remove animation effect */
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 8px;
+    background: transparent; /* Hide default bar */
+    z-index: 2; /* Keep it on top */
+    cursor: pointer;
+    opacity: 0; /* Hide the default slider */
 }
+
 
 /* Prevent color change on click */
 #volumeControl:focus, 
@@ -454,6 +635,11 @@ select {
 
 #togglePlayerBtn:active {
     transform: scale(0.9); /* Shrink effect on click */
+}
+
+.card {
+    border: none !important;
+    box-shadow: none !important; /* Removes shadow if needed */
 }
 
 /* 🎵 General Button Styling */
