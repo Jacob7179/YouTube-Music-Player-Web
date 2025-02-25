@@ -25,6 +25,11 @@ body {
     }
 }
 
+@keyframes fadeOut {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 /* Dark Mode */
 body.dark-mode {
     background-color: black;
@@ -41,56 +46,54 @@ body.dark-mode {
     color: white;
 }
 
-/* 🎛 Dark Mode Button */
+/* Dark Mode Toggle Button */
 #darkModeToggle {
-    top: 20px;
-    right: 20px;
+    background-color: black;
+    color: white;
     padding: 10px 15px;
     font-size: 16px;
     font-weight: bold;
     border: none;
     border-radius: 8px;
-    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, transform 0.1s ease-in-out;
 }
 
-/* Light Mode Button */
-#darkModeToggle {
-    background-color: black;
-    color: white;
-}
-
-/* Dark Mode Button */
+/* Dark Mode - Toggle to White */
 body.dark-mode #darkModeToggle {
     background-color: white;
     color: black;
 }
 
-/* Default Light Mode Button (Black Background, White Text) */
+/* Click Animation (Shrink Effect) */
+#darkModeToggle:active {
+    transform: scale(0.9); /* Shrinks when clicked */
+}
+
 .btn-dark-mode-toggle {
     background-color: black !important;
     color: white !important;
     border: 2px solid black !important;
-    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border 0.8s ease-in-out;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border 0.8s ease-in-out, opacity 0.8s ease-in-out;
+    opacity: 1;
 }
 
-/* Dark Mode - Switch to White Button */
+/* Dark Mode - Fade to White */
 body.dark-mode .btn-dark-mode-toggle {
     background-color: white !important;
     color: black !important;
     border: 2px solid white !important;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border 0.8s ease-in-out, opacity 0.8s ease-in-out;
 }
 
-/* Hover effect for smoother interaction */
+/* Fade Effect */
 .btn-dark-mode-toggle:hover {
-    background-color: #333 !important;
-    color: white !important;
-    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+    opacity: 0.7;
+    transition: opacity 0.8s ease-in-out;
 }
 
 body.dark-mode .btn-dark-mode-toggle:hover {
-    background-color: #ddd !important;
-    color: black !important;
-    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+    opacity: 0.7;
+    transition: opacity 0.8s ease-in-out;
 }
 
 .container {
