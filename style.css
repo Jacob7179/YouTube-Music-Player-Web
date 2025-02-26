@@ -468,6 +468,16 @@ select {
 }
 
 #nowPlaying .song-title {
+    transition: color 0.8s ease-in-out; /* Smooth transition */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    /* Fix descender cutoff issue */
+    line-height: 1.0; /* Ensure enough space for descenders */
+    padding-bottom: 2px; /* Prevent letters like "g, j, y" from being cut off */
+    display: inline-block; /* Ensure proper text alignment */
+    
     font-size: 18px;
     font-weight: bold;
     display: block;
@@ -616,6 +626,20 @@ body.dark-mode .author-name {
 #volumeControl:focus::-moz-range-track,
 #volumeControl:active::-moz-range-track {
     background: #aaa !important; /* Stays grey */
+}
+
+#playerContainer {
+    width: 100%; 
+    min-height: 200px; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#player {
+    width: 100%;
+    max-width: 260px;
+    height: 150px;
 }
 
 #playerContainer iframe {
