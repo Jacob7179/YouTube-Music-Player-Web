@@ -5,6 +5,12 @@ let progressInterval;
 let isDragging = false;
 let errorTimeout;
 let selectedVideoId = "wX_y95OrHLQ";
+let countdownInterval;
+
+// Set default song name and author to the first song
+let firstSongElement = document.querySelector("#songList li");
+let lastSong = firstSongElement ? firstSongElement.querySelector(".song").innerText : "";
+let lastAuthor = firstSongElement ? firstSongElement.querySelector(".author").innerText : "";
 
 function onYouTubeIframeAPIReady() {
     player = new YT.Player('player', {
@@ -28,7 +34,13 @@ function onYouTubeIframeAPIReady() {
 
 function handleVideoError(event) {
     let errorMsg = document.getElementById("errorMessage");
-    errorMsg.style.display = "block"; // Show error message
+    let countdown = 5;
+
+    clearInterval(countdownInterval);
+    errorMsg.style.transition = "opacity 0.5s ease-in-out";
+    errorMsg.style.opacity = "0";
+    errorMsg.style.display = "block";
+    setTimeout(() => { errorMsg.style.opacity = "1"; }, 500);
     playing = false;
     songUnavailable = true;
 
@@ -38,56 +50,92 @@ function handleVideoError(event) {
 
     playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
     document.getElementById("albumArt").classList.add("rotate-paused");
-
-    // ✅ Allow skipping only if Auto-Play is enabled
     clearTimeout(errorTimeout);
-    errorTimeout = setTimeout(() => {
-        errorMsg.style.display = "none"; // Hide error message
 
-        if (document.getElementById("autoPlayToggle").checked) { 
-            playNextSong(); // ✅ Only play next song if Auto-Play is ON
+    function updateCountdown() {
+        errorMsg.innerHTML = `⚠ This song is unavailable. Skipping in ${countdown} ...`;
+        countdown--;
+        if (countdown < 0) {
+            clearInterval(countdownInterval);
+            errorMsg.style.transition = "opacity 0.5s ease-in-out";
+            errorMsg.style.opacity = "0";
+            setTimeout(() => {
+                errorMsg.style.display = "none";
+                if (document.getElementById("autoPlayToggle").checked) {
+                    playNextSong();
+                }
+            }, 500);
         }
-    }, 3000);
+    }
+
+    countdownInterval = setInterval(updateCountdown, 1000);
+    updateCountdown();
+}
+
+// ✅ Reset countdown if user switches songs
+function resetErrorState() {
+    clearInterval(countdownInterval); // Stop the countdown
+    let errorMsg = document.getElementById("errorMessage");
+    if (errorMsg) {
+        errorMsg.style.display = "none"; // Hide error message
+        errorMsg.innerHTML = ""; // Clear message content
+        }
 }        
+
+// Attach reset function to song change event
+document.getElementById("songList").addEventListener("click", resetErrorState); // Example event listener
 
 function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
     let albumArt = document.getElementById("albumArt");
 
-    // ✅ Fade-out effect before changing the image
     albumArt.style.transition = "opacity 0.5s ease-in-out";
     albumArt.style.opacity = "0";
 
-    // ✅ Reset rotation
     setTimeout(() => {
         albumArt.classList.remove("rotate");
-        albumArt.style.transform = "rotate(0deg)"; // Reset rotation
+        albumArt.style.transform = "rotate(0deg)";
 
-        // ✅ Change the image (or wait if no new image)
         if (albumArtUrl) {
             albumArt.src = albumArtUrl;
         }
 
-        // ✅ Wait for the new image to load before fading in
         albumArt.onload = () => {
             setTimeout(() => {
-                albumArt.style.opacity = "1"; // Fade-in effect
-                albumArt.classList.add("rotate"); // Resume rotation
-            }, 200);
+                albumArt.style.opacity = "1";
+                albumArt.classList.add("rotate");
+            }, 500);
         };
     }, 500);
 
-    // ✅ Update background image
     updateBackgroundImage(albumArtUrl);
 
-    // ✅ Update song details
-    if (selectedSong) {
+    if (selectedSong && selectedSong !== firstSongElement) {
         let songName = selectedSong.querySelector(".song").innerText;
         let authorName = selectedSong.querySelector(".author").innerText;
-        document.querySelector("#nowPlaying .song-title").innerText = songName;
-        document.querySelector("#nowPlaying .author-name").innerText = authorName;
+        let songTitleElem = document.querySelector("#nowPlaying .song-title");
+        let authorNameElem = document.querySelector("#nowPlaying .author-name");
+        
+        if (songName !== lastSong) {
+            songTitleElem.style.transition = "opacity 0.5s ease-in-out";
+            songTitleElem.style.opacity = "0";
+            setTimeout(() => {
+                songTitleElem.innerText = songName;
+                songTitleElem.style.opacity = "1";
+            }, 500);
+            lastSong = songName;
     }
 
-    // ✅ Hide error message
+        if (authorName !== lastAuthor) {
+            authorNameElem.style.transition = "opacity 0.5s ease-in-out";
+            authorNameElem.style.opacity = "0";
+            setTimeout(() => {
+                authorNameElem.innerText = authorName;
+                authorNameElem.style.opacity = "1";
+            }, 500);
+            lastAuthor = authorName;
+        }
+    }
+
     clearTimeout(errorTimeout);
     document.getElementById("errorMessage").style.display = "none";
     songUnavailable = false;
@@ -207,29 +255,20 @@ document.addEventListener("DOMContentLoaded", function () {
 });        
 
 document.addEventListener("DOMContentLoaded", function () {
-    let defaultVolume = 100; // Set default volume to 100%
-    let volumeControl = document.getElementById("volumeControl");
-    let volumeProgress = document.getElementById("volumeProgress");
-    let volumeThumb = document.getElementById("volumeThumb");
+    const volumeControl = document.getElementById("volumeControl");
+    const volumeProgress = document.getElementById("volumeProgress");
+    const volumeThumb = document.getElementById("volumeThumb");
+    const volumeBarContainer = document.querySelector(".volume-bar-container");
 
     function updateVolumeUI(volumeValue) {
-        // Update progress fill width
-        volumeProgress.style.width = volumeValue + "%";
+        const progressBarWidth = volumeBarContainer.offsetWidth;
+        const thumbWidth = volumeThumb.offsetWidth; 
+        const thumbPosition = (volumeValue / 100) * (progressBarWidth - thumbWidth) + (thumbWidth / 2);
 
-        // Get progress bar width
-        let progressBarWidth = document.querySelector(".volume-bar-container").offsetWidth;
-        let thumbMax = progressBarWidth - 11; // Prevent thumb from going past 100% (Half of 22px width)
-        let thumbPosition = (volumeValue / 100) * progressBarWidth;
-
-        // Make sure the thumb doesn't exceed the right boundary
-        volumeThumb.style.left = `${Math.min(thumbPosition, thumbMax)}px`;
+        volumeProgress.style.width = `${volumeValue}%`;
+        volumeThumb.style.left = `${thumbPosition}px`;
     }
 
-    // Set default values on page load
-    volumeControl.value = defaultVolume;
-    updateVolumeUI(defaultVolume);
-
-    // When the volume changes, update UI and player volume
     volumeControl.addEventListener("input", function () {
         let volumeValue = this.value;
         if (player) {
@@ -237,7 +276,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         updateVolumeUI(volumeValue);
     });
-});        
+
+    // Adjust position on window resize
+    window.addEventListener("resize", () => {
+        updateVolumeUI(volumeControl.value);
+    });
+
+    // Initialize on page load
+    updateVolumeUI(volumeControl.value);
+});
 
 // Set default selected song
 document.querySelector("#songList li").classList.add("selected");        
@@ -549,11 +596,11 @@ function handlePlayerStateChange(event) {
 document.getElementById("togglePlayerBtn").addEventListener("click", function () {
     let playerContainer = document.getElementById("playerContainer");
 
-    if (playerContainer.style.display === "none") {
-        playerContainer.style.display = "block";
+    if (playerContainer.classList.contains("d-none")) {
+        playerContainer.classList.remove("d-none"); // Show player
         this.innerText = "Hide Player";
     } else {
-        playerContainer.style.display = "none";
+        playerContainer.classList.add("d-none"); // Hide player
         this.innerText = "Show Player";
     }
 });

@@ -139,7 +139,6 @@ body.dark-mode .btn-dark-mode-toggle:hover {
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-
 /* 🎵 Controls */
 .controls {
     padding-top: 15px;
@@ -469,6 +468,16 @@ select {
 }
 
 #nowPlaying .song-title {
+    transition: color 0.8s ease-in-out; /* Smooth transition */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    /* Fix descender cutoff issue */
+    line-height: 1.0; /* Ensure enough space for descenders */
+    padding-bottom: 2px; /* Prevent letters like "g, j, y" from being cut off */
+    display: inline-block; /* Ensure proper text alignment */
+    
     font-size: 18px;
     font-weight: bold;
     display: block;
@@ -486,6 +495,14 @@ select {
 .author-name {
     color: #666; /* Light mode text */
     transition: color 0.8s ease-in-out; /* Smooth transition */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    /* Fix descender cutoff issue */
+    line-height: 1.0; /* Ensure enough space for descenders */
+    padding-bottom: 2px; /* Prevent letters like "g, j, y" from being cut off */
+    display: inline-block; /* Ensure proper text alignment */
 }
 
 /* Dark Mode */
@@ -498,6 +515,7 @@ body.dark-mode .author-name {
     align-items: center;
     gap: 10px;
     width: 100%;
+    padding-top: 20px;
     max-width: 300px;
     position: relative;
     touch-action: none; /* Prevent browser scrolling when adjusting volume */
@@ -523,17 +541,6 @@ body.dark-mode .author-name {
     transform: translate(-50%, -50%);
     transition: left 0.1s ease-in-out;
     box-shadow: 0px 0px 6px rgba(0, 123, 255, 0.5);
-}
-
-.volume-bar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%; /* Full by default */
-    height: 100%;
-    background: #007bff; /* Filled color */
-    border-radius: 5px;
-    transition: width 0.1s ease-in-out;
 }
 
 /* Make thumb slightly overflow progress bar */
@@ -619,6 +626,20 @@ body.dark-mode .author-name {
 #volumeControl:focus::-moz-range-track,
 #volumeControl:active::-moz-range-track {
     background: #aaa !important; /* Stays grey */
+}
+
+#playerContainer {
+    width: 100%; 
+    min-height: 200px; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#player {
+    width: 100%;
+    max-width: 260px;
+    height: 150px;
 }
 
 #playerContainer iframe {
