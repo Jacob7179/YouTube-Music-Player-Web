@@ -87,7 +87,6 @@ document.getElementById("songList").addEventListener("click", resetErrorState); 
 
 function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
     let albumArt = document.getElementById("albumArt");
-
     albumArt.style.transition = "opacity 0.5s ease-in-out";
     albumArt.style.opacity = "0";
 
@@ -109,13 +108,14 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
 
     updateBackgroundImage(albumArtUrl);
 
-    if (selectedSong && selectedSong !== firstSongElement) {
+    let songTitleElem = document.querySelector("#nowPlaying .song-title");
+    let authorNameElem = document.querySelector("#nowPlaying .author-name");
+
+    if (selectedSong) {
         let songName = selectedSong.querySelector(".song").innerText;
         let authorName = selectedSong.querySelector(".author").innerText;
-        let songTitleElem = document.querySelector("#nowPlaying .song-title");
-        let authorNameElem = document.querySelector("#nowPlaying .author-name");
-        
-        if (songName !== lastSong) {
+
+        if (songName !== lastSong || selectedSong === firstSongElement) {
             songTitleElem.style.transition = "opacity 0.5s ease-in-out";
             songTitleElem.style.opacity = "0";
             setTimeout(() => {
@@ -123,9 +123,9 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
                 songTitleElem.style.opacity = "1";
             }, 500);
             lastSong = songName;
-    }
+        }
 
-        if (authorName !== lastAuthor) {
+        if (authorName !== lastAuthor || selectedSong === firstSongElement) {
             authorNameElem.style.transition = "opacity 0.5s ease-in-out";
             authorNameElem.style.opacity = "0";
             setTimeout(() => {
@@ -139,6 +139,9 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
     clearTimeout(errorTimeout);
     document.getElementById("errorMessage").style.display = "none";
     songUnavailable = false;
+
+    // ✅ Reset countdown interval if switching songs
+    clearInterval(countdownInterval);
 
     // ✅ Load and play the new video
     if (typeof player === "undefined" || !player.loadVideoById) {
@@ -163,7 +166,7 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
 
     // ✅ Start tracking progress
     updateProgressBar();
-}        
+}
 
 function playNextSong() {
     let songItems = document.querySelectorAll("#songList li");
@@ -609,9 +612,19 @@ document.getElementById("darkModeToggle").addEventListener("click", function () 
     document.body.classList.toggle("dark-mode");
 
     // Toggle dark mode for relevant elements including Boxicons
-    document.querySelectorAll(".card, .btn-dark-mode-toggle, .author-name, box-icon")
+    document.querySelectorAll(".card, .btn-dark-mode-toggle, .author-name, .song-title, box-icon")
         .forEach(el => el.classList.toggle("dark-mode"));
+
+    // Smooth transition for song title and author name in dark mode
+    document.querySelectorAll("#nowPlaying .song-title, #nowPlaying .author-name")
+        .forEach(elem => {
+            elem.style.transition = "opacity 0.5s ease-in-out, color 0.8s ease-in-out";
+            elem.style.opacity = "0";
+            setTimeout(() => {
+                elem.style.opacity = "1";
+            }, 50);
+        });
 
     // Change button text
     this.innerHTML = document.body.classList.contains("dark-mode") ? "Disable" : "Enable";
-});            
+});

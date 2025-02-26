@@ -484,6 +484,24 @@ select {
     margin-bottom: 2px; /* Reduce space below Song Name */
 }
 
+/* Smooth color transition for song title and author name */
+#nowPlaying .song-title,
+#nowPlaying .author-name {
+    transition: color 0.8s ease-in-out; /* Ensures smooth color change */
+}
+
+/* Dark Mode Colors */
+body.dark-mode #nowPlaying .song-title,
+body.dark-mode #nowPlaying .author-name {
+    color: white; /* Ensure both elements turn white in dark mode */
+}
+
+/* Light Mode Colors (Fix transition when turning OFF dark mode) */
+body:not(.dark-mode) #nowPlaying .song-title,
+body:not(.dark-mode) #nowPlaying .author-name {
+    color: black; /* Match original light mode text color */
+}
+
 #nowPlaying .author-name {
     font-size: 14px;
     font-weight: normal;
