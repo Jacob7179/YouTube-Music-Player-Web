@@ -32,6 +32,11 @@ function onYouTubeIframeAPIReady() {
     });
 }
 
+function sanitizeURL(url) {
+    const safeURLRegex = /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}(\/.*)?$/;
+    return safeURLRegex.test(url) ? url : 'default-image.jpg';  // Fallback to a safe default image
+}
+
 function handleVideoError(event) {
     let errorMsg = document.getElementById("errorMessage");
     let countdown = 5;
@@ -95,7 +100,7 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
         albumArt.style.transform = "rotate(0deg)";
 
         if (albumArtUrl) {
-            albumArt.src = albumArtUrl;
+            albumArt.src = sanitizeURL(albumArtUrl);
         }
 
         albumArt.onload = () => {
@@ -243,10 +248,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         let firstImage = firstSong.getAttribute("data-img");
         let firstSongName = firstSong.querySelector(".song").innerText;
-        let firstAuthorName = firstSong.querySelector(".author").innerText;
+        let firstAuthorName = escapeHTML(firstSong.querySelector(".author").innerText);
 
         if (firstImage) {
-            document.getElementById("albumArt").src = firstImage;
+            document.getElementById("albumArt").src = sanitizeURL(firstImage);
             document.getElementById("background").style.backgroundImage = `url(${firstImage})`;
         }
 
