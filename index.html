@@ -60,15 +60,19 @@
                             </div>                            
                         </div>
     
-                        <div class="volume-container">
-                            <box-icon name='volume-low'></box-icon>
-                            <div class="volume-bar-container">
-                                <input type="range" id="volumeControl" class="form-range" min="0" max="100" value="100">
-                                <div id="volumeProgress" class="volume-bar"></div>
-                                <div id="volumeThumb" class="volume-thumb"></div>
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-12 d-flex align-items-center volume-container">
+                                    <box-icon name='volume-low' class="me-2"></box-icon>
+                                    <div class="volume-bar-container flex-grow-1 position-relative">
+                                        <input type="range" id="volumeControl" class="form-range w-100" min="0" max="100" value="100">
+                                        <div id="volumeProgress" class="volume-bar position-absolute"></div>
+                                        <div id="volumeThumb" class="volume-thumb position-absolute"></div>
+                                    </div>
+                                    <box-icon name='volume-full' class="ms-2"></box-icon>
+                                </div>
                             </div>
-                            <box-icon name='volume-full'></box-icon>
-                        </div>
+                        </div>                        
                         
                         <p id="errorMessage" class="text-danger mt-2">⚠ This song is unavailable.</p>
                     </div>
@@ -194,6 +198,10 @@
                             </li>
 
                             <!-- English Song -->
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="TIz4dItDGjM" data-img="https://i.ytimg.com/vi/TIz4dItDGjM/hqdefault.jpg">
+                                <span class="song">J0YR1D3</span>
+                                <span class="author text-muted">BABii · Iglooghost · Pholo · Daisy Emily Warne</span>
+                            </li>
                             <li class="list-group-item d-flex justify-content-between align-items-center" data-video="ekr2nIex040" data-img="https://i.ytimg.com/vi/ekr2nIex040/hqdefault.jpg">
                                 <span class="song">APT.</span>
                                 <span class="author text-muted">ROSÉ & Bruno Mars</span>

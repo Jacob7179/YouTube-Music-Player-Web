@@ -207,29 +207,20 @@ document.addEventListener("DOMContentLoaded", function () {
 });        
 
 document.addEventListener("DOMContentLoaded", function () {
-    let defaultVolume = 100; // Set default volume to 100%
-    let volumeControl = document.getElementById("volumeControl");
-    let volumeProgress = document.getElementById("volumeProgress");
-    let volumeThumb = document.getElementById("volumeThumb");
+    const volumeControl = document.getElementById("volumeControl");
+    const volumeProgress = document.getElementById("volumeProgress");
+    const volumeThumb = document.getElementById("volumeThumb");
+    const volumeBarContainer = document.querySelector(".volume-bar-container");
 
     function updateVolumeUI(volumeValue) {
-        // Update progress fill width
-        volumeProgress.style.width = volumeValue + "%";
+        const progressBarWidth = volumeBarContainer.offsetWidth;
+        const thumbWidth = volumeThumb.offsetWidth; 
+        const thumbPosition = (volumeValue / 100) * (progressBarWidth - thumbWidth) + (thumbWidth / 2);
 
-        // Get progress bar width
-        let progressBarWidth = document.querySelector(".volume-bar-container").offsetWidth;
-        let thumbMax = progressBarWidth - 11; // Prevent thumb from going past 100% (Half of 22px width)
-        let thumbPosition = (volumeValue / 100) * progressBarWidth;
-
-        // Make sure the thumb doesn't exceed the right boundary
-        volumeThumb.style.left = `${Math.min(thumbPosition, thumbMax)}px`;
+        volumeProgress.style.width = `${volumeValue}%`;
+        volumeThumb.style.left = `${thumbPosition}px`;
     }
 
-    // Set default values on page load
-    volumeControl.value = defaultVolume;
-    updateVolumeUI(defaultVolume);
-
-    // When the volume changes, update UI and player volume
     volumeControl.addEventListener("input", function () {
         let volumeValue = this.value;
         if (player) {
@@ -237,7 +228,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         updateVolumeUI(volumeValue);
     });
-});        
+
+    // Adjust position on window resize
+    window.addEventListener("resize", () => {
+        updateVolumeUI(volumeControl.value);
+    });
+
+    // Initialize on page load
+    updateVolumeUI(volumeControl.value);
+});
 
 // Set default selected song
 document.querySelector("#songList li").classList.add("selected");        
