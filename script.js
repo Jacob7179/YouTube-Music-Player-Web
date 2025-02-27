@@ -24,7 +24,8 @@ function onYouTubeIframeAPIReady() {
         },
         events: {
             'onReady': () => {
-                player.setVolume(100);
+                let storedVolume = localStorage.getItem("userVolume") || 100; // Get saved volume or default to 100
+                player.setVolume(storedVolume);
             },
             'onStateChange': handlePlayerStateChange, // ✅ Detect video state changes
             'onError': handleVideoError
@@ -168,26 +169,6 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
     updateProgressBar();
 }
 
-function playNextSong() {
-    let songItems = document.querySelectorAll("#songList li");
-    let currentSong = document.querySelector("#songList li.selected");
-
-    let currentIndex = Array.from(songItems).indexOf(currentSong);
-    let nextIndex = (currentIndex + 1) % songItems.length;
-
-    let nextSong = songItems[nextIndex];
-    nextSong.classList.add("selected");
-    currentSong.classList.remove("selected");
-
-    let nextVideoId = nextSong.getAttribute("data-video");
-    let nextAlbumArtUrl = nextSong.getAttribute("data-img");
-
-    // ✅ Ensure "Now Playing" updates correctly
-    loadNewVideo(nextVideoId, nextAlbumArtUrl, nextSong);
-
-    nextSong.scrollIntoView({ behavior: "smooth", block: "nearest" });
-}        
-
 // Handle song list selection (Click to Play)
 document.querySelectorAll("#songList li").forEach(item => {
     item.addEventListener("click", function () {
@@ -211,7 +192,22 @@ document.querySelectorAll("#songList li").forEach(item => {
 
 function updateBackgroundImage(imageUrl) {
     let background = document.getElementById("background");
-    background.style.backgroundImage = `url(${imageUrl})`;
+    
+    // Fade out the background
+    background.style.transition = "opacity 0.5s ease-in-out";
+    background.style.opacity = "0";
+
+    setTimeout(() => {
+        // Change background image
+        background.style.backgroundImage = `url(${imageUrl})`;
+        
+        // Wait for image load before fading in
+        let img = new Image();
+        img.src = imageUrl;
+        img.onload = () => {
+            background.style.opacity = "1"; // Fade in
+        };
+    }, 500); // Match fade-out duration
 }
 
 // Apply background change when clicking a song
@@ -627,4 +623,14 @@ document.getElementById("darkModeToggle").addEventListener("click", function () 
 
     // Change button text
     this.innerHTML = document.body.classList.contains("dark-mode") ? "Disable" : "Enable";
+});
+
+// Prevent text selection
+document.addEventListener("selectstart", function(event) {
+    event.preventDefault();
+});
+
+// Prevent dragging of elements
+document.addEventListener("dragstart", function(event) {
+    event.preventDefault();
 });

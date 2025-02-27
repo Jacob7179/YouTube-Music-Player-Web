@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Music Player</title>
+    <link rel="icon" type="icon" href="../Jacob_profile_picture_icon.ico">
     <style>
         body {
             text-align: center;
@@ -267,7 +268,7 @@
         
             // Update "Now Playing" text
             let nowPlayingText = document.getElementById("nowPlaying");
-            nowPlayingText.innerText = `Now Playing: ${title} - ${channel}`;
+            nowPlayingText.innerHTML = `Now Playing:<br> ${title} - ${channel}`;
             nowPlayingText.style.display = "block";
         
             if (!player) {

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Music Player</title>
+    <link rel="icon" type="icon" href="../Jacob_profile_picture_icon.ico">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
@@ -150,7 +151,7 @@
         
             // Show the selected song name and author
             let nowPlayingText = document.getElementById("nowPlaying");
-            nowPlayingText.innerHTML = `${songName} - ${authorName}`;
+            nowPlayingText.innerHTML = `Now Playing:<br> ${songName} - ${authorName}`;
             nowPlayingText.style.display = "block"; // Make it visible
         
             if (player) {
