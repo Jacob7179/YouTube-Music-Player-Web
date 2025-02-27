@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Music Player</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        #albumArt {
+            width: 300px;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+        #playerContainer {
+            width: 100%;
+            max-width: 560px;
+            margin: 20px auto;
+            display: block;
+        }
+        #playlist {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .songItem {
+            cursor: pointer;
+            margin: 5px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            display: inline-block;
+            text-align: center;
+            width: 150px;
+        }
+        .songItem img {
+            width: 100%;
+            height: auto;
+        }
+        #progressContainer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px auto;
+        }
+        #progressBar {
+            width: 300px;
+            height: 10px;
+            background: #ddd;
+            position: relative;
+            cursor: pointer;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        #progress {
+            height: 100%;
+            width: 0%;
+            background: #007bff;
+            position: absolute;
+            transition: width 0.1s linear;
+        }
+        #timeDisplay {
+            font-size: 14px;
+            font-weight: bold;
+            width: 80px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Beta Version - Read Excel Files</h1>
+    <br>
+    <h2>🎵 YouTube Music Player</h2>
+
+    <img id="albumArt" src="https://via.placeholder.com/300" alt="Album Art">
+    
+    <h3 id="nowPlaying" style="display: none; font-size: 20px; font-weight: bold; margin-bottom: 10px;"></h3>
+    
+    <div id="playerContainer">
+        <div id="player"></div>
+    </div>
+    
+    <div id="progressContainer">
+        <span id="currentTime">0:00</span>
+        <div id="progressBar" onclick="seekVideo(event)">
+            <div id="progress"></div>
+        </div>
+        <span id="totalTime">0:00</span>
+    </div>
+
+    <div id="playlist"></div>
+
+    <script>
+        const filePath = "../playlist.xlsx"; // Fixed file path
+        let player;
+        let progressInterval;
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '315',
+                width: '560',
+                playerVars: { autoplay: 0, controls: 1 },
+                events: { 'onStateChange': handlePlayerStateChange }
+            });
+        }
+
+        async function loadPlaylist() {
+            try {
+                const response = await fetch(filePath);
+                const arrayBuffer = await response.arrayBuffer();
+
+                const workbook = XLSX.read(arrayBuffer, { type: "array" });
+                const sheetName = workbook.SheetNames[0]; 
+                const sheet = workbook.Sheets[sheetName];
+
+                const data = XLSX.utils.sheet_to_json(sheet);
+                displayPlaylist(data);
+            } catch (error) {
+                console.error("Error reading Excel file:", error);
+            }
+        }
+
+        function displayPlaylist(songs) {
+            const playlistDiv = document.getElementById("playlist");
+            playlistDiv.innerHTML = ""; 
+        
+            songs.forEach(song => {
+                const songItem = document.createElement("div");
+                songItem.className = "songItem";
+                const thumbnailUrl = `https://i.ytimg.com/vi/${song["YouTube ID"]}/hqdefault.jpg`;
+        
+                songItem.innerHTML = `
+                    <img src="${thumbnailUrl}" alt="${song["Song Name"]}">
+                    <br>${song["Song Name"]} - ${song["Author Name"]}
+                `;
+        
+                // Pass song name and author name to playSong()
+                songItem.onclick = () => playSong(song["YouTube ID"], thumbnailUrl, song["Song Name"], song["Author Name"]);
+                playlistDiv.appendChild(songItem);
+            });
+        }
+        
+        function playSong(videoId, thumbnail, songName, authorName) {
+            document.getElementById('albumArt').src = thumbnail;
+        
+            // Show the selected song name and author
+            let nowPlayingText = document.getElementById("nowPlaying");
+            nowPlayingText.innerHTML = `${songName} - ${authorName}`;
+            nowPlayingText.style.display = "block"; // Make it visible
+        
+            if (player) {
+                player.loadVideoById(videoId);
+                startProgressTracking();
+            } else {
+                player = new YT.Player('player', {
+                    height: '315',
+                    width: '560',
+                    videoId: videoId,
+                    events: { 'onStateChange': handlePlayerStateChange }
+                });
+            }
+        }        
+
+        function handlePlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                startProgressTracking();
+            } else {
+                clearInterval(progressInterval);
+            }
+        }
+
+        function startProgressTracking() {
+            clearInterval(progressInterval); // Clear any existing interval
+
+            progressInterval = setInterval(() => {
+                if (player && player.getDuration) {
+                    let duration = player.getDuration();
+                    let currentTime = player.getCurrentTime();
+                    let progressPercent = (currentTime / duration) * 100;
+
+                    document.getElementById("progress").style.width = progressPercent + "%";
+                    document.getElementById("currentTime").textContent = formatTime(currentTime);
+                    document.getElementById("totalTime").textContent = formatTime(duration);
+                }
+            }, 500);
+        }
+
+        function seekVideo(event) {
+            if (!player || !player.getDuration) return;
+
+            let progressBar = document.getElementById("progressBar");
+            let rect = progressBar.getBoundingClientRect();
+            let offsetX = event.clientX - rect.left;
+            let newTime = (offsetX / rect.width) * player.getDuration();
+
+            player.seekTo(newTime, true);
+        }
+
+        function formatTime(seconds) {
+            let minutes = Math.floor(seconds / 60);
+            let secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs < 10 ? "0" + secs : secs}`;
+        }
+
+        let tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        let firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        loadPlaylist();
+    </script>
+</body>
+</html>
