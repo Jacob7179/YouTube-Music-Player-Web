@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Music Player</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        #albumArt {
+            width: 300px;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }        
+        #playerContainer {
+            width: 560px;
+            margin: auto;
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        #tutorialModal {
+            display: none;
+            position: fixed;
+            top: 10%;
+            left: 50%;
+            transform: translate(-50%, 0);
+            width: 80%;
+            max-width: 600px;
+            background: white;
+            padding: 20px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.5);
+        }
+        #tutorialModal iframe {
+            width: 100%;
+            height: 315px;
+        }
+        #closeTutorial {
+            margin-top: 10px;
+            cursor: pointer;
+            color: red;
+        }
+
+        #progressContainer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px auto;
+        }
+        
+        #progressBar {
+            width: 300px;
+            height: 10px;
+            background: #ddd;
+            position: relative;
+            cursor: pointer;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        #progress {
+            height: 100%;
+            width: 0%;
+            background: #007bff;
+            position: absolute;
+            transition: width 0.1s linear;
+        }
+        
+        #currentTime, #totalTime {
+            font-size: 14px;
+            font-weight: bold;
+            width: 50px;
+        }        
+    </style>
+</head>
+<body>
+    <h1>Alpha Version - Read API Keys</h1>
+    <br>
+    <h2>🎵 YouTube Music Player</h2>
+    
+    <img id="albumArt" src="https://via.placeholder.com/300" alt="Album Art">
+
+    <div id="playerContainer">
+        <h3 id="nowPlaying" style="display: none; font-size: 18px; font-weight: bold; margin-bottom: 10px;"></h3>
+        <div id="player"></div>
+        <br>
+        <div id="progressContainer">
+            <span id="currentTime">0:00</span>
+            <div id="progressBar" onclick="seekVideo(event)">
+                <div id="progress"></div>
+            </div>
+            <span id="totalTime">0:00</span>
+        </div>        
+    </div>    
+    <br>
+    <input type="text" id="searchInput" placeholder="Search for a song...">
+    <button id="searchBtn">Search</button>
+
+    <ul id="songList"></ul>
+
+    
+    <input type="text" id="apiKeyInput" placeholder="Enter API Key">
+    <button id="saveApiKeyBtn">Save API Key</button>
+    <button id="tutorialBtn">How to get API Key?</button>
+
+    <!-- Tutorial Modal -->
+    <div id="tutorialModal">
+        <h3>How to Get a YouTube API Key</h3>
+        <iframe src="https://www.youtube.com/embed/LLAZUTbc97I" frameborder="0" allowfullscreen></iframe>
+        <p id="closeTutorial">Close</p>
+    </div>
+
+    <script>
+        let player;
+        let videoDuration = 0;
+        let progressInterval;
+
+        async function fetchApiKey() {
+            try {
+                const response = await fetch('../api_keys.txt');
+                if (!response.ok) throw new Error("File not found");
+                const apiKey = await response.text();
+                return apiKey.trim();
+            } catch (error) {
+                console.warn("Could not load API key from file:", error);
+                return null;
+            }
+        }
+        
+        async function initializeApiKey() {
+            let userApiKey = localStorage.getItem("youtubeApiKey");
+        
+            if (!userApiKey) {
+                userApiKey = await fetchApiKey();
+            }
+        
+            if (userApiKey) {
+                localStorage.setItem("youtubeApiKey", userApiKey);
+                document.getElementById("apiKeyInput").style.display = "none";
+                document.getElementById("saveApiKeyBtn").style.display = "none";
+            } else {
+                document.getElementById("apiKeyInput").style.display = "inline";
+                document.getElementById("saveApiKeyBtn").style.display = "inline";
+            }
+        }
+
+        document.getElementById("saveApiKeyBtn").addEventListener("click", function () {
+            let apiKey = document.getElementById("apiKeyInput").value;
+            if (apiKey) {
+                localStorage.setItem("youtubeApiKey", apiKey);
+                document.getElementById("apiKeyInput").style.display = "none";
+                document.getElementById("saveApiKeyBtn").style.display = "none";
+                alert("API Key saved successfully!");
+            }
+        });
+        
+        window.onload = initializeApiKey;
+
+        async function searchYouTube(query, callback) {
+            let userApiKey = localStorage.getItem("youtubeApiKey");
+        
+            if (!userApiKey) {
+                userApiKey = await fetchApiKey();
+                if (userApiKey) {
+                    localStorage.setItem("youtubeApiKey", userApiKey);
+                }
+            }
+        
+            if (!userApiKey) {
+                alert("YouTube API key is required!");
+                return;
+            }
+        
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=5&key=${userApiKey}`;
+        
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("YouTube API Response:", data); // Debugging log
+                    if (data.items && data.items.length > 0) {
+                        callback(data.items);
+                    } else {
+                        alert("No results found. Check API key or quota.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching YouTube data:", error);
+                    alert("Error fetching YouTube data. Check the console.");
+                });
+        }        
+
+        document.getElementById("searchBtn").addEventListener("click", function () {
+            let query = document.getElementById("searchInput").value;
+            searchYouTube(query, function (results) {
+                let songList = document.getElementById("songList");
+                songList.innerHTML = ""; // Clear previous results
+        
+                results.forEach(video => {
+                    let videoId = video.id.videoId;
+                    let thumbnail = video.snippet.thumbnails.medium.url;
+                    let title = video.snippet.title;
+                    let channel = video.snippet.channelTitle;
+        
+                    let li = document.createElement("li");
+                    li.className = "list-group-item";
+                    li.style.cursor = "pointer";
+                    li.style.padding = "10px";
+                    li.style.borderBottom = "1px solid #ccc";
+                    li.style.display = "flex";
+                    li.style.alignItems = "center";
+        
+                    let img = document.createElement("img");
+                    img.src = thumbnail;
+                    img.alt = title;
+                    img.style.width = "120px";
+                    img.style.height = "90px";
+                    img.style.marginRight = "10px";
+                    img.style.borderRadius = "8px";
+        
+                    let textContainer = document.createElement("div");
+        
+                    let titleElement = document.createElement("p");
+                    titleElement.innerText = title;
+                    titleElement.style.fontWeight = "bold";
+                    titleElement.style.margin = "0";
+        
+                    let channelElement = document.createElement("p");
+                    channelElement.innerText = channel;
+                    channelElement.style.color = "gray";
+                    channelElement.style.fontSize = "12px";
+                    channelElement.style.margin = "0";
+        
+                    textContainer.appendChild(titleElement);
+                    textContainer.appendChild(channelElement);
+                    li.appendChild(img);
+                    li.appendChild(textContainer);
+        
+                    // When clicked, play the song
+                    li.addEventListener("click", function () {
+                        playSong(videoId, thumbnail, title, channel);
+                    });
+        
+                    songList.appendChild(li);
+                });
+            });
+        });
+        
+        function attachClickEvent() {
+            document.querySelectorAll("#songList li").forEach(item => {
+                item.addEventListener("click", function () {
+                    let videoId = this.getAttribute("data-video");
+                    let thumbnail = this.getAttribute("data-img");
+
+                    document.getElementById("albumArt").src = thumbnail;
+                    loadVideo(videoId);
+                });
+            });
+        }
+
+        function playSong(videoId, thumbnail, title, channel) {
+            document.getElementById('albumArt').src = thumbnail;
+        
+            // Update "Now Playing" text
+            let nowPlayingText = document.getElementById("nowPlaying");
+            nowPlayingText.innerText = `Now Playing: ${title} - ${channel}`;
+            nowPlayingText.style.display = "block";
+        
+            if (!player) {
+                player = new YT.Player('player', {
+                    height: '315',
+                    width: '560',
+                    videoId: videoId,
+                    events: {
+                        'onReady': onPlayerReady,
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
+            } else {
+                player.loadVideoById(videoId);
+                startProgressTracking();
+            }
+        }
+        
+        function onPlayerReady(event) {
+            updateProgress();
+        }
+        
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                startProgressTracking();
+            } else {
+                clearInterval(progressInterval);
+            }
+        }
+        
+        function startProgressTracking() {
+            clearInterval(progressInterval); // Clear any existing interval
+        
+            progressInterval = setInterval(() => {
+                if (player && player.getDuration) {
+                    let duration = player.getDuration();
+                    let currentTime = player.getCurrentTime();
+                    let progressPercent = (currentTime / duration) * 100;
+        
+                    document.getElementById("progress").style.width = progressPercent + "%";
+                    document.getElementById("currentTime").textContent = formatTime(currentTime);
+                    document.getElementById("totalTime").textContent = formatTime(duration);
+                }
+            }, 500);
+        }
+        
+        function seekVideo(event) {
+            if (!player || !player.getDuration) return;
+        
+            let progressBar = document.getElementById("progressBar");
+            let rect = progressBar.getBoundingClientRect();
+            let offsetX = event.clientX - rect.left;
+            let newTime = (offsetX / rect.width) * player.getDuration();
+        
+            player.seekTo(newTime, true);
+        }
+        
+        function formatTime(seconds) {
+            let minutes = Math.floor(seconds / 60);
+            let secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs < 10 ? "0" + secs : secs}`;
+        }
+        
+        // Load YouTube API
+        let tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        let firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        // YouTube API script
+        function loadYouTubeAPI() {
+            let tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            let firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+
+        window.onload = function () {
+            loadYouTubeAPI();
+            initializeApiKey();
+        };
+
+        // Tutorial Modal
+        document.getElementById("tutorialBtn").addEventListener("click", function () {
+            document.getElementById("tutorialModal").style.display = "block";
+        });
+
+        document.getElementById("closeTutorial").addEventListener("click", function () {
+            document.getElementById("tutorialModal").style.display = "none";
+        });
+
+    </script>
+    <script async src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
