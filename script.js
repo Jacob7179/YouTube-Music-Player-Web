@@ -96,7 +96,7 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
         albumArt.style.transform = "rotate(0deg)";
 
         if (albumArtUrl) {
-            albumArt.src = albumArtUrl;
+            albumArt.setAttribute("src", albumArtUrl);
         }
 
         albumArt.onload = () => {
@@ -228,9 +228,28 @@ document.querySelectorAll("#songList li").forEach((item, index) => {
 });
 
 // Set default selected song on page load
+//
+function isValidImageUrl(url) {
+    try {
+        let parsed = new URL(url);
+        console.log("Checking image URL:", parsed.href); // Debugging
+        return ["http:", "https:"].includes(parsed.protocol);
+    } catch (e) {
+        console.error("Invalid URL format:", url);
+        return false;
+    }
+}
+
+function getAbsoluteUrl(url) {
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+        return url; // Already absolute
+    }
+    return new URL(url, window.location.origin).href; // Convert relative to absolute
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     document.body.style.opacity = "1";
-    
+
     let firstSong = document.querySelector("#songList li");
 
     if (firstSong) {
@@ -242,16 +261,29 @@ document.addEventListener("DOMContentLoaded", function () {
         let firstAuthorName = firstSong.querySelector(".author").innerText;
 
         if (firstImage) {
-            document.getElementById("albumArt").src = firstImage;
-            document.getElementById("background").style.backgroundImage = `url(${firstImage})`;
+            let absoluteImageUrl = getAbsoluteUrl(firstImage);
+            console.log("Resolved Image URL:", absoluteImageUrl);
+
+            let albumArt = document.getElementById("albumArt");
+            let background = document.getElementById("background");
+
+            if (albumArt && background) {
+                if (isValidImageUrl(absoluteImageUrl)) {
+                    albumArt.setAttribute("src", absoluteImageUrl);
+                    background.style.backgroundImage = `url(${absoluteImageUrl})`;
+                } else {
+                    console.error("Invalid or unsafe image URL:", absoluteImageUrl);
+                }
+            } else {
+                console.error("albumArt or background element not found!");
+            }
         }
 
-        // ✅ Correctly set the first song as "Now Playing"
-        //document.querySelector("#nowPlaying .status").innerText = "Now Playing:";
         document.querySelector("#nowPlaying .song-title").innerText = firstSongName;
         document.querySelector("#nowPlaying .author-name").innerText = firstAuthorName;
     }
-});        
+});
+//     
 
 document.addEventListener("DOMContentLoaded", function () {
     const volumeControl = document.getElementById("volumeControl");
@@ -288,14 +320,34 @@ document.addEventListener("DOMContentLoaded", function () {
 // Set default selected song
 document.querySelector("#songList li").classList.add("selected");        
 
-window.onload = function() {
+window.onload = function () {
     let firstSong = document.querySelector("#songList li");
+    
     if (firstSong) {
         firstSong.classList.add("selected");
+
         let albumArtUrl = firstSong.getAttribute("data-img");
-        document.getElementById("albumArt").src = albumArtUrl;
+
+        if (albumArtUrl) {
+            let absoluteUrl = getAbsoluteUrl(albumArtUrl);
+
+            if (isValidImageUrl(absoluteUrl)) {
+                let albumArt = document.getElementById("albumArt");
+                if (albumArt) {
+                    albumArt.src = absoluteUrl;
+                } else {
+                    console.error("Error: #albumArt element not found.");
+                }
+            } else {
+                console.error("Invalid image URL:", absoluteUrl);
+            }
+        } else {
+            console.error("Error: No data-img attribute found.");
+        }
+    } else {
+        console.error("Error: No songs found in #songList.");
     }
-};        
+};
 
 document.getElementById("playPauseBtn").addEventListener("click", function () {
     if (songUnavailable) return; // Prevent play if song is unavailable
