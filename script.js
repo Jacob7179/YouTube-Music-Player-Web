@@ -671,12 +671,26 @@ document.getElementById("togglePlayerBtn").addEventListener("click", function ()
     }
 });
 
+document.addEventListener("DOMContentLoaded", function () {
+    // Check if dark mode is enabled in local storage before page renders
+    if (localStorage.getItem("darkMode") === "enabled") {
+        document.body.classList.add("dark-mode");
+        document.getElementById("darkModeToggle").innerHTML = "Disable";
+        applyDarkModeToElements(true);
+    }
+
+    // Ensure body opacity animation starts only after dark mode is set
+    document.body.style.opacity = "1";
+});
+
 document.getElementById("darkModeToggle").addEventListener("click", function () {
-    document.body.classList.toggle("dark-mode");
+    const isDarkMode = document.body.classList.toggle("dark-mode");
+
+    // Save the preference in local storage
+    localStorage.setItem("darkMode", isDarkMode ? "enabled" : "disabled");
 
     // Toggle dark mode for relevant elements including Boxicons
-    document.querySelectorAll(".card, .btn-dark-mode-toggle, .author-name, .song-title, box-icon")
-        .forEach(el => el.classList.toggle("dark-mode"));
+    applyDarkModeToElements(isDarkMode);
 
     // Smooth transition for song title and author name in dark mode
     document.querySelectorAll("#nowPlaying .song-title, #nowPlaying .author-name")
@@ -689,8 +703,14 @@ document.getElementById("darkModeToggle").addEventListener("click", function () 
         });
 
     // Change button text
-    this.innerHTML = document.body.classList.contains("dark-mode") ? "Disable" : "Enable";
+    this.innerHTML = isDarkMode ? "Disable" : "Enable";
 });
+
+function applyDarkModeToElements(enable) {
+    document.querySelectorAll(
+        ".card, .btn-dark-mode-toggle, .author-name, .song-title, box-icon, #songList, #songList .list-group-item, #songList .song, #songList .author"
+    ).forEach(el => el.classList.toggle("dark-mode", enable));
+}
 
 // Prevent text selection
 document.addEventListener("selectstart", function(event) {

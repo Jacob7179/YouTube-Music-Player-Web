@@ -10,6 +10,9 @@
         body {
             text-align: center;
             font-family: Arial, sans-serif;
+            background-color: white;
+            color: black;
+            transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
         }
         #albumArt {
             width: 300px;
@@ -71,6 +74,11 @@
             font-weight: bold;
             width: 80px;
         }
+        /* Dark Mode */
+        body.dark-mode {
+            background-color: #121212; /* Darker background for better contrast */
+            color: #e0e0e0; /* Lighter text */
+        }
     </style>
 </head>
 <body>
@@ -93,6 +101,8 @@
         </div>
         <span id="totalTime">0:00</span>
     </div>
+
+    <button id="darkModeToggle" class="btn btn-dark">Enable Dark Mode</button>
 
     <div id="playlist"></div>
 
@@ -214,6 +224,37 @@
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
         loadPlaylist();
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Check if dark mode is enabled in local storage before page renders
+            if (localStorage.getItem("darkMode") === "enabled") {
+                document.body.classList.add("dark-mode");
+                document.getElementById("darkModeToggle").innerHTML = "Disable Dark Mode";
+                applyDarkModeToElements(true);
+            }
+    
+            // Ensure body opacity animation starts only after dark mode is set
+            document.body.style.opacity = "1";
+        });
+    
+        function applyDarkModeToElements(enable) {
+            document.querySelectorAll(
+                ".card, .btn-dark-mode-toggle, .author-name, .song-title, #songList, #songList .list-group-item, #songList .song, #songList .author"
+            ).forEach(el => el.classList.toggle("dark-mode", enable));
+        }
+
+        document.getElementById("darkModeToggle").addEventListener("click", function () {
+            const isDarkMode = document.body.classList.toggle("dark-mode");
+        
+            // Save preference
+            localStorage.setItem("darkMode", isDarkMode ? "enabled" : "disabled");
+        
+            // Apply dark mode to all necessary elements
+            applyDarkModeToElements(isDarkMode);
+        
+            // Update button text
+            this.innerHTML = isDarkMode ? "Disable Dark Mode" : "Enable Dark Mode";
+        });
     </script>
 </body>
 </html>

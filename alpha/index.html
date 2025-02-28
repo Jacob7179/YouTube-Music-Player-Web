@@ -9,6 +9,13 @@
         body {
             text-align: center;
             font-family: Arial, sans-serif;
+            background-color: white;
+            color: black;
+            transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
+        }
+        body.dark-mode {
+            background-color: #121212;
+            color: #e0e0e0;
         }
         #albumArt {
             width: 300px;
@@ -98,7 +105,8 @@
             <span id="totalTime">0:00</span>
         </div>        
     </div>    
-    <br>
+    <button id="darkModeToggle">Enable Dark Mode</button>
+    <br><br>
     <input type="text" id="searchInput" placeholder="Search for a song...">
     <button id="searchBtn">Search</button>
 
@@ -348,6 +356,18 @@
             document.getElementById("tutorialModal").style.display = "none";
         });
 
+        document.addEventListener("DOMContentLoaded", function () {
+            if (localStorage.getItem("darkMode") === "enabled") {
+                document.body.classList.add("dark-mode");
+                document.getElementById("darkModeToggle").innerText = "Disable Dark Mode";
+            }
+        });
+        
+        document.getElementById("darkModeToggle").addEventListener("click", function () {
+            const isDarkMode = document.body.classList.toggle("dark-mode");
+            localStorage.setItem("darkMode", isDarkMode ? "enabled" : "disabled");
+            this.innerText = isDarkMode ? "Disable Dark Mode" : "Enable Dark Mode";
+        });
     </script>
     <script async src="https://www.youtube.com/iframe_api"></script>
 </body>

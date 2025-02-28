@@ -15,6 +15,40 @@ body {
     transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
 }
 
+/* If dark mode is enabled, override before fade-in */
+body.dark-mode {
+    background-color: black;
+    color: white;
+}
+
+/* Dark Mode Styles for Song List */
+body.dark-mode #songList {
+    background-color: #222; /* Dark background */
+}
+
+body.dark-mode #songList .list-group-item {
+    background-color: #333; /* Darker shade for items */
+    color: white; /* White text */
+    border-bottom: 1px solid white !important;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
+}
+
+body.dark-mode #songList .list-group-item:hover {
+    background-color: #444; /* Lighter shade on hover */
+}
+
+body.dark-mode #songList .list-group-item.selected {
+    background-color: #007bff; /* Keep blue for selected */
+    color: white;
+}
+
+/* Ensure text inside song list elements also adapts */
+body.dark-mode #songList .song,
+body.dark-mode #songList .author {
+    color: white !important;
+    transition: color 0.8s ease-in-out;
+}
+
 /* Keyframe Animation */
 @keyframes fadeIn {
     from {
@@ -283,6 +317,7 @@ select {
     border-left: none !important;
     border-right: none !important;
     padding: 10px 15px; /* Adjust spacing for better readability */
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
 }
 
 /* Remove border from the last item to avoid extra line */
@@ -484,10 +519,11 @@ select {
     margin-bottom: 2px; /* Reduce space below Song Name */
 }
 
-/* Smooth color transition for song title and author name */
+/* Smooth transition for song title and author name */
 #nowPlaying .song-title,
-#nowPlaying .author-name {
-    transition: color 0.8s ease-in-out; /* Ensures smooth color change */
+#nowPlaying .author-name,
+#songList .author { /* Apply to second card */
+    transition: color 0.8s ease-in-out, opacity 0.5s ease-in-out !important;
 }
 
 /* Dark Mode Colors */
@@ -505,7 +541,7 @@ body:not(.dark-mode) #nowPlaying .author-name {
 #nowPlaying .author-name {
     font-size: 14px;
     font-weight: normal;
-    color: #666;
+    color: #666 !important;
     display: block;
 }        
 
