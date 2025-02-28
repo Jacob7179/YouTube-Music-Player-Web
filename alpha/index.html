@@ -251,23 +251,6 @@
             });
         });
         
-        function attachClickEvent() {
-            document.querySelectorAll("#songList li").forEach(item => {
-                item.addEventListener("click", function () {
-                    let videoId = this.getAttribute("data-video");
-                    let thumbnail = this.getAttribute("data-img");
-        
-                    if (isValidUrl(thumbnail)) {
-                        document.getElementById("albumArt").src = thumbnail;
-                    } else {
-                        console.error("Invalid thumbnail URL");
-                    }
-        
-                    loadVideo(videoId);
-                });
-            });
-        }        
-
         function playSong(videoId, thumbnail, title, channel) {
             document.getElementById('albumArt').src = thumbnail;
         

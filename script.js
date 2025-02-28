@@ -95,8 +95,10 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
         albumArt.classList.remove("rotate");
         albumArt.style.transform = "rotate(0deg)";
 
-        if (albumArtUrl) {
+        if (albumArtUrl && isValidImageUrl(albumArtUrl)) {
             albumArt.setAttribute("src", albumArtUrl);
+        } else {
+            console.error("Invalid or unsafe albumArtUrl:", albumArtUrl);
         }
 
         albumArt.onload = () => {
@@ -232,8 +234,21 @@ document.querySelectorAll("#songList li").forEach((item, index) => {
 function isValidImageUrl(url) {
     try {
         let parsed = new URL(url);
-        console.log("Checking image URL:", parsed.href); // Debugging
-        return ["http:", "https:"].includes(parsed.protocol);
+        console.log("Checking image URL:", parsed.href);
+
+        // ✅ Allow only HTTP(S) URLs
+        if (!["http:", "https:"].includes(parsed.protocol)) {
+            console.error("Blocked non-HTTP(S) URL:", url);
+            return false;
+        }
+
+        // ✅ Ensure the URL points to an actual image file
+        if (!/\.(jpg|jpeg|png|gif|webp)$/i.test(parsed.pathname)) {
+            console.error("Blocked non-image URL:", url);
+            return false;
+        }
+
+        return true;
     } catch (e) {
         console.error("Invalid URL format:", url);
         return false;
@@ -270,7 +285,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (albumArt && background) {
                 if (isValidImageUrl(absoluteImageUrl)) {
                     albumArt.setAttribute("src", absoluteImageUrl);
-                    background.style.backgroundImage = `url(${absoluteImageUrl})`;
+                    background.style.backgroundImage = `url('${absoluteImageUrl}')`; // ✅ Secure assignment
                 } else {
                     console.error("Invalid or unsafe image URL:", absoluteImageUrl);
                 }
@@ -334,12 +349,12 @@ window.onload = function () {
             if (isValidImageUrl(absoluteUrl)) {
                 let albumArt = document.getElementById("albumArt");
                 if (albumArt) {
-                    albumArt.src = absoluteUrl;
+                    albumArt.setAttribute("src", absoluteUrl);
                 } else {
                     console.error("Error: #albumArt element not found.");
                 }
             } else {
-                console.error("Invalid image URL:", absoluteUrl);
+                console.error("Invalid or unsafe image URL:", absoluteUrl);
             }
         } else {
             console.error("Error: No data-img attribute found.");
