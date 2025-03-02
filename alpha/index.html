@@ -115,6 +115,7 @@
     
     <input type="text" id="apiKeyInput" placeholder="Enter API Key">
     <button id="saveApiKeyBtn">Save API Key</button>
+    <button id="deleteApiKeyBtn">Delete API Key</button>
     <button id="tutorialBtn">How to get API Key?</button>
 
     <!-- Tutorial Modal -->
@@ -367,6 +368,13 @@
             const isDarkMode = document.body.classList.toggle("dark-mode");
             localStorage.setItem("darkMode", isDarkMode ? "enabled" : "disabled");
             this.innerText = isDarkMode ? "Disable Dark Mode" : "Enable Dark Mode";
+        });
+
+        document.getElementById("deleteApiKeyBtn").addEventListener("click", function () {
+            localStorage.removeItem("youtubeApiKey");
+            document.getElementById("apiKeyInput").style.display = "inline";
+            document.getElementById("saveApiKeyBtn").style.display = "inline";
+            alert("API Key deleted successfully!");
         });
     </script>
     <script async src="https://www.youtube.com/iframe_api"></script>

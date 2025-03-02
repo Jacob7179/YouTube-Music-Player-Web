@@ -6,6 +6,7 @@ let isDragging = false;
 let errorTimeout;
 let selectedVideoId = "wX_y95OrHLQ";
 let countdownInterval;
+let darkModeToggleInProgress = false;
 
 // Set default song name and author to the first song
 let firstSongElement = document.querySelector("#songList li");
@@ -24,10 +25,10 @@ function onYouTubeIframeAPIReady() {
         },
         events: {
             'onReady': () => {
-                let storedVolume = localStorage.getItem("userVolume") || 100; // Get saved volume or default to 100
-                player.setVolume(storedVolume);
+                player.setVolume(100);
+                updateVolumeUI(100);
             },
-            'onStateChange': handlePlayerStateChange, // ✅ Detect video state changes
+            'onStateChange': handlePlayerStateChange, 
             'onError': handleVideoError
         }
     });
@@ -561,13 +562,18 @@ let volumeThumb = document.getElementById("volumeThumb");
 let isAdjustingVolume = false;
 
 function updateVolumeUI(volumeValue) {
-    volumeProgress.style.width = volumeValue + "%";
+    const volumeProgress = document.getElementById("volumeProgress");
+    const volumeThumb = document.getElementById("volumeThumb");
+    const volumeBarContainer = document.querySelector(".volume-bar-container");
 
-    let progressBarWidth = document.querySelector(".volume-bar-container").offsetWidth;
-    let thumbMax = progressBarWidth - 11; // Prevent thumb from going past 100%
-    let thumbPosition = (volumeValue / 100) * progressBarWidth;
+    if (!volumeProgress || !volumeThumb || !volumeBarContainer) return; // Ensure elements exist
 
-    volumeThumb.style.left = `${Math.min(thumbPosition, thumbMax)}px`;
+    const progressBarWidth = volumeBarContainer.offsetWidth;
+    const thumbWidth = volumeThumb.offsetWidth;
+    const thumbPosition = (volumeValue / 100) * (progressBarWidth - thumbWidth) + (thumbWidth / 2);
+
+    volumeProgress.style.width = `${volumeValue}%`;
+    volumeThumb.style.left = `${thumbPosition}px`;
 }
 
 // Handle touch start
@@ -605,22 +611,19 @@ function adjustVolume(event) {
 
 // Allow volume control using scroll
 document.getElementById("volumeControl").addEventListener("wheel", function (event) {
-    event.preventDefault(); // Prevent default scrolling behavior
+    event.preventDefault(); // Prevent page scrolling
+
     let step = event.deltaY < 0 ? 5 : -5; // Scroll up increases, scroll down decreases
-    let newValue = Math.min(100, Math.max(0, parseInt(this.value) + step)); // Keep between 0-100
+    let newValue = Math.min(100, Math.max(0, parseInt(this.value, 10) + step)); // Keep within range
+
     this.value = newValue;
-
-    // Update progress fill width
-    document.getElementById("volumeProgress").style.width = newValue + "%";
-
-    // Update thumb position
-    let thumbPosition = (newValue / 100) * document.querySelector(".volume-bar-container").offsetWidth;
-    document.getElementById("volumeThumb").style.left = thumbPosition + "px";
 
     if (player) {
         player.setVolume(newValue);
     }
-});        
+
+    updateVolumeUI(newValue); // Ensure UI updates properly
+});
 
 let repeatSong = false; // Track repeat mode
 
@@ -684,32 +687,57 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 document.getElementById("darkModeToggle").addEventListener("click", function () {
-    const isDarkMode = document.body.classList.toggle("dark-mode");
+    if (darkModeToggleInProgress) return; // Prevent spam clicking
+    darkModeToggleInProgress = true;
 
-    // Save the preference in local storage
-    localStorage.setItem("darkMode", isDarkMode ? "enabled" : "disabled");
+    requestAnimationFrame(() => {
+        const isDarkMode = document.body.classList.toggle("dark-mode");
 
-    // Toggle dark mode for relevant elements including Boxicons
-    applyDarkModeToElements(isDarkMode);
+        // Save the preference in local storage
+        localStorage.setItem("darkMode", isDarkMode ? "enabled" : "disabled");
 
-    // Smooth transition for song title and author name in dark mode
-    document.querySelectorAll("#nowPlaying .song-title, #nowPlaying .author-name")
-        .forEach(elem => {
-            elem.style.transition = "opacity 0.5s ease-in-out, color 0.8s ease-in-out";
-            elem.style.opacity = "0";
-            setTimeout(() => {
-                elem.style.opacity = "1";
-            }, 50);
-        });
+        // Toggle dark mode for relevant elements
+        applyDarkModeToElements(isDarkMode);
 
-    // Change button text
-    this.innerHTML = isDarkMode ? "Disable" : "Enable";
+        // Smooth transition for song title and author name
+        document.querySelectorAll("#nowPlaying .song-title, #nowPlaying .author-name")
+            .forEach(elem => {
+                elem.style.transition = "opacity 0.5s ease-in-out, color 0.8s ease-in-out";
+                elem.style.opacity = "0";
+                setTimeout(() => {
+                    elem.style.opacity = "1";
+                }, 50);
+            });
+
+        // Change button text
+        this.innerHTML = isDarkMode ? "Disable" : "Enable";
+
+        // Prevent rapid toggling
+        setTimeout(() => {
+            darkModeToggleInProgress = false;
+        }, 600);
+    });
 });
 
 function applyDarkModeToElements(enable) {
     document.querySelectorAll(
-        ".card, .btn-dark-mode-toggle, .author-name, .song-title, box-icon, #songList, #songList .list-group-item, #songList .song, #songList .author"
-    ).forEach(el => el.classList.toggle("dark-mode", enable));
+        ".card, .btn-dark-mode-toggle, .author-name, .song-title, #songList .list-group-item, #songList .song, #songList .author"
+    ).forEach(el => {
+        el.classList.toggle("dark-mode", enable);
+    });
+
+    // Ensure song title and author color updates correctly
+    document.querySelectorAll("#nowPlaying .song-title, #nowPlaying .author-name")
+        .forEach(elem => {
+            elem.style.transition = "opacity 0.5s ease-in-out, color 0.8s ease-in-out";
+            elem.style.color = enable ? "white" : "black";
+        });
+
+    // Ensure the selected song in the list remains readable
+    document.querySelectorAll("#songList .list-group-item.selected").forEach(item => {
+        item.style.backgroundColor = "#007bff"; // Ensure selection color stays
+        item.style.color = "white"; // Keep selected text white
+    });
 }
 
 // Prevent text selection

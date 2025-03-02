@@ -520,7 +520,6 @@ select {
 }
 
 /* Smooth transition for song title and author name */
-#nowPlaying .song-title,
 #nowPlaying .author-name,
 #songList .author { /* Apply to second card */
     transition: color 0.8s ease-in-out, opacity 0.5s ease-in-out !important;
@@ -529,19 +528,22 @@ select {
 /* Dark Mode Colors */
 body.dark-mode #nowPlaying .song-title,
 body.dark-mode #nowPlaying .author-name {
-    color: white; /* Ensure both elements turn white in dark mode */
+    color: white !important; /* Ensure both elements turn white in dark mode */
 }
 
 /* Light Mode Colors (Fix transition when turning OFF dark mode) */
-body:not(.dark-mode) #nowPlaying .song-title,
-body:not(.dark-mode) #nowPlaying .author-name {
+body:not(.dark-mode) #nowPlaying .song-title {
     color: black; /* Match original light mode text color */
+}
+
+body:not(.dark-mode) #nowPlaying .author-name {
+    color: #666 !important;
 }
 
 #nowPlaying .author-name {
     font-size: 14px;
     font-weight: normal;
-    color: #666 !important;
+    color: #666;
     display: block;
 }        
 
