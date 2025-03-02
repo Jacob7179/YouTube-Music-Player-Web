@@ -721,23 +721,15 @@ document.getElementById("darkModeToggle").addEventListener("click", function () 
 
 function applyDarkModeToElements(enable) {
     document.querySelectorAll(
-        ".card, .btn-dark-mode-toggle, .author-name, .song-title, #songList .list-group-item, #songList .song, #songList .author"
-    ).forEach(el => {
-        el.classList.toggle("dark-mode", enable);
-    });
+        ".card, .btn-dark-mode-toggle, .author-name, .song-title, box-icon, #songList, #songList .list-group-item, #songList .song, #songList .author"
+    ).forEach(el => el.classList.toggle("dark-mode", enable));
 
-    // Ensure song title and author color updates correctly
-    document.querySelectorAll("#nowPlaying .song-title, #nowPlaying .author-name")
+    // Explicitly change text color for smooth transition
+    document.querySelectorAll("#nowPlaying .song-title, #nowPlaying .author-name, #songList .author")
         .forEach(elem => {
-            elem.style.transition = "opacity 0.5s ease-in-out, color 0.8s ease-in-out";
+            elem.style.transition = "color 0.8s ease-in-out";
             elem.style.color = enable ? "white" : "black";
         });
-
-    // Ensure the selected song in the list remains readable
-    document.querySelectorAll("#songList .list-group-item.selected").forEach(item => {
-        item.style.backgroundColor = "#007bff"; // Ensure selection color stays
-        item.style.color = "white"; // Keep selected text white
-    });
 }
 
 // Prevent text selection
