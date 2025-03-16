@@ -366,6 +366,7 @@ select {
     text-overflow: ellipsis;
     max-width: 50%;
 }
+
 #background {
     position: fixed;
     top: 0;

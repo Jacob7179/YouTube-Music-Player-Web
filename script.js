@@ -4,7 +4,7 @@ let songUnavailable = false;
 let progressInterval;
 let isDragging = false;
 let errorTimeout;
-let selectedVideoId = "wX_y95OrHLQ";
+let selectedVideoId = "LgNT-a_ekC8";
 let countdownInterval;
 let darkModeToggleInProgress = false;
 
@@ -119,7 +119,7 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
         let songName = selectedSong.querySelector(".song").innerText;
         let authorName = selectedSong.querySelector(".author").innerText;
 
-        if (songName !== lastSong || selectedSong === firstSongElement) {
+        if (songName !== lastSong) {  // 只在歌曲名变化时才执行动画
             songTitleElem.style.transition = "opacity 0.5s ease-in-out";
             songTitleElem.style.opacity = "0";
             setTimeout(() => {
@@ -128,8 +128,8 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
             }, 500);
             lastSong = songName;
         }
-
-        if (authorName !== lastAuthor || selectedSong === firstSongElement) {
+        
+        if (authorName !== lastAuthor) { // 只在作者名变化时才执行动画
             authorNameElem.style.transition = "opacity 0.5s ease-in-out";
             authorNameElem.style.opacity = "0";
             setTimeout(() => {
@@ -137,7 +137,7 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
                 authorNameElem.style.opacity = "1";
             }, 500);
             lastAuthor = authorName;
-        }
+        }        
     }
 
     clearTimeout(errorTimeout);
