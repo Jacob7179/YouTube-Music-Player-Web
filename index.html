@@ -15,7 +15,7 @@
         <div class="row justify-content-center align-items-stretch">        
             <!-- Card 1: Music Player -->
             <div class="col-md-3 col-12 d-flex">
-                <div class="card shadow-lg w-100 h-100" style="max-height: 890px;"> <!-- Added min-height -->
+                <div class="card shadow-lg w-100 h-100" style="max-height: 890px;">
                     <div class="card-body text-center d-flex flex-column">
                         <h5 class="card-title fw-bold"><i class='bx bxs-music'></i> YouTube Music Player</h5>
     
@@ -24,7 +24,6 @@
                         </div>                        
     
                         <h4 id="nowPlaying" class="text-center mt-3">
-                            <!-- <span class="status">Not Playing</span> <br> -->
                             <span class="song-title">Loading...</span> <br>
                             <span class="author-name text-muted"></span>
                         </h4>
@@ -83,12 +82,12 @@
             <div class="col-md-8 col-12 mt-4 mt-md-0">
                 <div class="card shadow-lg">
                     <div class="card-body">
-                        <h5 class="card-title text-center fw-bold"><i class='bx bxs-playlist' ></i> Playlist</h5>
+                        <h5 class="card-title text-center fw-bold"><i class='bx bxs-playlist' ></i> My Playlist</h5>
 
-                        <!-- Search Bar -->
+                        <!-- Search Bar for Playlist -->
                         <div class="input-group mb-3">
-                            <input type="text" id="searchSongInput" class="form-control" placeholder="Search songs...">
-                            <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn"><i class='bx bx-x'></i></button>
+                            <input type="text" id="searchPlaylistInput" class="form-control" placeholder="Search your playlist...">
+                            <button class="btn btn-outline-secondary" type="button" id="clearPlaylistSearchBtn"><i class='bx bx-x'></i></button>
                         </div>
 
                         <!-- Song List Headers -->
@@ -102,37 +101,61 @@
                         </ul>                        
                     </div>
                 </div>
-                <!-- Add Song Section -->
+
+                <!-- YouTube Search Section -->
                 <div class="card shadow-lg mt-4">
                     <div class="card-body">
-                        <h5 class="card-title text-center fw-bold"><i class='bx bx-add-to-queue'></i> Add New Song</h5>
-                        <div class="mb-3">
-                            <input type="text" id="addVideoId" class="form-control" placeholder="YouTube Video ID (e.g., LgNT-a_ekC8)">
+                        <h5 class="card-title text-center fw-bold"><i class='bx bx-search'></i> Search YouTube</h5>
+                        
+                        <!-- YouTube Search Bar -->
+                        <div class="input-group mb-3">
+                            <input type="text" id="youtubeSearchInput" class="form-control" placeholder="Search YouTube for songs to add...">
+                            <button class="btn btn-primary" type="button" id="youtubeSearchBtn"><i class='bx bx-search'></i> Search</button>
                         </div>
-                        <div class="mb-3">
-                            <input type="text" id="addSongTitle" class="form-control" placeholder="Song Title">
+
+                        <!-- Search Results -->
+                        <div id="searchResults" class="d-none">
+                            <h6 class="fw-bold mb-3">Search Results:</h6>
+                            <div id="searchResultsList" class="overflow-auto" style="max-height: 400px;">
+                                <!-- Search results will be populated here -->
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <input type="text" id="addAuthorName" class="form-control" placeholder="Author Name">
+
+                        <!-- Loading indicator -->
+                        <div id="searchLoading" class="text-center d-none">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Searching...</span>
+                            </div>
+                            <p class="mt-2">Searching YouTube...</p>
                         </div>
-                        <div class="mb-3">
-                            <input type="text" id="addAlbumArtUrl" class="form-control" placeholder="Album Art URL (e.g., https://i.ytimg.com/vi/ID/hqdefault.jpg)">
+
+                        <!-- Search error message -->
+                        <div id="searchError" class="alert alert-danger d-none" role="alert">
+                            <i class='bx bx-error'></i> Unable to search YouTube. Please check your internet connection and try again.
                         </div>
-                        <button id="addSongBtn" class="btn btn-primary w-100"><i class='bx bx-plus'></i> Add Song to Playlist</button>
-                        <p id="addSongError" class="text-danger mt-2 d-none">Please fill in all fields with valid information.</p>
                     </div>
                 </div>
             </div>
         </div>
     
         <div class="d-flex justify-content-center align-items-start flex-wrap" style="margin-top: 20px; gap: 20px; padding-bottom: 20px;">
-            <!-- GitHub Profile Card -->
+            <!-- Original Creator Credit Card -->
             <div class="card dark" style="width: 16rem;">
                 <div class="card-body text-center">
-                    <img src="https://github.com/Farwalker3.png" alt="GitHub Profile" class="rounded-circle img-fluid" style="width: 100px; height: 100px; object-fit: cover;" draggable="false">
+                    <img src="https://github.com/Jacob7179.png" alt="Original Creator" class="rounded-circle img-fluid" style="width: 100px; height: 100px; object-fit: cover;" draggable="false">
+                    <h5 class="card-title mt-2">Jacob7179</h5>
+                    <p class="card-text">Original creator of this YouTube Music Player project.</p>
+                    <a href="https://github.com/Jacob7179" target="_blank" class="btn btn-dark-mode-toggle"><i class='bx bx-link-external'></i> Original Creator</a>
+                </div>
+            </div>
+
+            <!-- Fork Maintainer Card -->
+            <div class="card dark" style="width: 16rem;">
+                <div class="card-body text-center">
+                    <img src="https://github.com/Farwalker3.png" alt="Fork Maintainer" class="rounded-circle img-fluid" style="width: 100px; height: 100px; object-fit: cover;" draggable="false">
                     <h5 class="card-title mt-2">Farwalker3</h5>
-                    <p class="card-text">Check out my GitHub profile for more projects.</p>
-                    <a href="https://github.com/Farwalker3" target="_blank" class="btn btn-dark-mode-toggle"><i class='bx bx-link-external'></i> Visit Profile</a>
+                    <p class="card-text">Maintainer of this forked version with enhanced features.</p>
+                    <a href="https://github.com/Farwalker3" target="_blank" class="btn btn-dark-mode-toggle"><i class='bx bx-link-external'></i> Fork Maintainer</a>
                 </div>
             </div>            
         
@@ -140,8 +163,8 @@
             <div class="card" style="width: 16rem;">
                 <div class="card-body text-center">
                     <h5 class="card-title">YouTube Music Player</h5>
-                    <p class="card-text">Click the link below to visit the repository.</p>
-                    <a href="https://github.com/Farwalker3/YouTube-Music-Player-Web" target="_blank" class="btn btn-primary"><i class='bx bx-link-external'></i> Visit GitHub</a>
+                    <p class="card-text">Visit the repository for this enhanced version.</p>
+                    <a href="https://github.com/Farwalker3/YouTube-Music-Player-Web" target="_blank" class="btn btn-primary"><i class='bx bx-link-external'></i> Visit Repository</a>
                 </div>
             </div>
 
@@ -186,6 +209,17 @@
                     <button onclick="window.location.href='/YouTube-Music-Player-Web/alpha/'" class="btn btn-secondary w-100">View Alpha Test Project</button>
                 </div>
             </div>
+        </div>
+
+        <!-- Attribution Footer -->
+        <div class="text-center mt-4 mb-4">
+            <p class="text-muted">
+                <small>
+                    Original project by <a href="https://github.com/Jacob7179" target="_blank" class="text-decoration-none">Jacob7179</a> | 
+                    Enhanced version by <a href="https://github.com/Farwalker3" target="_blank" class="text-decoration-none">Farwalker3</a> | 
+                    <a href="https://github.com/Jacob7179/YouTube-Music-Player-Web" target="_blank" class="text-decoration-none">Original Repository</a>
+                </small>
+            </p>
         </div>
     </div>
     <script src="script.js"></script>
