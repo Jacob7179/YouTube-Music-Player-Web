@@ -23,7 +23,6 @@ const ICON_PREVIOUS = '<i class=\'bx bx-skip-previous\' ></i>';
 const ICON_NEXT = '<i class=\'bx bx-skip-next\' ></i>';
 const ICON_REPEAT = '<i class=\'bx bx-repeat\' ></i>';
 
-
 // Load playlist from local storage or use a default if none exists
 function loadPlaylist() {
     const storedPlaylist = localStorage.getItem('youtubeMusicPlaylist');
@@ -214,6 +213,9 @@ document.getElementById('youtubeSearchInput').addEventListener('keypress', funct
 });
 
 async function searchYouTube() {
+    console.log("Attempting YouTube search...");
+    console.log("API Key present: ", YOUTUBE_API_KEY && YOUTUBE_API_KEY.length > 10);
+
     const searchTerm = document.getElementById('youtubeSearchInput').value.trim();
     const searchResultsList = document.getElementById('searchResultsList');
     const searchLoading = document.getElementById('searchLoading');
@@ -228,12 +230,34 @@ async function searchYouTube() {
         return;
     }
 
+    if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === 'YOUR_YOUTUBE_API_KEY') {
+        searchError.textContent = 'YouTube API Key is not configured. Please see README for instructions.';
+        searchError.classList.remove('d-none');
+        return;
+    }
+
     searchLoading.classList.remove('d-none'); // Show loading indicator
 
     try {
         const response = await fetch(
             `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchTerm)}&type=video&maxResults=10&key=${YOUTUBE_API_KEY}`
         );
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('YouTube API Error:', errorData);
+            if (response.status === 403) {
+                searchError.textContent = 'YouTube API Error: Forbidden. Check your API key restrictions and CORS settings.';
+            } else if (response.status === 400) {
+                searchError.textContent = 'YouTube API Error: Bad Request. Check your API key and search parameters.';
+            } else {
+                searchError.textContent = `YouTube API Error: ${errorData.error.message || response.statusText}`; 
+            }
+            searchError.classList.remove('d-none');
+            searchLoading.classList.add('d-none');
+            return;
+        }
+
         const data = await response.json();
 
         searchLoading.classList.add('d-none'); // Hide loading indicator
@@ -283,6 +307,7 @@ async function searchYouTube() {
     } catch (error) {
         console.error('Error searching YouTube:', error);
         searchLoading.classList.add('d-none');
+        searchError.textContent = 'An unexpected error occurred while searching YouTube. Please try again.';
         searchError.classList.remove('d-none');
     }
 }
@@ -316,7 +341,9 @@ function addSongFromSearch(event) {
 let lastSong = '';
 let lastAuthor = '';
 
-function onYouTubeIframeAPIReady() {
+// Make onYouTubeIframeAPIReady globally accessible
+window.onYouTubeIframeAPIReady = function() {
+    console.log("YouTube IFrame API is ready!");
     if (playlist.length > 0) {
         selectedVideoId = playlist[0].videoId;
     } else {
@@ -346,7 +373,7 @@ function onYouTubeIframeAPIReady() {
             'onError': handleVideoError
         }
     });
-}
+};
 
 function handleVideoError(event) {
     let errorMsg = document.getElementById("errorMessage");
@@ -467,13 +494,31 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
     // ✅ Load and play the new video
     if (typeof player === "undefined" || !player.loadVideoById) {
         document.getElementById("playerContainer").innerHTML = `<div id="player"></div>`;
-        onYouTubeIframeAPIReady();
-        setTimeout(() => {
-            if (player && player.loadVideoById) {
-                player.loadVideoById(videoId);
-                player.playVideo();
-            }
-        }, 1000);
+        // Ensure the API is ready before creating a player
+        if (window.YT && window.YT.Player) {
+             player = new YT.Player('player', {
+                videoId: videoId,
+                playerVars: {
+                    autoplay: 1,
+                    controls: 0,
+                    modestbranding: 1,
+                    showinfo: 0,
+                    rel: 0
+                },
+                events: {
+                    'onReady': (event) => {
+                        event.target.setVolume(100);
+                        updateVolumeUI(100);
+                        event.target.playVideo();
+                    },
+                    'onStateChange': handlePlayerStateChange, 
+                    'onError': handleVideoError
+                }
+            });
+        } else {
+            console.error("YouTube IFrame API not ready when trying to load new video.");
+            // Fallback or retry logic can be added here
+        }
     } else {
         player.loadVideoById(videoId);
         player.playVideo();
@@ -823,6 +868,7 @@ function seek(event) {
     }
 }
 
+// Make onYouTubeIframeAPIReady globally accessible and load the API
 let tag = document.createElement('script');
 tag.src = "https://www.youtube.com/iframe_api";
 let firstScriptTag = document.getElementsByTagName('script')[0];
