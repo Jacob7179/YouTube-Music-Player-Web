@@ -8,8 +8,7 @@ let selectedVideoId;
 let countdownInterval;
 let darkModeToggleInProgress = false;
 
-// IMPORTANT: Replace with your actual YouTube Data API Key
-const YOUTUBE_API_KEY = 'YOUR_YOUTUBE_API_KEY'; 
+// YOUTUBE_API_KEY will be loaded from config.js
 
 // CORS Proxy URL - Used to bypass CORS restrictions for YouTube API calls
 // You can change this if you find a more reliable proxy.
@@ -219,7 +218,8 @@ document.getElementById('youtubeSearchInput').addEventListener('keypress', funct
 
 async function searchYouTube() {
     console.log("Attempting YouTube search...");
-    console.log("API Key present: ", YOUTUBE_API_KEY && YOUTUBE_API_KEY.length > 10);
+    // YOUTUBE_API_KEY is now a global variable from config.js
+    console.log("API Key present (from config.js): ", typeof YOUTUBE_API_KEY !== 'undefined' && YOUTUBE_API_KEY.length > 10);
 
     const searchTerm = document.getElementById('youtubeSearchInput').value.trim();
     const searchResultsList = document.getElementById('searchResultsList');
@@ -235,9 +235,10 @@ async function searchYouTube() {
         return;
     }
 
-    if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === 'YOUR_YOUTUBE_API_KEY') {
-        searchError.textContent = 'YouTube API Key is not configured. Please see README for instructions.';
+    if (typeof YOUTUBE_API_KEY === 'undefined' || YOUTUBE_API_KEY === 'YOUR_YOUTUBE_API_KEY') {
+        searchError.textContent = 'YouTube API Key is not configured. Please ensure config.js is loaded and the key is set.';
         searchError.classList.remove('d-none');
+        searchLoading.classList.add('d-none');
         return;
     }
 
@@ -248,6 +249,7 @@ async function searchYouTube() {
         const youtubeApiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchTerm)}&type=video&maxResults=10&key=${YOUTUBE_API_KEY}`;
         
         // Prepend the CORS proxy URL to the YouTube API URL
+        // The URL for the proxy itself needs to be encoded if it contains query parameters
         const proxiedUrl = `${CORS_PROXY_URL}${encodeURIComponent(youtubeApiUrl)}`;
 
         console.log("Fetching from proxied URL:", proxiedUrl);
@@ -257,7 +259,7 @@ async function searchYouTube() {
         if (!response.ok) {
             const errorText = await response.text(); // Get raw text for more info
             console.error('YouTube API Error (via proxy):', response.status, response.statusText, errorText);
-            searchError.textContent = `YouTube API Error: ${response.statusText}. Please check your API key and network.`;
+            searchError.textContent = `YouTube API Error: ${response.status} ${response.statusText}. Check console for details.`;
             searchError.classList.remove('d-none');
             searchLoading.classList.add('d-none');
             return;
@@ -612,8 +614,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (isValidImageUrl(absoluteImageUrl)) {
                     albumArt.setAttribute("src", absoluteImageUrl);
                     background.style.backgroundImage = `url('${absoluteImageUrl}')`; // ✅ Secure assignment
-                } else {
-                    console.error("Invalid or unsafe image URL:", absoluteImageUrl);
                 }
             } else {
                 console.error("albumArt or background element not found!");
@@ -671,8 +671,6 @@ window.onload = function () {
                 if (albumArt) {
                     albumArt.setAttribute("src", absoluteUrl);
                 }
-            } else {
-                console.error("Invalid or unsafe image URL:", absoluteUrl);
             }
         }
     } else {
@@ -1039,7 +1037,7 @@ document.getElementById("darkModeToggle").addEventListener("click", function () 
 
 function applyDarkModeToElements(enable) {
     document.querySelectorAll(
-        ".card, .btn-dark-mode-toggle, .author-name, .song-title, box-icon, #songList, #songList .list-group-item, #songList .song, #songList .author, #searchResultsList .list-group-item, #searchResultsList h6, #searchResultsList p"
+        ".card, .btn-dark-mode-toggle, .author-name, .song-title, box-icon, #songList, #songList .list-group-item, #songList .list-group-item-action, #songList .song, #songList .author, #searchResultsList .list-group-item, #searchResultsList h6, #searchResultsList p"
     ).forEach(el => el.classList.toggle("dark-mode", enable));
 
     // Explicitly change text color for smooth transition
