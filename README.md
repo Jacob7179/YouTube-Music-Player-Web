@@ -22,4 +22,4 @@ The player in this project is created using the **YouTube IFrame API**, which al
 
 
 ## Website
-[![Website](https://img.shields.io/badge/Website-Visit-blue?style=for-the-badge&logo=internet-explorer)](https://jacob7179.github.io/YouTube-Music-Player-Web/)
+[![Website](https://img.shields.io/badge/Website-Visit-blue?style=for-the-badge&logo=internet-explorer)](https://farwalker3.github.io/YouTube-Music-Player-Web/)
