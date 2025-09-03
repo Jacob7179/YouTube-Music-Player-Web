@@ -32,23 +32,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject YouTube API Key
+      - name: Create config.js with API Key
         run: |
-          echo "🔧 Injecting YouTube API Key..."
+          echo "Creating config.js with YOUTUBE_API_KEY..."
           if [ -z "${{ secrets.YOUTUBE_API_KEY }}" ]; then
             echo "⚠️ Warning: YOUTUBE_API_KEY secret not found. YouTube search will not work."
+            echo "const YOUTUBE_API_KEY = 'YOUR_YOUTUBE_API_KEY';" > config.js
           else
-            echo "✅ YOUTUBE_API_KEY secret found - injecting into script.js"
-            API_KEY="${{ secrets.YOUTUBE_API_KEY }}"
-            perl -pi -e "s|YOUR_YOUTUBE_API_KEY|\Q$API_KEY\E|g" script.js
-            
-            if grep -q "YOUR_YOUTUBE_API_KEY" script.js; then
-              echo "❌ API key injection failed"
-              exit 1
-            else
-              echo "✅ API key successfully injected"
-            fi
+            echo "✅ YOUTUBE_API_KEY secret found - creating config.js"
+            echo "const YOUTUBE_API_KEY = \"${{ secrets.YOUTUBE_API_KEY }}\";" > config.js
           fi
+          cat config.js # Print content for debugging
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -56,7 +50,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
+          # Upload entire repository including config.js
           path: '.'
 
       - name: Deploy to GitHub Pages
