@@ -8,7 +8,7 @@ let selectedVideoId;
 let countdownInterval;
 let darkModeToggleInProgress = false;
 
-// YOUTUBE_API_KEY will be loaded from config.js
+// YOUTUBE_API_KEY is now loaded from config.js
 
 // CORS Proxy URL - Used to bypass CORS restrictions for YouTube API calls
 // You can change this if you find a more reliable proxy.
