@@ -8,6 +8,9 @@ let selectedVideoId;
 let countdownInterval;
 let darkModeToggleInProgress = false;
 
+// IMPORTANT: Replace with your actual YouTube Data API Key
+const YOUTUBE_API_KEY = 'YOUR_YOUTUBE_API_KEY'; 
+
 let playlist = []; // Array to store playlist data
 
 // Load playlist from local storage or use a default if none exists
@@ -75,7 +78,7 @@ function renderPlaylist(songsToRender) {
     songListElement.innerHTML = ''; // Clear existing list
 
     if (songsToRender.length === 0) {
-        songListElement.innerHTML = '<li class="list-group-item text-center text-muted">No songs in playlist. Add some!</li>';
+        songListElement.innerHTML = '<li class="list-group-item text-center text-muted">No songs in playlist. Add some using the YouTube search below!</li>';
         return;
     }
 
@@ -145,52 +148,6 @@ function renderPlaylist(songsToRender) {
     }
 }
 
-// Add song functionality
-document.getElementById('addSongBtn').addEventListener('click', function () {
-    const videoIdInput = document.getElementById('addVideoId');
-    const songTitleInput = document.getElementById('addSongTitle');
-    const authorNameInput = document.getElementById('addAuthorName');
-    const albumArtUrlInput = document.getElementById('addAlbumArtUrl');
-    const addSongError = document.getElementById('addSongError');
-
-    const videoId = videoIdInput.value.trim();
-    const songTitle = songTitleInput.value.trim();
-    const authorName = authorNameInput.value.trim();
-    const albumArt = albumArtUrlInput.value.trim();
-
-    if (!videoId || !songTitle || !authorName || !albumArt) {
-        addSongError.classList.remove('d-none');
-        return;
-    }
-
-    if (!isValidImageUrl(albumArt)) {
-        addSongError.textContent = 'Please enter a valid image URL for album art.';
-        addSongError.classList.remove('d-none');
-        return;
-    }
-
-    // Check if song already exists
-    const songExists = playlist.some(song => song.videoId === videoId);
-    if (songExists) {
-        addSongError.textContent = 'This song is already in the playlist!';
-        addSongError.classList.remove('d-none');
-        return;
-    }
-
-    addSongError.classList.add('d-none'); // Hide error if successful
-
-    const newSong = { videoId, songName: songTitle, authorName, albumArt };
-    playlist.push(newSong);
-    savePlaylist();
-    renderPlaylist(playlist);
-
-    // Clear inputs
-    videoIdInput.value = '';
-    songTitleInput.value = '';
-    authorNameInput.value = '';
-    albumArtUrlInput.value = '';
-});
-
 // Remove song functionality
 function removeSong(videoIdToRemove) {
     const currentPlayingVideoId = player ? player.getVideoData().video_id : null;
@@ -222,8 +179,8 @@ function removeSong(videoIdToRemove) {
     }
 }
 
-// Search functionality
-document.getElementById('searchSongInput').addEventListener('input', function () {
+// Playlist Search functionality (for filtering the current playlist)
+document.getElementById('searchPlaylistInput').addEventListener('input', function () {
     const searchTerm = this.value.toLowerCase();
     const filteredSongs = playlist.filter(song =>
         song.songName.toLowerCase().includes(searchTerm) ||
@@ -232,10 +189,117 @@ document.getElementById('searchSongInput').addEventListener('input', function ()
     renderPlaylist(filteredSongs);
 });
 
-document.getElementById('clearSearchBtn').addEventListener('click', function () {
-    document.getElementById('searchSongInput').value = '';
+document.getElementById('clearPlaylistSearchBtn').addEventListener('click', function () {
+    document.getElementById('searchPlaylistInput').value = '';
     renderPlaylist(playlist);
 });
+
+// YouTube Search Functionality
+document.getElementById('youtubeSearchBtn').addEventListener('click', searchYouTube);
+document.getElementById('youtubeSearchInput').addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') {
+        searchYouTube();
+    }
+});
+
+async function searchYouTube() {
+    const searchTerm = document.getElementById('youtubeSearchInput').value.trim();
+    const searchResultsList = document.getElementById('searchResultsList');
+    const searchLoading = document.getElementById('searchLoading');
+    const searchError = document.getElementById('searchError');
+    const searchResultsContainer = document.getElementById('searchResults');
+
+    searchResultsList.innerHTML = ''; // Clear previous results
+    searchError.classList.add('d-none'); // Hide error message
+    searchResultsContainer.classList.add('d-none'); // Hide results container initially
+
+    if (!searchTerm) {
+        return;
+    }
+
+    searchLoading.classList.remove('d-none'); // Show loading indicator
+
+    try {
+        const response = await fetch(
+            `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchTerm)}&type=video&maxResults=10&key=${YOUTUBE_API_KEY}`
+        );
+        const data = await response.json();
+
+        searchLoading.classList.add('d-none'); // Hide loading indicator
+        searchResultsContainer.classList.remove('d-none'); // Show results container
+
+        if (data.items && data.items.length > 0) {
+            data.items.forEach(item => {
+                if (item.id.videoId) { // Ensure it's a video
+                    const videoId = item.id.videoId;
+                    const title = item.snippet.title;
+                    const channelTitle = item.snippet.channelTitle;
+                    const thumbnailUrl = item.snippet.thumbnails.high.url;
+
+                    const resultItem = document.createElement('div');
+                    resultItem.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'align-items-center', 'mb-2', 'rounded');
+                    resultItem.innerHTML = `
+                        <img src="${thumbnailUrl}" alt="${title}" class="me-3 rounded" style="width: 80px; height: 45px; object-fit: cover;">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">${title}</h6>
+                            <p class="mb-0 text-muted"><small>${channelTitle}</small></p>
+                        </div>
+                        <button class="btn btn-success btn-sm add-from-search-btn" 
+                                data-video-id="${videoId}" 
+                                data-song-title="${title.replace(/"/g, '&quot;')}" 
+                                data-author-name="${channelTitle.replace(/"/g, '&quot;')}" 
+                                data-album-art="${thumbnailUrl}">
+                            <i class='bx bx-plus'></i> Add
+                        </button>
+                    `;
+                    searchResultsList.appendChild(resultItem);
+                }
+            });
+            // Add event listeners to the new add buttons
+            document.querySelectorAll('.add-from-search-btn').forEach(button => {
+                button.addEventListener('click', addSongFromSearch);
+            });
+
+            // Reapply dark mode if enabled
+            if (document.body.classList.contains('dark-mode')) {
+                applyDarkModeToElements(true);
+            }
+
+        } else {
+            searchResultsList.innerHTML = '<p class="text-center text-muted">No results found.</p>';
+        }
+
+    } catch (error) {
+        console.error('Error searching YouTube:', error);
+        searchLoading.classList.add('d-none');
+        searchError.classList.remove('d-none');
+    }
+}
+
+function addSongFromSearch(event) {
+    const button = event.currentTarget;
+    const videoId = button.getAttribute('data-video-id');
+    const songTitle = button.getAttribute('data-song-title');
+    const authorName = button.getAttribute('data-author-name');
+    const albumArt = button.getAttribute('data-album-art');
+
+    // Check if song already exists
+    const songExists = playlist.some(song => song.videoId === videoId);
+    if (songExists) {
+        alert('This song is already in your playlist!');
+        return;
+    }
+
+    const newSong = { videoId, songName: songTitle, authorName, albumArt };
+    playlist.push(newSong);
+    savePlaylist();
+    renderPlaylist(playlist);
+    alert(`${songTitle} by ${authorName} added to your playlist!`);
+
+    // Optional: Hide search results or clear search input after adding
+    // document.getElementById('youtubeSearchInput').value = '';
+    // document.getElementById('searchResults').classList.add('d-none');
+}
 
 // Set default song name and author to the first song
 let lastSong = '';
@@ -661,12 +725,16 @@ function updateProgressBar() {
                 let playPauseBtn = document.getElementById("playPauseBtn");
                 let autoPlayToggle = document.getElementById("autoPlayToggle").checked;
 
-                if (!autoPlayToggle) {
-                    playPauseBtn.innerHTML = "<i class='bx bx-revision' style='color: white; font-size: 24px;'></i>";
+                if (repeatSong) {
+                    player.seekTo(0); // Restart the current song
+                    player.playVideo(); // Always play again when Repeat is ON
+                } else if (autoPlay) {
+                    playNextSong(); // Play next song if Auto-Play is ON
                 } else {
-                    playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
+                    // Show bx-revision when the song ends and Auto-Play is OFF
+                    playPauseBtn.innerHTML = "<i class='bx bx-revision' style='color: white; font-size: 24px;'></i>";
+                    playing = false;
                 }
-                playing = false;
             }
         }
     }, 1000);
@@ -729,7 +797,8 @@ document.addEventListener("touchend", function() {
 
 function seek(event) {
     let barWidth = progressBar.offsetWidth;
-    let clickPosition = event.clientX - progressBar.getBoundingClientRect().left;
+    let clientX = event.clientX || event.touches[0].clientX; // Handle both mouse and touch events
+    let clickPosition = clientX - progressBar.getBoundingClientRect().left;
     let duration = player.getDuration();
     let seekTime = (clickPosition / barWidth) * duration;
 
@@ -744,21 +813,6 @@ function seek(event) {
         progress.style.width = progressPercent + "%";
     }
 }
-
-document.addEventListener("mousemove", function(event) {
-    if (isDragging) {
-        seek(event);
-    }
-});
-
-document.addEventListener("mouseup", function(event) {
-    if (isDragging) {
-        isDragging = false;
-        if (!playing) {
-            player.pauseVideo(); // Don't auto-play if the song was paused
-        }
-    }
-});
 
 let tag = document.createElement('script');
 tag.src = "https://www.youtube.com/iframe_api";
@@ -931,11 +985,11 @@ document.getElementById("darkModeToggle").addEventListener("click", function () 
 
 function applyDarkModeToElements(enable) {
     document.querySelectorAll(
-        ".card, .btn-dark-mode-toggle, .author-name, .song-title, box-icon, #songList, #songList .list-group-item, #songList .song, #songList .author"
+        ".card, .btn-dark-mode-toggle, .author-name, .song-title, box-icon, #songList, #songList .list-group-item, #songList .song, #songList .author, #searchResultsList .list-group-item, #searchResultsList h6, #searchResultsList p"
     ).forEach(el => el.classList.toggle("dark-mode", enable));
 
     // Explicitly change text color for smooth transition
-    document.querySelectorAll("#nowPlaying .song-title, #nowPlaying .author-name, #songList .author")
+    document.querySelectorAll("#nowPlaying .song-title, #nowPlaying .author-name, #songList .author, #searchResultsList h6, #searchResultsList p")
         .forEach(elem => {
             elem.style.transition = "color 0.8s ease-in-out";
             elem.style.color = enable ? "white" : "black";
