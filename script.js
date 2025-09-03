@@ -13,6 +13,17 @@ const YOUTUBE_API_KEY = 'YOUR_YOUTUBE_API_KEY';
 
 let playlist = []; // Array to store playlist data
 
+// Define icon HTML as constants to prevent syntax issues
+const ICON_TRASH = '<i class=\'bx bx-trash\'></i>';
+const ICON_PLUS = '<i class=\'bx bx-plus\'></i>';
+const ICON_PLAY = '<i class=\'bx bx-play\' style=\'color: white; font-size: 24px;\'></i>';
+const ICON_PAUSE = '<i class=\'bx bx-pause\' style=\'color: white; font-size: 24px;\'></i>';
+const ICON_REVISION = '<i class=\'bx bx-revision\' style=\'color: white; font-size: 24px;\'></i>';
+const ICON_PREVIOUS = '<i class=\'bx bx-skip-previous\' ></i>';
+const ICON_NEXT = '<i class=\'bx bx-skip-next\' ></i>';
+const ICON_REPEAT = '<i class=\'bx bx-repeat\' ></i>';
+
+
 // Load playlist from local storage or use a default if none exists
 function loadPlaylist() {
     const storedPlaylist = localStorage.getItem('youtubeMusicPlaylist');
@@ -97,7 +108,7 @@ function renderPlaylist(songsToRender) {
 
         const removeButton = document.createElement('button');
         removeButton.classList.add('btn', 'btn-danger', 'btn-sm', 'remove-song-btn');
-        removeButton.innerHTML = '<i class='bx bx-trash'></i>';
+        removeButton.innerHTML = ICON_TRASH; // Use constant
         removeButton.setAttribute('data-video', song.videoId); // Identify song to remove
 
         listItem.appendChild(songNumberSpan);
@@ -166,7 +177,7 @@ function removeSong(videoIdToRemove) {
             // If playlist is empty, stop playback and reset UI
             player.stopVideo();
             playing = false;
-            document.getElementById('playPauseBtn').innerHTML = '<i class='bx bx-play' style='color: white; font-size: 24px;'></i>';
+            document.getElementById('playPauseBtn').innerHTML = ICON_PLAY; // Use constant
             document.getElementById('albumArt').src = 'https://via.placeholder.com/300';
             document.getElementById('nowPlaying .song-title').innerText = 'No Song';
             document.getElementById('nowPlaying .author-name').innerText = '';
@@ -249,7 +260,7 @@ async function searchYouTube() {
                                 data-song-title="${title.replace(/"/g, '&quot;')}" 
                                 data-author-name="${channelTitle.replace(/"/g, '&quot;')}" 
                                 data-album-art="${thumbnailUrl}">
-                            <i class='bx bx-plus'></i> Add
+                            ${ICON_PLUS} Add
                         </button>
                     `;
                     searchResultsList.appendChild(resultItem);
@@ -353,7 +364,7 @@ function handleVideoError(event) {
         player.pauseVideo();
     }
 
-    playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
+    playPauseBtn.innerHTML = ICON_PLAY; // Use constant
     document.getElementById("albumArt").classList.add("rotate-paused");
     clearTimeout(errorTimeout);
 
@@ -477,7 +488,7 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
     document.getElementById("totalTime").innerText = "0:00";
 
     playing = true;
-    document.getElementById("playPauseBtn").innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>";
+    document.getElementById("playPauseBtn").innerHTML = ICON_PAUSE; // Use constant
 
     // ✅ Start tracking progress
     updateProgressBar();
@@ -619,8 +630,6 @@ window.onload = function () {
             } else {
                 console.error("Invalid or unsafe image URL:", absoluteUrl);
             }
-        } else {
-            console.error("Error: No data-img attribute found.");
         }
     } else {
         console.error("Error: No songs found in #songList.");
@@ -635,19 +644,19 @@ document.getElementById("playPauseBtn").addEventListener("click", function () {
     if (player) {
         if (playing) {
             player.pauseVideo();
-            this.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>"; // ✅ Play button
+            this.innerHTML = ICON_PLAY; // Use constant
             clearInterval(progressInterval);
             albumArt.classList.add("rotate-paused");
         } else {
             player.playVideo();
-            this.innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>"; // ✅ Pause button
+            this.innerHTML = ICON_PAUSE; // Use constant
             updateProgressBar();
             albumArt.classList.remove("rotate-paused");
             albumArt.classList.add("rotate");
 
             // ✅ If bx-revision is showing, reset it to Play/Pause
             if (this.innerHTML.includes("bx-revision")) {
-                this.innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>";
+                this.innerHTML = ICON_PAUSE;
             }
         }
         playing = !playing;
@@ -732,7 +741,7 @@ function updateProgressBar() {
                     playNextSong(); // Play next song if Auto-Play is ON
                 } else {
                     // Show bx-revision when the song ends and Auto-Play is OFF
-                    playPauseBtn.innerHTML = "<i class='bx bx-revision' style='color: white; font-size: 24px;'></i>";
+                    playPauseBtn.innerHTML = ICON_REVISION; // Use constant
                     playing = false;
                 }
             }
@@ -912,14 +921,14 @@ function handlePlayerStateChange(event) {
             playNextSong(); // ✅ Play next song if Auto-Play is ON
         } else {
             // ✅ Show bx-revision when the song ends and Auto-Play is OFF
-            playPauseBtn.innerHTML = "<i class='bx bx-revision' style='color: white; font-size: 24px;'></i>";
+            playPauseBtn.innerHTML = ICON_REVISION; // Use constant
         }
     } else if (event.data === 2) { // ✅ 2 means PAUSED
-        playPauseBtn.innerHTML = "<i class='bx bx-play' style='color: white; font-size: 24px;'></i>";
+        playPauseBtn.innerHTML = ICON_PLAY; // Use constant
         playing = false;
         albumArt.classList.add("rotate-paused");
     } else if (event.data === 1) { // ✅ 1 means PLAYING
-        playPauseBtn.innerHTML = "<i class='bx bx-pause' style='color: white; font-size: 24px;'></i>";
+        playPauseBtn.innerHTML = ICON_PAUSE; // Use constant
         playing = true;
         albumArt.classList.remove("rotate-paused");
         albumArt.classList.add("rotate");
