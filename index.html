@@ -85,6 +85,12 @@
                     <div class="card-body">
                         <h5 class="card-title text-center fw-bold"><i class='bx bxs-playlist' ></i> Playlist</h5>
 
+                        <!-- Search Bar -->
+                        <div class="input-group mb-3">
+                            <input type="text" id="searchSongInput" class="form-control" placeholder="Search songs...">
+                            <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn"><i class='bx bx-x'></i></button>
+                        </div>
+
                         <!-- Song List Headers -->
                         <div class="d-flex justify-content-between px-3 fw-bold border-bottom pb-2">
                             <span>Song Name</span>
@@ -92,182 +98,28 @@
                         </div>
 
                         <ul id="songList" class="list-group overflow-auto" style="max-height: 620px;">
-
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="LgNT-a_ekC8" data-img="https://i.ytimg.com/vi/LgNT-a_ekC8/hqdefault.jpg">
-                                <span class="song">无名的人</span>
-                                <span class="author text-muted">毛不易</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="yBaYm7Ig7ZQ" data-img="https://i.ytimg.com/vi/yBaYm7Ig7ZQ/hqdefault.jpg">
-                                <span class="song">点燃银河尽头的篝火</span>
-                                <span class="author text-muted">华晨宇</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="eSvnAyHFoyo" data-img="https://i.ytimg.com/vi/eSvnAyHFoyo/hqdefault.jpg">
-                                <span class="song">好想爱这个世界啊</span>
-                                <span class="author text-muted">华晨宇</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="wmRkAWPuvCg" data-img="https://i.ytimg.com/vi/wmRkAWPuvCg/hqdefault.jpg">
-                                <span class="song">我管你</span>
-                                <span class="author text-muted">华晨宇</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="Oewc0KgfQUU" data-img="https://i.ytimg.com/vi/Oewc0KgfQUU/hqdefault.jpg">
-                                <span class="song">贝加尔湖畔</span>
-                                <span class="author text-muted">李健</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="Nk9ztUjikT0" data-img="https://i.ytimg.com/vi/Nk9ztUjikT0/hqdefault.jpg">
-                                <span class="song">风吹麦浪</span>
-                                <span class="author text-muted">李健</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="N-RZKm29Qz8" data-img="https://i.ytimg.com/vi/N-RZKm29Qz8/hqdefault.jpg">
-                                <span class="song">浪人琵琶</span>
-                                <span class="author text-muted">胡66</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="YPdRwoIZgVs" data-img="https://i.ytimg.com/vi/YPdRwoIZgVs/hqdefault.jpg">
-                                <span class="song">日落大道</span>
-                                <span class="author text-muted">梁博</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="mrY8qdNHcRs" data-img="https://i.ytimg.com/vi/mrY8qdNHcRs/hqdefault.jpg">
-                                <span class="song">回不去的夏天</span>
-                                <span class="author text-muted">夏日入侵企画</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="jS0rDCTyg-E" data-img="https://i.ytimg.com/vi/jS0rDCTyg-E/hqdefault.jpg">
-                                <span class="song">尘星</span>
-                                <span class="author text-muted">夏日入侵企画</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="rQOIRBrY7h0" data-img="https://i.ytimg.com/vi/rQOIRBrY7h0/hqdefault.jpg">
-                                <span class="song">我們都擁有海洋 (嗶哩嗶哩2023畢業歌)</span>
-                                <span class="author text-muted">吳青峰</span>
-                            </li>
-
-
-
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="wX_y95OrHLQ" data-img="https://i.ytimg.com/vi/wX_y95OrHLQ/hqdefault.jpg">
-                                <span class="song">Starlight Traveler</span>
-                                <span class="author text-muted">D-D-Dice · aaaa</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="TQ8WlA2GXbk" data-img="https://i.ytimg.com/vi/TQ8WlA2GXbk/hqdefault.jpg">
-                                <span class="song">Pretender</span>
-                                <span class="author text-muted">OFFICIAL HIGE DANDISM</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="DuMqFknYHBs" data-img="https://i.ytimg.com/vi/DuMqFknYHBs/hqdefault.jpg">
-                                <span class="song">イエスタデイ - Yesterday</span>
-                                <span class="author text-muted">OFFICIAL HIGE DANDISM</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="EZy_vHyFedw" data-img="https://i.ytimg.com/vi/EZy_vHyFedw/hqdefault.jpg">
-                                <span class="song">ミックスナッツ - Mixed Nuts</span>
-                                <span class="author text-muted">OFFICIAL HIGE DANDISM</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="qvk4Rl7r2GY" data-img="https://i.ytimg.com/vi/qvk4Rl7r2GY/hqdefault.jpg">
-                                <span class="song">百花繚乱</span>
-                                <span class="author text-muted">幾田りら (Lilas Ikuta)</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="q4CbHfW3Ji8" data-img="https://i.ytimg.com/vi/q4CbHfW3Ji8/hqdefault.jpg">
-                                <span class="song">スパークル - Sparkle</span>
-                                <span class="author text-muted">幾田りら (Lilas Ikuta)</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="kerzepq4imY" data-img="https://i.ytimg.com/vi/kerzepq4imY/hqdefault.jpg">
-                                <span class="song">もしも明日が</span>
-                                <span class="author text-muted">Warabe (わらべ)</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="U4pM3yB9KtU" data-img="https://i.ytimg.com/vi/U4pM3yB9KtU/hqdefault.jpg">
-                                <span class="song">MUGEN</span>
-                                <span class="author text-muted">MY FIRST STORY</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="jg-uSq64Ru8" data-img="https://i.ytimg.com/vi/jg-uSq64Ru8/hqdefault.jpg">
-                                <span class="song">Omokage (produced by Vaundy)</span>
-                                <span class="author text-muted">milet · Aimer · Lilas Ikuta</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="OxiyIW2y1bg" data-img="https://i.ytimg.com/vi/OxiyIW2y1bg/hqdefault.jpg">
-                                <span class="song">Her Blue Sky</span>
-                                <span class="author text-muted">空の青さを知る人よ</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="zP2uM7_EV1I" data-img="https://i.ytimg.com/vi/zP2uM7_EV1I/hqdefault.jpg">
-                                <span class="song">カメレオン (Chameleon)</span>
-                                <span class="author text-muted">King Gnu</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="Auq8qj7uuF0" data-img="https://i.ytimg.com/vi/Auq8qj7uuF0/hqdefault.jpg">
-                                <span class="song">Shiori</span>
-                                <span class="author text-muted">SEKAI NO OWARI</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="12IZ8oyF6X4" data-img="https://i.ytimg.com/vi/12IZ8oyF6X4/hqdefault.jpg">
-                                <span class="song">Shuhasu</span>
-                                <span class="author text-muted">SEKAI NO OWARI</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="jTTuA0msOyg" data-img="https://i.ytimg.com/vi/jTTuA0msOyg/hqdefault.jpg">
-                                <span class="song">Present</span>
-                                <span class="author text-muted">SEKAI NO OWARI</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="gZFGA41Slh0" data-img="https://i.ytimg.com/vi/gZFGA41Slh0/hqdefault.jpg">
-                                <span class="song">Illumination</span>
-                                <span class="author text-muted">SEKAI NO OWARI</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="QlyW9kYHTDo" data-img="https://i.ytimg.com/vi/QlyW9kYHTDo/hqdefault.jpg">
-                                <span class="song">Time Machine</span>
-                                <span class="author text-muted">SEKAI NO OWARI</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="zOkIe3RcTCs" data-img="https://i.ytimg.com/vi/zOkIe3RcTCs/hqdefault.jpg">
-                                <span class="song">LADY</span>
-                                <span class="author text-muted">米津玄師 Kenshi Yonezu</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="Ci_zad39Uhw" data-img="https://i.ytimg.com/vi/Ci_zad39Uhw/hqdefault.jpg">
-                                <span class="song">粛聖!! ロリ神レクイエム☆</span>
-                                <span class="author text-muted">しぐれうい</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="eSW2LVbPThw" data-img="https://i.ytimg.com/vi/eSW2LVbPThw/hqdefault.jpg">
-                                <span class="song">Rabbit Hole feat. Hatsune Miku</span>
-                                <span class="author text-muted">DECO*27</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="uKxyLmbOc0Q" data-img="https://i.ytimg.com/vi/uKxyLmbOc0Q/hqdefault.jpg">
-                                <span class="song">Renai Circulation「恋愛サーキュレーション」</span>
-                                <span class="author text-muted">＊なみりん (*Namirin)</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="RWFW1OSlMkM" data-img="https://i.ytimg.com/vi/RWFW1OSlMkM/hqdefault.jpg">
-                                <span class="song">seisyun complex</span>
-                                <span class="author text-muted">kessoku band</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="YjrSkBjDVEw" data-img="https://i.ytimg.com/vi/YjrSkBjDVEw/hqdefault.jpg">
-                                <span class="song">Fukashigi no KARTE</span>
-                                <span class="author text-muted">Mai Sakurajima(CV:Asami Seto) · Tomoe Koga(CV:Nao Toyama) · Rio Futaba(CV:Atsumi Tanezaki) · Nodoka Toyohama(CV:Maaya Uchida) · Kaede Azusagawa(CV:Yurika Kubo) · Shoko Makinohara(CV:Inori Minase)</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="IRsobBUcvCs" data-img="https://i.ytimg.com/vi/IRsobBUcvCs/hqdefault.jpg">
-                                <span class="song">DROPS (feat. Such)</span>
-                                <span class="author text-muted">Zekk · poplavor · Such</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="XkNai2JPIK8" data-img="https://i.ytimg.com/vi/XkNai2JPIK8/hqdefault.jpg">
-                                <span class="song">導火</span>
-                                <span class="author text-muted">Tsukuyomi / YurryCanon</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="G96Qa5QoEfI" data-img="https://i.ytimg.com/vi/G96Qa5QoEfI/hqdefault.jpg">
-                                <span class="song">百花の約束 (feat. 夕凪夜)</span>
-                                <span class="author text-muted">駒木優 / relier (Yu Komaki · Yoru Younagi)</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="eF_wT8KwXlI" data-img="https://i.ytimg.com/vi/eF_wT8KwXlI/hqdefault.jpg">
-                                <span class="song">Psyched Fevereiro</span>
-                                <span class="author text-muted">t+pazolite</span>
-                            </li>
-
-
-
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="TIz4dItDGjM" data-img="https://i.ytimg.com/vi/TIz4dItDGjM/hqdefault.jpg">
-                                <span class="song">J0YR1D3</span>
-                                <span class="author text-muted">BABii · Iglooghost · Pholo · Daisy Emily Warne</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="95K19FUQlsM" data-img="https://i.ytimg.com/vi/95K19FUQlsM/hqdefault.jpg">
-                                <span class="song">MOONLIGHT</span>
-                                <span class="author text-muted">헨리 HENRY LAU</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="ekr2nIex040" data-img="https://i.ytimg.com/vi/ekr2nIex040/hqdefault.jpg">
-                                <span class="song">APT.</span>
-                                <span class="author text-muted">ROSÉ & Bruno Mars</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="hJqYc62NCKo" data-img="https://i.ytimg.com/vi/hJqYc62NCKo/hqdefault.jpg">
-                                <span class="song">We'll Meet Again</span>
-                                <span class="author text-muted">TheFatRat & Laura Brehm</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center" data-video="dpT-TeRYFvY" data-img="https://i.ytimg.com/vi/dpT-TeRYFvY/hqdefault.jpg">
-                                <span class="song">All For Love</span>
-                                <span class="author text-muted">Tungevaag · Raaban · Richard Smitt</span>
-                            </li>
+                            <!-- Songs will be dynamically loaded here by script.js -->
                         </ul>                        
+                    </div>
+                </div>
+                <!-- Add Song Section -->
+                <div class="card shadow-lg mt-4">
+                    <div class="card-body">
+                        <h5 class="card-title text-center fw-bold"><i class='bx bx-add-to-queue'></i> Add New Song</h5>
+                        <div class="mb-3">
+                            <input type="text" id="addVideoId" class="form-control" placeholder="YouTube Video ID (e.g., LgNT-a_ekC8)">
+                        </div>
+                        <div class="mb-3">
+                            <input type="text" id="addSongTitle" class="form-control" placeholder="Song Title">
+                        </div>
+                        <div class="mb-3">
+                            <input type="text" id="addAuthorName" class="form-control" placeholder="Author Name">
+                        </div>
+                        <div class="mb-3">
+                            <input type="text" id="addAlbumArtUrl" class="form-control" placeholder="Album Art URL (e.g., https://i.ytimg.com/vi/ID/hqdefault.jpg)">
+                        </div>
+                        <button id="addSongBtn" class="btn btn-primary w-100"><i class='bx bx-plus'></i> Add Song to Playlist</button>
+                        <p id="addSongError" class="text-danger mt-2 d-none">Please fill in all fields with valid information.</p>
                     </div>
                 </div>
             </div>
@@ -277,10 +129,10 @@
             <!-- GitHub Profile Card -->
             <div class="card dark" style="width: 16rem;">
                 <div class="card-body text-center">
-                    <img src="https://github.com/Jacob7179.png" alt="GitHub Profile" class="rounded-circle img-fluid" style="width: 100px; height: 100px; object-fit: cover;" draggable="false">
-                    <h5 class="card-title mt-2">Jacob7179</h5>
+                    <img src="https://github.com/Farwalker3.png" alt="GitHub Profile" class="rounded-circle img-fluid" style="width: 100px; height: 100px; object-fit: cover;" draggable="false">
+                    <h5 class="card-title mt-2">Farwalker3</h5>
                     <p class="card-text">Check out my GitHub profile for more projects.</p>
-                    <a href="https://github.com/Jacob7179" target="_blank" class="btn btn-dark-mode-toggle"><i class='bx bx-link-external'></i> Visit Profile</a>
+                    <a href="https://github.com/Farwalker3" target="_blank" class="btn btn-dark-mode-toggle"><i class='bx bx-link-external'></i> Visit Profile</a>
                 </div>
             </div>            
         
@@ -289,7 +141,7 @@
                 <div class="card-body text-center">
                     <h5 class="card-title">YouTube Music Player</h5>
                     <p class="card-text">Click the link below to visit the repository.</p>
-                    <a href="https://github.com/Jacob7179/YouTube-Music-Player-Web" target="_blank" class="btn btn-primary"><i class='bx bx-link-external'></i> Visit GitHub</a>
+                    <a href="https://github.com/Farwalker3/YouTube-Music-Player-Web" target="_blank" class="btn btn-primary"><i class='bx bx-link-external'></i> Visit GitHub</a>
                 </div>
             </div>
 
