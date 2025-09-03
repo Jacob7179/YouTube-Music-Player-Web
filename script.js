@@ -11,6 +11,11 @@ let darkModeToggleInProgress = false;
 // IMPORTANT: Replace with your actual YouTube Data API Key
 const YOUTUBE_API_KEY = 'YOUR_YOUTUBE_API_KEY'; 
 
+// CORS Proxy URL - Used to bypass CORS restrictions for YouTube API calls
+// You can change this if you find a more reliable proxy.
+// Example: https://corsproxy.io/?
+const CORS_PROXY_URL = 'https://corsproxy.io/?';
+
 let playlist = []; // Array to store playlist data
 
 // Define icon HTML as constants to prevent syntax issues
@@ -239,20 +244,20 @@ async function searchYouTube() {
     searchLoading.classList.remove('d-none'); // Show loading indicator
 
     try {
-        const response = await fetch(
-            `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchTerm)}&type=video&maxResults=10&key=${YOUTUBE_API_KEY}`
-        );
+        // Construct the URL for the YouTube API call
+        const youtubeApiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchTerm)}&type=video&maxResults=10&key=${YOUTUBE_API_KEY}`;
+        
+        // Prepend the CORS proxy URL to the YouTube API URL
+        const proxiedUrl = `${CORS_PROXY_URL}${encodeURIComponent(youtubeApiUrl)}`;
+
+        console.log("Fetching from proxied URL:", proxiedUrl);
+
+        const response = await fetch(proxiedUrl);
         
         if (!response.ok) {
-            const errorData = await response.json();
-            console.error('YouTube API Error:', errorData);
-            if (response.status === 403) {
-                searchError.textContent = 'YouTube API Error: Forbidden. Check your API key restrictions and CORS settings.';
-            } else if (response.status === 400) {
-                searchError.textContent = 'YouTube API Error: Bad Request. Check your API key and search parameters.';
-            } else {
-                searchError.textContent = `YouTube API Error: ${errorData.error.message || response.statusText}`; 
-            }
+            const errorText = await response.text(); // Get raw text for more info
+            console.error('YouTube API Error (via proxy):', response.status, response.statusText, errorText);
+            searchError.textContent = `YouTube API Error: ${response.statusText}. Please check your API key and network.`;
             searchError.classList.remove('d-none');
             searchLoading.classList.add('d-none');
             return;
@@ -305,7 +310,7 @@ async function searchYouTube() {
         }
 
     } catch (error) {
-        console.error('Error searching YouTube:', error);
+        console.error('Error searching YouTube (via proxy):', error);
         searchLoading.classList.add('d-none');
         searchError.textContent = 'An unexpected error occurred while searching YouTube. Please try again.';
         searchError.classList.remove('d-none');
@@ -360,14 +365,10 @@ window.onYouTubeIframeAPIReady = function() {
             rel: 0
         },
         events: {
-            'onReady': () => {
-                player.setVolume(100);
+            'onReady': (event) => {
+                event.target.setVolume(100);
                 updateVolumeUI(100);
-                // If there's a selected video, load its art and details
-                if (playlist.length > 0 && selectedVideoId) {
-                    const firstSong = playlist.find(s => s.videoId === selectedVideoId) || playlist[0];
-                    loadNewVideo(firstSong.videoId, firstSong.albumArt, firstSong);
-                }
+                event.target.playVideo();
             },
             'onStateChange': handlePlayerStateChange, 
             'onError': handleVideoError
@@ -669,8 +670,6 @@ window.onload = function () {
                 let albumArt = document.getElementById("albumArt");
                 if (albumArt) {
                     albumArt.setAttribute("src", absoluteUrl);
-                } else {
-                    console.error("Error: #albumArt element not found.");
                 }
             } else {
                 console.error("Invalid or unsafe image URL:", absoluteUrl);
