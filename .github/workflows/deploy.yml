@@ -34,26 +34,33 @@ jobs:
 
       - name: Replace API key in script.js
         run: |
-          # Check if the secret exists
+          echo "--- Debugging API Key Injection ---"
+          echo "Checking for YOUTUBE_API_KEY secret..."
           if [ -z "${{ secrets.YOUTUBE_API_KEY }}" ]; then
-            echo "⚠️ Warning: YOUTUBE_API_KEY secret not found. YouTube search will not work."
-            echo "Please add your YouTube Data API key to repository secrets."
+            echo "⚠️ Warning: YOUTUBE_API_KEY secret not found in repository secrets. YouTube search will not work."
+            echo "Please ensure it is added to Settings -> Secrets and variables -> Actions."
+            # Exit with success if API key is not critical for basic deployment, but warn
+            # For now, we'll let it proceed but the app will show the 'not configured' message.
           else
-            # Use a different delimiter (|) to avoid issues with forward slashes in API keys
-            # Also escape any special characters that might break sed
+            echo "✅ YOUTUBE_API_KEY secret found."
+            echo "Content of script.js BEFORE replacement:"
+            cat script.js | grep "YOUTUBE_API_KEY"
+
             API_KEY="${{ secrets.YOUTUBE_API_KEY }}"
-            # Use perl instead of sed for better handling of special characters
+            # Use perl for robust replacement and quote API_KEY for special characters
             perl -pi -e "s|YOUR_YOUTUBE_API_KEY|\Q$API_KEY\E|g" script.js
-            echo "✅ API key has been injected into script.js"
             
-            # Verify the replacement worked (without showing the actual key)
+            echo "Content of script.js AFTER replacement:"
+            cat script.js | grep "YOUTUBE_API_KEY"
+
             if grep -q "YOUR_YOUTUBE_API_KEY" script.js; then
-              echo "❌ Error: API key replacement failed"
+              echo "❌ Error: API key placeholder 'YOUR_YOUTUBE_API_KEY' is still present in script.js after replacement attempt."
               exit 1
             else
-              echo "✅ API key replacement verified"
+              echo "✅ API key replacement verified: Placeholder successfully replaced."
             fi
           fi
+          echo "-------------------------------------"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
