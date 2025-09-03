@@ -1,5 +1,5 @@
 # Deploy to GitHub Pages with API key injection
-name: Deploy to GitHub Pages
+name: Deploy YouTube Music Player to Pages
 
 on:
   # Runs on pushes targeting the default branch
@@ -32,16 +32,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
       - name: Replace API key in script.js
         run: |
-          # Replace the placeholder with the actual API key from secrets
-          sed -i "s/YOUR_YOUTUBE_API_KEY/${{ secrets.YOUTUBE_API_KEY }}/g" script.js
-          echo "API key has been injected into script.js"
+          # Check if the secret exists
+          if [ -z "${{ secrets.YOUTUBE_API_KEY }}" ]; then
+            echo "Warning: YOUTUBE_API_KEY secret not found. YouTube search will not work."
+            echo "Please add your YouTube Data API key to repository secrets."
+          else
+            # Replace the placeholder with the actual API key from secrets
+            sed -i "s/YOUR_YOUTUBE_API_KEY/${{ secrets.YOUTUBE_API_KEY }}/g" script.js
+            echo "✅ API key has been injected into script.js"
+          fi
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
