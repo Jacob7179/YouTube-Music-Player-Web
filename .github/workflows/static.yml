@@ -31,13 +31,34 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Inject YouTube API Key
+        run: |
+          echo "🔧 Injecting YouTube API Key..."
+          if [ -z "${{ secrets.YOUTUBE_API_KEY }}" ]; then
+            echo "⚠️ Warning: YOUTUBE_API_KEY secret not found. YouTube search will not work."
+          else
+            echo "✅ YOUTUBE_API_KEY secret found - injecting into script.js"
+            API_KEY="${{ secrets.YOUTUBE_API_KEY }}"
+            perl -pi -e "s|YOUR_YOUTUBE_API_KEY|\Q$API_KEY\E|g" script.js
+            
+            if grep -q "YOUR_YOUTUBE_API_KEY" script.js; then
+              echo "❌ API key injection failed"
+              exit 1
+            else
+              echo "✅ API key successfully injected"
+            fi
+          fi
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload entire repository
           path: '.'
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
