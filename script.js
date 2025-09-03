@@ -4,16 +4,250 @@ let songUnavailable = false;
 let progressInterval;
 let isDragging = false;
 let errorTimeout;
-let selectedVideoId = "LgNT-a_ekC8";
+let selectedVideoId;
 let countdownInterval;
 let darkModeToggleInProgress = false;
 
+let playlist = []; // Array to store playlist data
+
+// Load playlist from local storage or use a default if none exists
+function loadPlaylist() {
+    const storedPlaylist = localStorage.getItem('youtubeMusicPlaylist');
+    if (storedPlaylist) {
+        playlist = JSON.parse(storedPlaylist);
+    } else {
+        // Default playlist if local storage is empty
+        playlist = [
+            { videoId: 'LgNT-a_ekC8', songName: '无名的人', authorName: '毛不易', albumArt: 'https://i.ytimg.com/vi/LgNT-a_ekC8/hqdefault.jpg' },
+            { videoId: 'yBaYm7Ig7ZQ', songName: '点燃银河尽头的篝火', authorName: '华晨宇', albumArt: 'https://i.ytimg.com/vi/yBaYm7Ig7ZQ/hqdefault.jpg' },
+            { videoId: 'eSvnAyHFoyo', songName: '好想爱这个世界啊', authorName: '华晨宇', albumArt: 'https://i.ytimg.com/vi/eSvnAyHFoyo/hqdefault.jpg' },
+            { videoId: 'wmRkAWPuvCg', songName: '我管你', authorName: '华晨宇', albumArt: 'https://i.ytimg.com/vi/wmRkAWPuvCg/hqdefault.jpg' },
+            { videoId: 'Oewc0KgfQUU', songName: '贝加尔湖畔', authorName: '李健', albumArt: 'https://i.ytimg.com/vi/Oewc0KgfQUU/hqdefault.jpg' },
+            { videoId: 'Nk9ztUjikT0', songName: '风吹麦浪', authorName: '李健', albumArt: 'https://i.ytimg.com/vi/Nk9ztUjikT0/hqdefault.jpg' },
+            { videoId: 'N-RZKm29Qz8', songName: '浪人琵琶', authorName: '胡66', albumArt: 'https://i.ytimg.com/vi/N-RZKm29Qz8/hqdefault.jpg' },
+            { videoId: 'YPdRwoIZgVs', songName: '日落大道', authorName: '梁博', albumArt: 'https://i.ytimg.com/vi/YPdRwoIZgVs/hqdefault.jpg' },
+            { videoId: 'mrY8qdNHcRs', songName: '回不去的夏天', authorName: '夏日入侵企画', albumArt: 'https://i.ytimg.com/vi/mrY8qdNHcRs/hqdefault.jpg' },
+            { videoId: 'jS0rDCTyg-E', songName: '尘星', authorName: '夏日入侵企画', albumArt: 'https://i.ytimg.com/vi/jS0rDCTyg-E/hqdefault.jpg' },
+            { videoId: 'rQOIRBrY7h0', songName: '我們都擁有海洋 (嗶哩嗶哩2023畢業歌)', authorName: '吳青峰', albumArt: 'https://i.ytimg.com/vi/rQOIRBrY7h0/hqdefault.jpg' },
+            { videoId: 'wX_y95OrHLQ', songName: 'Starlight Traveler', authorName: 'D-D-Dice · aaaa', albumArt: 'https://i.ytimg.com/vi/wX_y95OrHLQ/hqdefault.jpg' },
+            { videoId: 'TQ8WlA2GXbk', songName: 'Pretender', authorName: 'OFFICIAL HIGE DANDISM', albumArt: 'https://i.ytimg.com/vi/TQ8WlA2GXbk/hqdefault.jpg' },
+            { videoId: 'DuMqFknYHBs', songName: 'イエスタデイ - Yesterday', authorName: 'OFFICIAL HIGE DANDISM', albumArt: 'https://i.ytimg.com/vi/DuMqFknYHBs/hqdefault.jpg' },
+            { videoId: 'EZy_vHyFedw', songName: 'ミックスナッツ - Mixed Nuts', authorName: 'OFFICIAL HIGE DANDISM', albumArt: 'https://i.ytimg.com/vi/EZy_vHyFedw/hqdefault.jpg' },
+            { videoId: 'qvk4Rl7r2GY', songName: '百花繚乱', authorName: '幾田りら (Lilas Ikuta)', albumArt: 'https://i.ytimg.com/vi/qvk4Rl7r2GY/hqdefault.jpg' },
+            { videoId: 'q4CbHfW3Ji8', songName: 'スパークル - Sparkle', authorName: '幾田りら (Lilas Ikuta)', albumArt: 'https://i.ytimg.com/vi/q4CbHfW3Ji8/hqdefault.jpg' },
+            { videoId: 'kerzepq4imY', songName: 'もしも明日が', authorName: 'Warabe (わらべ)', albumArt: 'https://i.ytimg.com/vi/kerzepq4imY/hqdefault.jpg' },
+            { videoId: 'U4pM3yB9KtU', songName: 'MUGEN', authorName: 'MY FIRST STORY', albumArt: 'https://i.ytimg.com/vi/U4pM3yB9KtU/hqdefault.jpg' },
+            { videoId: 'jg-uSq64Ru8', songName: 'Omokage (produced by Vaundy)', authorName: 'milet · Aimer · Lilas Ikuta', albumArt: 'https://i.ytimg.com/vi/jg-uSq64Ru8/hqdefault.jpg' },
+            { videoId: 'OxiyIW2y1bg', songName: 'Her Blue Sky', authorName: '空の青さを知る人よ', albumArt: 'https://i.ytimg.com/vi/OxiyIW2y1bg/hqdefault.jpg' },
+            { videoId: 'zP2uM7_EV1I', songName: 'カメレオン (Chameleon)', authorName: 'King Gnu', albumArt: 'https://i.ytimg.com/vi/zP2uM7_EV1I/hqdefault.jpg' },
+            { videoId: 'Auq8qj7uuF0', songName: 'Shiori', authorName: 'SEKAI NO OWARI', albumArt: 'https://i.ytimg.com/vi/Auq8qj7uuF0/hqdefault.jpg' },
+            { videoId: '12IZ8oyF6X4', songName: 'Shuhasu', authorName: 'SEKAI NO OWARI', albumArt: 'https://i.ytimg.com/vi/12IZ8oyF6X4/hqdefault.jpg' },
+            { videoId: 'jTTuA0msOyg', songName: 'Present', authorName: 'SEKAI NO OWARI', albumArt: 'https://i.ytimg.com/vi/jTTuA0msOyg/hqdefault.jpg' },
+            { videoId: 'gZFGA41Slh0', songName: 'Illumination', authorName: 'SEKAI NO OWARI', albumArt: 'https://i.ytimg.com/vi/gZFGA41Slh0/hqdefault.jpg' },
+            { videoId: 'QlyW9kYHTDo', songName: 'Time Machine', authorName: 'SEKAI NO OWARI', albumArt: 'https://i.ytimg.com/vi/QlyW9kYHTDo/hqdefault.jpg' },
+            { videoId: 'zOkIe3RcTCs', songName: 'LADY', authorName: '米津玄師 Kenshi Yonezu', albumArt: 'https://i.ytimg.com/vi/zOkIe3RcTCs/hqdefault.jpg' },
+            { videoId: 'Ci_zad39Uhw', songName: '粛聖!! ロリ神レクイエム☆', authorName: 'しぐれうい', albumArt: 'https://i.ytimg.com/vi/Ci_zad39Uhw/hqdefault.jpg' },
+            { videoId: 'eSW2LVbPThw', songName: 'Rabbit Hole feat. Hatsune Miku', authorName: 'DECO*27', albumArt: 'https://i.ytimg.com/vi/eSW2LVbPThw/hqdefault.jpg' },
+            { videoId: 'uKxyLmbOc0Q', songName: 'Renai Circulation「恋愛サーキュレーション」', authorName: '＊なみりん (*Namirin)', albumArt: 'https://i.ytimg.com/vi/uKxyLmbOc0Q/hqdefault.jpg' },
+            { videoId: 'RWFW1OSlMkM', songName: 'seisyun complex', authorName: 'kessoku band', albumArt: 'https://i.ytimg.com/vi/RWFW1OSlMkM/hqdefault.jpg' },
+            { videoId: 'YjrSkBjDVEw', songName: 'Fukashigi no KARTE', authorName: 'Mai Sakurajima(CV:Asami Seto) · Tomoe Koga(CV:Nao Toyama) · Rio Futaba(CV:Atsumi Tanezaki) · Nodoka Toyohama(CV:Maaya Uchida) · Kaede Azusagawa(CV:Yurika Kubo) · Shoko Makinohara(CV:Inori Minase)', albumArt: 'https://i.ytimg.com/vi/YjrSkBjDVEw/hqdefault.jpg' },
+            { videoId: 'IRsobBUcvCs', songName: 'DROPS (feat. Such)', authorName: 'Zekk · poplavor · Such', albumArt: 'https://i.ytimg.com/vi/IRsobBUcvCs/hqdefault.jpg' },
+            { videoId: 'XkNai2JPIK8', songName: '導火', authorName: 'Tsukuyomi / YurryCanon', albumArt: 'https://i.ytimg.com/vi/XkNai2JPIK8/hqdefault.jpg' },
+            { videoId: 'G96Qa5QoEfI', songName: '百花の約束 (feat. 夕凪夜)', authorName: '駒木優 / relier (Yu Komaki · Yoru Younagi)', albumArt: 'https://i.ytimg.com/vi/G96Qa5QoEfI/hqdefault.jpg' },
+            { videoId: 'eF_wT8KwXlI', songName: 'Psyched Fevereiro', authorName: 't+pazolite', albumArt: 'https://i.ytimg.com/vi/eF_wT8KwXlI/hqdefault.jpg' },
+            { videoId: 'TIz4dItDGjM', songName: 'J0YR1D3', authorName: 'BABii · Iglooghost · Pholo · Daisy Emily Warne', albumArt: 'https://i.ytimg.com/vi/TIz4dItDGjM/hqdefault.jpg' },
+            { videoId: '95K19FUQlsM', songName: 'MOONLIGHT', authorName: '헨리 HENRY LAU', albumArt: 'https://i.ytimg.com/vi/95K19FUQlsM/hqdefault.jpg' },
+            { videoId: 'ekr2nIex040', songName: 'APT.', authorName: 'ROSÉ & Bruno Mars', albumArt: 'https://i.ytimg.com/vi/ekr2nIex040/hqdefault.jpg' },
+            { videoId: 'hJqYc62NCKo', songName: 'We\'ll Meet Again', authorName: 'TheFatRat & Laura Brehm', albumArt: 'https://i.ytimg.com/vi/hJqYc62NCKo/hqdefault.jpg' },
+            { videoId: 'dpT-TeRYFvY', songName: 'All For Love', authorName: 'Tungevaag · Raaban · Richard Smitt', albumArt: 'https://i.ytimg.com/vi/dpT-TeRYFvY/hqdefault.jpg' },
+        ];
+    }
+    renderPlaylist(playlist);
+}
+
+function savePlaylist() {
+    localStorage.setItem('youtubeMusicPlaylist', JSON.stringify(playlist));
+}
+
+// Render playlist to the DOM
+function renderPlaylist(songsToRender) {
+    const songListElement = document.getElementById('songList');
+    songListElement.innerHTML = ''; // Clear existing list
+
+    if (songsToRender.length === 0) {
+        songListElement.innerHTML = '<li class="list-group-item text-center text-muted">No songs in playlist. Add some!</li>';
+        return;
+    }
+
+    songsToRender.forEach((song, index) => {
+        const listItem = document.createElement('li');
+        listItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+        listItem.setAttribute('data-video', song.videoId);
+        listItem.setAttribute('data-img', song.albumArt);
+
+        const songNumberSpan = document.createElement('span');
+        songNumberSpan.classList.add('song-number');
+        songNumberSpan.textContent = (index + 1) + ".\u00A0";
+
+        const songDetailsSpan = document.createElement('span');
+        songDetailsSpan.innerHTML = `<span class="song">${song.songName}</span>\n                                     <span class="author text-muted">${song.authorName}</span>`;
+
+        const removeButton = document.createElement('button');
+        removeButton.classList.add('btn', 'btn-danger', 'btn-sm', 'remove-song-btn');
+        removeButton.innerHTML = '<i class='bx bx-trash'></i>';
+        removeButton.setAttribute('data-video', song.videoId); // Identify song to remove
+
+        listItem.appendChild(songNumberSpan);
+        listItem.appendChild(songDetailsSpan);
+        listItem.appendChild(removeButton);
+
+        songListElement.appendChild(listItem);
+
+        // Add click listener to play song
+        songDetailsSpan.addEventListener('click', function () {
+            // Remove highlight from previous selection
+            document.querySelectorAll('#songList li').forEach(li => li.classList.remove('selected'));
+            // Highlight the clicked song
+            listItem.classList.add('selected');
+
+            loadNewVideo(song.videoId, song.albumArt, song);
+            listItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+
+        // Add click listener to remove song
+        removeButton.addEventListener('click', function (event) {
+            event.stopPropagation(); // Prevent playing the song when removing
+            removeSong(song.videoId);
+        });
+    });
+
+    // Reapply dark mode if enabled
+    if (document.body.classList.contains('dark-mode')) {
+        applyDarkModeToElements(true);
+    }
+
+    // Select the first song if none is selected and playlist is not empty
+    if (!document.querySelector('#songList li.selected') && songsToRender.length > 0) {
+        const firstSongElement = document.querySelector('#songList li');
+        if (firstSongElement) {
+            firstSongElement.classList.add('selected');
+            const firstVideoId = firstSongElement.getAttribute('data-video');
+            const firstAlbumArtUrl = firstSongElement.getAttribute('data-img');
+            // Only load if player is not already playing this song
+            if (player && player.getVideoData().video_id !== firstVideoId) {
+                loadNewVideo(firstVideoId, firstAlbumArtUrl, songsToRender[0]);
+            } else if (!player) {
+                // Initialize player if not already done
+                selectedVideoId = firstVideoId;
+                onYouTubeIframeAPIReady();
+            }
+        }
+    }
+}
+
+// Add song functionality
+document.getElementById('addSongBtn').addEventListener('click', function () {
+    const videoIdInput = document.getElementById('addVideoId');
+    const songTitleInput = document.getElementById('addSongTitle');
+    const authorNameInput = document.getElementById('addAuthorName');
+    const albumArtUrlInput = document.getElementById('addAlbumArtUrl');
+    const addSongError = document.getElementById('addSongError');
+
+    const videoId = videoIdInput.value.trim();
+    const songTitle = songTitleInput.value.trim();
+    const authorName = authorNameInput.value.trim();
+    const albumArt = albumArtUrlInput.value.trim();
+
+    if (!videoId || !songTitle || !authorName || !albumArt) {
+        addSongError.classList.remove('d-none');
+        return;
+    }
+
+    if (!isValidImageUrl(albumArt)) {
+        addSongError.textContent = 'Please enter a valid image URL for album art.';
+        addSongError.classList.remove('d-none');
+        return;
+    }
+
+    // Check if song already exists
+    const songExists = playlist.some(song => song.videoId === videoId);
+    if (songExists) {
+        addSongError.textContent = 'This song is already in the playlist!';
+        addSongError.classList.remove('d-none');
+        return;
+    }
+
+    addSongError.classList.add('d-none'); // Hide error if successful
+
+    const newSong = { videoId, songName: songTitle, authorName, albumArt };
+    playlist.push(newSong);
+    savePlaylist();
+    renderPlaylist(playlist);
+
+    // Clear inputs
+    videoIdInput.value = '';
+    songTitleInput.value = '';
+    authorNameInput.value = '';
+    albumArtUrlInput.value = '';
+});
+
+// Remove song functionality
+function removeSong(videoIdToRemove) {
+    const currentPlayingVideoId = player ? player.getVideoData().video_id : null;
+    const wasPlayingCurrent = currentPlayingVideoId === videoIdToRemove && playing;
+
+    playlist = playlist.filter(song => song.videoId !== videoIdToRemove);
+    savePlaylist();
+    renderPlaylist(playlist);
+
+    // If the removed song was the currently playing one
+    if (wasPlayingCurrent) {
+        if (playlist.length > 0) {
+            // Play the next song in the updated playlist
+            playNextSong();
+        } else {
+            // If playlist is empty, stop playback and reset UI
+            player.stopVideo();
+            playing = false;
+            document.getElementById('playPauseBtn').innerHTML = '<i class='bx bx-play' style='color: white; font-size: 24px;'></i>';
+            document.getElementById('albumArt').src = 'https://via.placeholder.com/300';
+            document.getElementById('nowPlaying .song-title').innerText = 'No Song';
+            document.getElementById('nowPlaying .author-name').innerText = '';
+            document.getElementById('progress').style.width = '0%';
+            document.getElementById('currentTime').innerText = '0:00';
+            document.getElementById('totalTime').innerText = '0:00';
+            document.getElementById('background').style.backgroundImage = 'none';
+            clearInterval(progressInterval);
+        }
+    }
+}
+
+// Search functionality
+document.getElementById('searchSongInput').addEventListener('input', function () {
+    const searchTerm = this.value.toLowerCase();
+    const filteredSongs = playlist.filter(song =>
+        song.songName.toLowerCase().includes(searchTerm) ||
+        song.authorName.toLowerCase().includes(searchTerm)
+    );
+    renderPlaylist(filteredSongs);
+});
+
+document.getElementById('clearSearchBtn').addEventListener('click', function () {
+    document.getElementById('searchSongInput').value = '';
+    renderPlaylist(playlist);
+});
+
 // Set default song name and author to the first song
-let firstSongElement = document.querySelector("#songList li");
-let lastSong = firstSongElement ? firstSongElement.querySelector(".song").innerText : "";
-let lastAuthor = firstSongElement ? firstSongElement.querySelector(".author").innerText : "";
+let lastSong = '';
+let lastAuthor = '';
 
 function onYouTubeIframeAPIReady() {
+    if (playlist.length > 0) {
+        selectedVideoId = playlist[0].videoId;
+    } else {
+        selectedVideoId = ''; // No default video if playlist is empty
+    }
+
     player = new YT.Player('player', {
         videoId: selectedVideoId,
         playerVars: {
@@ -27,6 +261,11 @@ function onYouTubeIframeAPIReady() {
             'onReady': () => {
                 player.setVolume(100);
                 updateVolumeUI(100);
+                // If there's a selected video, load its art and details
+                if (playlist.length > 0 && selectedVideoId) {
+                    const firstSong = playlist.find(s => s.videoId === selectedVideoId) || playlist[0];
+                    loadNewVideo(firstSong.videoId, firstSong.albumArt, firstSong);
+                }
             },
             'onStateChange': handlePlayerStateChange, 
             'onError': handleVideoError
@@ -82,12 +321,12 @@ function resetErrorState() {
         errorMsg.style.display = "none"; // Hide error message
         errorMsg.innerHTML = ""; // Clear message content
         }
-}        
+}
 
 // Attach reset function to song change event
 document.getElementById("songList").addEventListener("click", resetErrorState); // Example event listener
 
-function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
+function loadNewVideo(videoId, albumArtUrl, songObject = null) {
     let albumArt = document.getElementById("albumArt");
     albumArt.style.transition = "opacity 0.5s ease-in-out";
     albumArt.style.opacity = "0";
@@ -100,12 +339,15 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
             albumArt.setAttribute("src", albumArtUrl);
         } else {
             console.error("Invalid or unsafe albumArtUrl:", albumArtUrl);
+            albumArt.setAttribute("src", "https://via.placeholder.com/300"); // Fallback
         }
 
         albumArt.onload = () => {
             setTimeout(() => {
                 albumArt.style.opacity = "1";
-                albumArt.classList.add("rotate");
+                if (playing) {
+                    albumArt.classList.add("rotate");
+                }
             }, 500);
         };
     }, 500);
@@ -115,11 +357,11 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
     let songTitleElem = document.querySelector("#nowPlaying .song-title");
     let authorNameElem = document.querySelector("#nowPlaying .author-name");
 
-    if (selectedSong) {
-        let songName = selectedSong.querySelector(".song").innerText;
-        let authorName = selectedSong.querySelector(".author").innerText;
+    if (songObject) {
+        let songName = songObject.songName;
+        let authorName = songObject.authorName;
 
-        if (songName !== lastSong) {  // 只在歌曲名变化时才执行动画
+        if (songName !== lastSong) {  // Only animate if song name changes
             songTitleElem.style.transition = "opacity 0.5s ease-in-out";
             songTitleElem.style.opacity = "0";
             setTimeout(() => {
@@ -129,7 +371,7 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
             lastSong = songName;
         }
         
-        if (authorName !== lastAuthor) { // 只在作者名变化时才执行动画
+        if (authorName !== lastAuthor) { // Only animate if author name changes
             authorNameElem.style.transition = "opacity 0.5s ease-in-out";
             authorNameElem.style.opacity = "0";
             setTimeout(() => {
@@ -152,13 +394,18 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
         document.getElementById("playerContainer").innerHTML = `<div id="player"></div>`;
         onYouTubeIframeAPIReady();
         setTimeout(() => {
-            player.loadVideoById(videoId);
-            player.playVideo();
+            if (player && player.loadVideoById) {
+                player.loadVideoById(videoId);
+                player.playVideo();
+            }
         }, 1000);
     } else {
         player.loadVideoById(videoId);
         player.playVideo();
     }
+
+    // Update selectedVideoId
+    selectedVideoId = videoId;
 
     // ✅ Reset progress bar and timer
     document.getElementById("progress").style.width = "0%";
@@ -171,27 +418,6 @@ function loadNewVideo(videoId, albumArtUrl, selectedSong = null) {
     // ✅ Start tracking progress
     updateProgressBar();
 }
-
-// Handle song list selection (Click to Play)
-document.querySelectorAll("#songList li").forEach(item => {
-    item.addEventListener("click", function () {
-        // ✅ Remove highlight from previous selection
-        document.querySelectorAll("#songList li").forEach(li => li.classList.remove("selected"));
-
-        // ✅ Highlight the clicked song
-        this.classList.add("selected");
-
-        // ✅ Get video details
-        let videoId = this.getAttribute("data-video");
-        let albumArtUrl = this.getAttribute("data-img");
-
-        // ✅ Load new video with animation
-        loadNewVideo(videoId, albumArtUrl, this);
-
-        // ✅ Ensure the progress bar updates for the new song
-        updateProgressBar();
-    });
-});
 
 function updateBackgroundImage(imageUrl) {
     let background = document.getElementById("background");
@@ -213,29 +439,9 @@ function updateBackgroundImage(imageUrl) {
     }, 500); // Match fade-out duration
 }
 
-// Apply background change when clicking a song
-document.querySelectorAll("#songList li").forEach((item, index) => {
-    // Add numbering
-    let numberSpan = document.createElement("span");
-    numberSpan.classList.add("song-number");
-    numberSpan.textContent = (index + 1) + ".\u00A0"; 
-    item.prepend(numberSpan);
-
-    // Handle song selection
-    item.addEventListener("click", function () {
-        let videoId = this.getAttribute("data-video");
-        let albumArtUrl = this.getAttribute("data-img");
-
-        loadNewVideo(videoId, albumArtUrl, this);
-    });
-});
-
-// Set default selected song on page load
-//
 function isValidImageUrl(url) {
     try {
         let parsed = new URL(url);
-        console.log("Checking image URL:", parsed.href);
 
         // ✅ Allow only HTTP(S) URLs
         if (!["http:", "https:"].includes(parsed.protocol)) {
@@ -266,20 +472,18 @@ function getAbsoluteUrl(url) {
 document.addEventListener("DOMContentLoaded", function () {
     document.body.style.opacity = "1";
 
-    let firstSong = document.querySelector("#songList li");
+    loadPlaylist(); // Load and render playlist on startup
+
+    let firstSong = document.querySelector('#songList li.selected');
 
     if (firstSong) {
-        document.querySelectorAll("#songList li").forEach(li => li.classList.remove("selected"));
-        firstSong.classList.add("selected");
-
         let firstImage = firstSong.getAttribute("data-img");
         let firstSongName = firstSong.querySelector(".song").innerText;
         let firstAuthorName = firstSong.querySelector(".author").innerText;
 
         if (firstImage) {
             let absoluteImageUrl = getAbsoluteUrl(firstImage);
-            console.log("Resolved Image URL:", absoluteImageUrl);
-
+            
             let albumArt = document.getElementById("albumArt");
             let background = document.getElementById("background");
 
@@ -299,7 +503,6 @@ document.addEventListener("DOMContentLoaded", function () {
         document.querySelector("#nowPlaying .author-name").innerText = firstAuthorName;
     }
 });
-//     
 
 document.addEventListener("DOMContentLoaded", function () {
     const volumeControl = document.getElementById("volumeControl");
@@ -333,15 +536,10 @@ document.addEventListener("DOMContentLoaded", function () {
     updateVolumeUI(volumeControl.value);
 });
 
-// Set default selected song
-document.querySelector("#songList li").classList.add("selected");        
-
 window.onload = function () {
-    let firstSong = document.querySelector("#songList li");
+    let firstSong = document.querySelector('#songList li.selected');
     
     if (firstSong) {
-        firstSong.classList.add("selected");
-
         let albumArtUrl = firstSong.getAttribute("data-img");
 
         if (albumArtUrl) {
@@ -390,45 +588,55 @@ document.getElementById("playPauseBtn").addEventListener("click", function () {
         }
         playing = !playing;
     }
-});        
+});
 
 document.getElementById("prevBtn").addEventListener("click", playPreviousSong);
 document.getElementById("nextBtn").addEventListener("click", playNextSong);
 
 function playPreviousSong() {
     let songItems = document.querySelectorAll("#songList li");
-    let currentSong = document.querySelector("#songList li.selected");
+    if (songItems.length === 0) return; // No songs to play
 
-    let currentIndex = Array.from(songItems).indexOf(currentSong);
+    let currentSongElement = document.querySelector("#songList li.selected");
+    let currentIndex = Array.from(songItems).indexOf(currentSongElement);
+
     let prevIndex = (currentIndex - 1 + songItems.length) % songItems.length;
 
-    let prevSong = songItems[prevIndex];
-    prevSong.classList.add("selected");
-    currentSong.classList.remove("selected");
+    let prevSongElement = songItems[prevIndex];
+    if (currentSongElement) {
+        currentSongElement.classList.remove("selected");
+    }
+    prevSongElement.classList.add("selected");
 
-    let prevVideoId = prevSong.getAttribute("data-video");
-    let prevAlbumArtUrl = prevSong.getAttribute("data-img");
+    let prevVideoId = prevSongElement.getAttribute("data-video");
+    let prevAlbumArtUrl = prevSongElement.getAttribute("data-img");
+    const prevSongObject = playlist.find(s => s.videoId === prevVideoId);
 
-    loadNewVideo(prevVideoId, prevAlbumArtUrl, prevSong);
-    prevSong.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    loadNewVideo(prevVideoId, prevAlbumArtUrl, prevSongObject);
+    prevSongElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function playNextSong() {
     let songItems = document.querySelectorAll("#songList li");
-    let currentSong = document.querySelector("#songList li.selected");
+    if (songItems.length === 0) return; // No songs to play
 
-    let currentIndex = Array.from(songItems).indexOf(currentSong);
+    let currentSongElement = document.querySelector("#songList li.selected");
+    let currentIndex = Array.from(songItems).indexOf(currentSongElement);
+
     let nextIndex = (currentIndex + 1) % songItems.length;
 
-    let nextSong = songItems[nextIndex];
-    nextSong.classList.add("selected");
-    currentSong.classList.remove("selected");
+    let nextSongElement = songItems[nextIndex];
+    if (currentSongElement) {
+        currentSongElement.classList.remove("selected");
+    }
+    nextSongElement.classList.add("selected");
 
-    let nextVideoId = nextSong.getAttribute("data-video");
-    let nextAlbumArtUrl = nextSong.getAttribute("data-img");
+    let nextVideoId = nextSongElement.getAttribute("data-video");
+    let nextAlbumArtUrl = nextSongElement.getAttribute("data-img");
+    const nextSongObject = playlist.find(s => s.videoId === nextVideoId);
 
-    loadNewVideo(nextVideoId, nextAlbumArtUrl, nextSong);
-    nextSong.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    loadNewVideo(nextVideoId, nextAlbumArtUrl, nextSongObject);
+    nextSongElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function updateProgressBar() {
@@ -462,13 +670,13 @@ function updateProgressBar() {
             }
         }
     }, 1000);
-}        
+}
 
 function formatTime(seconds) {
     let mins = Math.floor(seconds / 60);
     let secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-}        
+}
 
 const progressBar = document.getElementById("progressBar");
 const progress = document.getElementById("progress");
@@ -522,16 +730,17 @@ document.addEventListener("touchend", function() {
 function seek(event) {
     let barWidth = progressBar.offsetWidth;
     let clickPosition = event.clientX - progressBar.getBoundingClientRect().left;
-    let seekTime = (clickPosition / barWidth) * player.getDuration();
+    let duration = player.getDuration();
+    let seekTime = (clickPosition / barWidth) * duration;
 
-    if (player) {
+    if (player && duration > 0) {
         player.seekTo(seekTime, true);
 
         if (!wasPlaying) {
             player.pauseVideo(); // Prevent auto-play if the user was just seeking
         }
 
-        let progressPercent = (seekTime / player.getDuration()) * 100;
+        let progressPercent = (seekTime / duration) * 100;
         progress.style.width = progressPercent + "%";
     }
 }
@@ -599,7 +808,8 @@ volumeBar.addEventListener("touchend", function () {
 function adjustVolume(event) {
     let bar = document.querySelector(".volume-bar-container");
     let barWidth = bar.offsetWidth;
-    let touchX = event.clientX - bar.getBoundingClientRect().left;
+    let clientX = event.clientX || event.touches[0].clientX; // Handle both mouse and touch events
+    let touchX = clientX - bar.getBoundingClientRect().left;
     let newVolume = Math.max(0, Math.min(100, (touchX / barWidth) * 100));
 
     volumeBar.value = newVolume;
