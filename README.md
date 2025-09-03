@@ -21,12 +21,13 @@ This forked version includes additional features:
 - **❌ Remove Songs**: Delete songs from your playlist with a simple click
 - **🔎 Playlist Search**: Filter your existing playlist to find songs quickly
 - **🎨 Enhanced UI**: Improved user interface with better organization and attribution
+- **🔐 Secure API Key Management**: Uses GitHub Secrets for secure API key storage
 
 ## 🚀 Setup Instructions
 
-### YouTube Search Functionality
+### YouTube Search Functionality (GitHub Secrets Method - Recommended)
 
-To enable the YouTube search feature, you need to obtain a YouTube Data API key:
+For secure API key management, this project uses GitHub Secrets:
 
 1. **Get a YouTube Data API Key**:
    - Go to the [Google Cloud Console](https://console.cloud.google.com/)
@@ -35,15 +36,35 @@ To enable the YouTube search feature, you need to obtain a YouTube Data API key:
    - Create credentials (API key)
    - Restrict the API key to YouTube Data API v3 for security
 
-2. **Add Your API Key**:
-   - Open `script.js`
-   - Find the line: `const YOUTUBE_API_KEY = 'YOUR_YOUTUBE_API_KEY';`
-   - Replace `'YOUR_YOUTUBE_API_KEY'` with your actual API key
+2. **Add Your API Key to GitHub Secrets**:
+   - Go to your repository on GitHub
+   - Click on **Settings** → **Secrets and variables** → **Actions**
+   - Click **New repository secret**
+   - Name: `YOUTUBE_API_KEY`
+   - Value: Your actual YouTube Data API key
+   - Click **Add secret**
 
-3. **API Usage Limits**:
-   - The YouTube Data API has daily quotas
-   - Each search request consumes quota units
-   - For personal use, the free tier should be sufficient
+3. **Deploy**:
+   - The GitHub Actions workflow will automatically inject your API key during deployment
+   - Push any changes to the `main` branch to trigger a new deployment
+   - Your API key remains secure and is never exposed in your code
+
+### Alternative: Local Development Setup
+
+For local development, you can still manually add the API key:
+
+1. **Clone the repository locally**
+2. **Open `script.js`**
+3. **Find the line**: `const YOUTUBE_API_KEY = 'YOUR_YOUTUBE_API_KEY';`
+4. **Replace** `'YOUR_YOUTUBE_API_KEY'` with your actual API key
+5. **Important**: Never commit this change to prevent exposing your API key
+
+### API Usage Information
+
+- **Daily Quotas**: The YouTube Data API has daily quotas
+- **Search Requests**: Each search consumes quota units
+- **Free Tier**: Should be sufficient for personal use
+- **Rate Limiting**: The app includes error handling for API limits
 
 ### Without API Key
 
@@ -62,12 +83,29 @@ If you don't want to set up the YouTube API, you can still:
 6. **Controls**: Use play/pause, next/previous, volume, and repeat controls
 7. **Dark Mode**: Toggle dark mode for better viewing experience
 
+## 🔧 GitHub Actions Workflow
+
+This project uses GitHub Actions to:
+- **Securely inject** the YouTube API key from GitHub Secrets
+- **Automatically deploy** to GitHub Pages on every push to main
+- **Keep your API key safe** by never exposing it in the repository
+
+The workflow file is located at `.github/workflows/deploy.yml`.
+
 ## 📁 Project Structure
 
 - `index.html` - Main application interface
 - `script.js` - Core functionality and YouTube integration
 - `style.css` - Styling and animations
+- `.github/workflows/deploy.yml` - GitHub Actions deployment workflow
 - `README.md` - This documentation
+
+## 🔐 Security Features
+
+- **GitHub Secrets**: API keys are stored securely in GitHub Secrets
+- **No Key Exposure**: API keys are never committed to the repository
+- **Automatic Injection**: Keys are injected during deployment only
+- **Restricted API Keys**: Recommended to restrict API keys to specific services
 
 ## 🤝 Attribution
 
@@ -93,9 +131,14 @@ If you encounter any issues or have suggestions for improvements:
 
 To run this project locally:
 1. Clone the repository
-2. Set up your YouTube Data API key (optional, for search functionality)
+2. Set up your YouTube Data API key (see setup instructions above)
 3. Open `index.html` in a web browser
 4. The app works entirely client-side, no server required
+
+For production deployment:
+1. Set up the `YOUTUBE_API_KEY` secret in your GitHub repository
+2. Push to the `main` branch
+3. GitHub Actions will handle the rest!
 
 ---
 
