@@ -118,7 +118,7 @@ The workflow file is located at `.github/workflows/deploy.yml`.
 [![License](https://img.shields.io/github/license/Jacob7179/YouTube-Music-Player-Web?logo=github&style=for-the-badge)](LICENSE)
 
 ## 🌐 Website
-[![Website](https://img.shields.io/badge/Website-Visit-blue?style=for-the-badge&logo=internet-explorer)](https://farwalker3.github.io/YouTube-Music-Player-Web/)
+[![Website](https://img.shields.io/badge/Website-Visit-blue?style=for-the-badge&logo=internet-explorer)](https://jacob7179.github.io/YouTube-Music-Player-Web/)
 
 ## 🐛 Issues & Contributions
 
