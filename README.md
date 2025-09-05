@@ -6,6 +6,10 @@
 > [!NOTE]
 > **The project was developed using HTML, CSS, JavaScript language and [YouTube Iframe Player API](https://developers.google.com/youtube/iframe_api_reference).**
 
+## Screenshots
+![Alt text](resource/image/1.png)
+![Alt text](resource/image/2.png)
+
 ## Information
 
 This project is a **YouTube Music Player Web Application** that allows users to stream and control YouTube videos as an interactive music player. It features a custom playlist, enabling users to select and play songs seamlessly. The app includes auto-play, repeat mode, and volume control, along with a progress bar for tracking playback. Additionally, a dark mode toggle enhances user experience. The interface is styled using Bootstrap and custom CSS animations, while JavaScript manages the YouTube IFrame API for video playback. The app also dynamically updates the background image based on the selected song, creating a visually engaging experience.
