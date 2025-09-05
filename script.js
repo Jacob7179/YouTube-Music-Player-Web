@@ -92,7 +92,7 @@ function renderPlaylist(songsToRender) {
     songListElement.innerHTML = ''; // Clear existing list
 
     if (songsToRender.length === 0) {
-        songListElement.innerHTML = '<li class="list-group-item text-center text-muted">No songs in playlist. Add some using the YouTube search below!</li>';
+        songListElement.innerHTML = `<li class="list-group-item text-center text-muted">No songs in playlist. Add some using the YouTube search below!</li>`;
         return;
     }
 
@@ -150,11 +150,16 @@ function renderPlaylist(songsToRender) {
             firstSongElement.classList.add('selected');
             const firstVideoId = firstSongElement.getAttribute('data-video');
             const firstAlbumArtUrl = firstSongElement.getAttribute('data-img');
-            // Only load if player is not already playing this song
-            if (player && player.getVideoData().video_id !== firstVideoId) {
-                loadNewVideo(firstVideoId, firstAlbumArtUrl, songsToRender[0]);
-            } else if (!player) {
-                // Initialize player if not already done
+            const firstSongObj = songsToRender[0];
+
+            // ✅ Immediately update UI without autoplay
+            document.getElementById("albumArt").src = firstAlbumArtUrl;
+            document.getElementById("background").style.backgroundImage = `url('${firstAlbumArtUrl}')`;
+            document.querySelector("#nowPlaying .song-title").innerText = firstSongObj.songName;
+            document.querySelector("#nowPlaying .author-name").innerText = firstSongObj.authorName;
+
+            // Only prepare player, don’t autoplay
+            if (!player) {
                 selectedVideoId = firstVideoId;
                 onYouTubeIframeAPIReady();
             }
@@ -339,6 +344,11 @@ function addSongFromSearch(event) {
     renderPlaylist(playlist);
     alert(`${songTitle} by ${authorName} added to your playlist!`);
 
+    // ✅ If playlist was empty before, autoplay the new song
+    if (playlist.length === 1) {
+        loadNewVideo(videoId, albumArt, newSong);
+    }
+
     // Optional: Hide search results or clear search input after adding
     // document.getElementById('youtubeSearchInput').value = '';
     // document.getElementById('searchResults').classList.add('d-none');
@@ -370,7 +380,7 @@ window.onYouTubeIframeAPIReady = function() {
             'onReady': (event) => {
                 event.target.setVolume(100);
                 updateVolumeUI(100);
-                event.target.playVideo();
+                //event.target.playVideo();
             },
             'onStateChange': handlePlayerStateChange, 
             'onError': handleVideoError

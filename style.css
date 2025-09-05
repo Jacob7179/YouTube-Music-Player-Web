@@ -567,6 +567,25 @@ body.dark-mode .author-name {
     color: #bbb !important; /* Lighter text for dark mode */
 }
 
+/* Dark mode support for empty playlist and footer */
+body.dark-mode .text-muted {
+    color: #aaa !important; /* brighter gray for readability */
+}
+
+body.dark-mode .list-group-item.text-muted {
+    background-color: transparent !important;
+    border: none !important;
+    color: #aaa !important;
+}
+
+body.dark-mode .text-muted a {
+    color: #bbb !important;  /* links lighter gray */
+}
+
+body.dark-mode .text-muted a:hover {
+    color: #fff !important;  /* hover = white */
+}
+
 .volume-container {
     display: flex;
     align-items: center;
