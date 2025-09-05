@@ -494,7 +494,7 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
                 authorNameElem.style.opacity = "1";
             }, 500);
             lastAuthor = authorName;
-        }        
+        }
     }
 
     clearTimeout(errorTimeout);
