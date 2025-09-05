@@ -163,14 +163,39 @@ body.dark-mode .btn-dark-mode-toggle:hover {
     justify-content: center;
     align-items: center;
     width: 100%;
+    max-width: 250px; /* Maximum size */
+    margin: 0 auto; /* Center the container */
 }
 
 #albumArt {
-    width: 250px;
-    height: 250px;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1/1; /* Maintain square aspect ratio */
     object-fit: cover;
     border-radius: 50%;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    max-width: 250px; /* Maximum size */
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    .album-art-container {
+        max-width: 200px; /* Smaller on mobile */
+    }
+    
+    #albumArt {
+        max-width: 200px; /* Smaller on mobile */
+    }
+}
+
+@media (max-width: 576px) {
+    .album-art-container {
+        max-width: 150px; /* Even smaller on very small screens */
+    }
+    
+    #albumArt {
+        max-width: 150px; /* Even smaller on very small screens */
+    }
 }
 
 /* 🎵 Controls */
@@ -179,18 +204,19 @@ body.dark-mode .btn-dark-mode-toggle:hover {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    flex-wrap: nowrap;
 }        
 
 /* Play/Pause Button */
 #playPauseBtn, #prevBtn, #nextBtn {
-    width: 70px;
-    height: 70px;
+    width: 60px;
+    height: 60px;
     border: none;
     border-radius: 50%;
     background: #007bff;
     color: white;
-    font-size: 26px;
+    font-size: 22px;
     font-weight: bold;
     cursor: pointer;
     display: flex;
@@ -199,6 +225,109 @@ body.dark-mode .btn-dark-mode-toggle:hover {
     transition: background 0.3s, transform 0.1s;
     padding: 10px;
     line-height: 1; /* Ensures vertical centering */
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* Auto-play and Repeat controls container */
+.d-flex.justify-content-between.align-items-center.mt-3 {
+    flex-wrap: wrap; /* Allow wrapping on small screens */
+    gap: 15px;
+    justify-content: space-between !important;
+}
+
+/* Auto-play toggle - always on left side */
+.auto-play-toggle {
+    order: 1; /* Force to left side */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Repeat button section - always on right side */
+.d-flex.align-items-center.gap-2 {
+    order: 2; /* Force to right side */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Default layout - items in row */
+.auto-play-toggle,
+.d-flex.align-items-center.gap-2 {
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+
+/* Text labels */
+.auto-play-toggle span,
+.d-flex.align-items-center.gap-2 span {
+    font-size: 12px;
+    white-space: nowrap;
+    text-align: center;
+    line-height: 1.2;
+}
+
+/* Switch and button styling */
+.switch {
+    margin-bottom: 2px;
+}
+
+#repeatBtn {
+    margin-bottom: 2px;
+}
+
+/* For larger screens - switch to horizontal layout */
+@media (min-width: 1025px) {
+    .auto-play-toggle,
+    .d-flex.align-items-center.gap-2 {
+        flex-direction: row;
+        gap: 10px;
+    }
+    
+    .auto-play-toggle span,
+    .d-flex.align-items-center.gap-2 span {
+        font-size: 14px;
+    }
+}
+
+/* For medium screens - keep text below but adjust spacing */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .auto-play-toggle,
+    .d-flex.align-items-center.gap-2 {
+        gap: 3px;
+    }
+    
+    .auto-play-toggle span,
+    .d-flex.align-items-center.gap-2 span {
+        font-size: 11px;
+    }
+}
+
+/* For very small screens - make text even smaller */
+@media (max-width: 400px) {
+    .auto-play-toggle span,
+    .d-flex.align-items-center.gap-2 span {
+        font-size: 10px;
+    }
+}
+
+/* Responsive adjustments for medium screens */
+@media (max-width: 992px) {
+    .auto-play-toggle span,
+    .d-flex.align-items-center.gap-2 span {
+        font-size: 13px;
+    }
+}
+
+
+/* Ensure text doesn't overflow */
+.song-title, .author-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 
 #playPauseBtn:active, #prevBtn:active, #nextBtn:active {
@@ -221,7 +350,7 @@ body.dark-mode .btn-dark-mode-toggle:hover {
 }
 
 .progress {
-    width: 90%;
+    width: 95%;
     height: 6px;
     background: #ddd;
     border-radius: 5px;
@@ -238,8 +367,8 @@ body.dark-mode .btn-dark-mode-toggle:hover {
 .time-display {
     display: flex;
     justify-content: space-between;
-    width: 90%;
-    font-size: 14px;
+    width: 95%;
+    font-size: 12px;
     margin-top: 2px; /* Reduce space between progress bar and time */
 }
 
@@ -462,13 +591,13 @@ select {
 /* 🎵 Repeat Button */
 /* Add scale animation effect */
 #repeatBtn {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
     border: none;
     border-radius: 50%;
     background: #ccc;
     color: white;
-    font-size: 20px;
+    font-size: 18px;
     cursor: pointer;
     transition: background 0.3s, transform 0.1s; /* Smooth animation */
     display: flex;
