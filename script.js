@@ -320,7 +320,7 @@ async function searchYouTube() {
                             <h6 class="mb-1">${title}</h6>
                             <p class="mb-0 text-muted"><small>${channelTitle}</small></p>
                         </div>
-                        <button class="btn btn-success btn-sm add-from-search-btn" 
+                        <button class="btn btn-success btn-sm add-from-search-btn" title="Add to Playlist"
                                 data-video-id="${videoId}" 
                                 data-song-title="${title.replace(/"/g, '&quot;')}" 
                                 data-author-name="${channelTitle.replace(/"/g, '&quot;')}" 
