@@ -1254,8 +1254,15 @@ document.addEventListener("DOMContentLoaded", function() {
 // Export playlist function
 function exportPlaylist() {
     try {
-        // Get current playlist
-        const playlistData = JSON.stringify(playlist, null, 2);
+        // Get current playlist and dark mode status
+        const exportData = {
+            playlist: playlist,
+            darkMode: localStorage.getItem("darkMode") === "enabled",
+            exportDate: new Date().toISOString(),
+            version: "1.0"
+        };
+        
+        const playlistData = JSON.stringify(exportData, null, 2);
         
         // Create a blob and download link
         const blob = new Blob([playlistData], { type: 'application/json' });
@@ -1278,7 +1285,7 @@ function exportPlaylist() {
             URL.revokeObjectURL(url);
         }, 100);
         
-        console.log("Playlist exported successfully");
+        console.log("Playlist exported successfully with dark mode status");
     } catch (error) {
         console.error("Error exporting playlist:", error);
         alert("Error exporting playlist. Please try again.");
@@ -1291,22 +1298,25 @@ function importPlaylist(file) {
     
     reader.onload = function(e) {
         try {
-            const importedPlaylist = JSON.parse(e.target.result);
+            const importedData = JSON.parse(e.target.result);
             
-            // Validate the imported playlist structure
-            if (!Array.isArray(importedPlaylist)) {
-                throw new Error("Invalid playlist format: Expected an array");
+            // Handle both old format (array) and new format (object with playlist property)
+            let importedPlaylist;
+            let importDarkMode = false;
+            
+            if (Array.isArray(importedData)) {
+                // Old format - just the playlist array
+                importedPlaylist = importedData;
+            } else if (importedData.playlist && Array.isArray(importedData.playlist)) {
+                // New format - object with playlist and darkMode properties
+                importedPlaylist = importedData.playlist;
+                importDarkMode = importedData.darkMode === true;
+            } else {
+                throw new Error("Invalid playlist format");
             }
             
-            // Check if each item has the required properties
-            const isValid = importedPlaylist.every(item => {
-                return item && 
-                       typeof item.videoId === 'string' && 
-                       typeof item.songName === 'string' && 
-                       typeof item.authorName === 'string';
-            });
-            
-            if (!isValid) {
+            // Validate the imported playlist structure
+            if (!validatePlaylist(importedPlaylist)) {
                 throw new Error("Invalid playlist format: Missing required fields");
             }
             
@@ -1317,10 +1327,23 @@ function importPlaylist(file) {
                 savePlaylist();
                 renderPlaylist(playlist);
                 
+                // Apply dark mode if included in export
+                if (importDarkMode) {
+                    document.body.classList.add("dark-mode");
+                    localStorage.setItem("darkMode", "enabled");
+                    document.getElementById("darkModeToggle").innerHTML = "Disable";
+                    applyDarkModeToElements(true);
+                } else {
+                    document.body.classList.remove("dark-mode");
+                    localStorage.setItem("darkMode", "disabled");
+                    document.getElementById("darkModeToggle").innerHTML = "Enable";
+                    applyDarkModeToElements(false);
+                }
+                
                 // Play the first song if playlist was empty before
                 if (playlist.length > 0 && (!player || !playing)) {
                     const firstSong = playlist[0];
-                    loadNewVideo(firstSong.videoId, firstSong.albumArt, firstSong);
+                    //loadNewVideo(firstSong.videoId, firstSong.albumArt, firstSong);
                 }
                 
                 alert(`Successfully imported ${importedPlaylist.length} songs!`);
@@ -1352,6 +1375,13 @@ function validatePlaylist(playlistData) {
     if (!Array.isArray(playlistData)) return false;
     
     return playlistData.every(isValidPlaylistItem);
+}
+
+if (importDarkMode !== undefined) {
+    const darkModeStatus = importDarkMode ? "enabled" : "disabled";
+    alert(`Successfully imported ${importedPlaylist.length} songs! Dark mode was ${darkModeStatus} in the imported file.`);
+} else {
+    alert(`Successfully imported ${importedPlaylist.length} songs!`);
 }
 
 // Scroll to Top functionality
