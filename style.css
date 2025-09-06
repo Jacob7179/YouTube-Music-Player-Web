@@ -900,3 +900,97 @@ body.dark-mode .text-muted a:hover {
 .rotate-paused {
     animation-play-state: paused;
 }
+
+/* Floating Settings Button */
+.floating-settings {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.settings-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.settings-btn:hover {
+    transform: rotate(45deg);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+}
+
+.settings-menu {
+    position: absolute;
+    bottom: 70px;
+    right: 0;
+    background: white;
+    border-radius: 10px;
+    padding: 0;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    width: 200px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+}
+
+.settings-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.settings-header h6 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.settings-close-btn {
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+}
+
+.settings-body {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.settings-body .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+/* Dark mode support for settings menu */
+body.dark-mode .settings-menu {
+    background: #222;
+    border: 1px solid #444;
+}
+
+body.dark-mode .settings-header {
+    border-bottom: 1px solid #444;
+}
+
+body.dark-mode .settings-header h6 {
+    color: white;
+}
+
+body.dark-mode .settings-close-btn {
+    filter: invert(1);
+}

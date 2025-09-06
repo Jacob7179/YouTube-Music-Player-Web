@@ -114,13 +114,6 @@
                             <button class="btn btn-primary" type="button" id="youtubeSearchBtn" title="Search YouTube"><i class='bx bx-search'></i> Search</button>
                         </div>
 
-                        <!-- Add this cache clearing button -->
-                        <div class="d-flex justify-content-end mb-3">
-                            <button id="clearCacheBtn" class="btn btn-warning btn-sm" title="Clear Search Cache">
-                                <i class='bx bx-trash'></i> Clear Search Cache
-                            </button>
-                        </div>
-
                         <!-- Search Results -->
                         <div id="searchResults" class="d-none">
                             <h6 class="fw-bold mb-3">Search Results:</h6>
@@ -210,6 +203,31 @@
                     <button onclick="window.location.href='/YouTube-Music-Player-Web/alpha/'" class="btn btn-secondary w-100" title="View Alpha Test Project">View Alpha Test Project</button>
                 </div>
             </div>
+        </div>
+
+        <div class="floating-settings">
+            <button id="settingsBtn" class="btn btn-primary rounded-circle settings-btn">
+                <i class='bx bx-cog'></i>
+            </button>
+            <div id="settingsMenu" class="settings-menu">
+                <div class="settings-header">
+                    <h6>Settings</h6>
+                    <button class="btn-close settings-close-btn"></button>
+                </div>
+                <div class="settings-body">
+                    <button id="settingsExportBtn" class="btn btn-info btn-sm w-100 mb-2">
+                <i class='bx bx-export'></i> Export Playlist
+            </button>
+            <button id="settingsImportBtn" class="btn btn-success btn-sm w-100 mb-2">
+                <i class='bx bx-import'></i> Import Playlist
+            </button>
+                    <button id="settingsClearCacheBtn" class="btn btn-warning btn-sm w-100 mb-2" title="Clear Search Cache">
+                        <i class='bx bx-trash'></i> Clear Search Cache
+                    </button>
+                </div>
+            </div>
+            <!-- Hidden file input for import -->
+            <input type="file" id="importFileInput" accept=".json" style="display: none;">
         </div>
 
         <!-- Attribution Footer -->

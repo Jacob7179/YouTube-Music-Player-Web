@@ -1182,14 +1182,174 @@ document.addEventListener("dragstart", function(event) {
     event.preventDefault();
 });
 
-// Add cache clearing button functionality
-document.getElementById('clearCacheBtn').addEventListener('click', function() {
-    if (confirm('Are you sure you want to clear the search cache? This will remove all saved search results.')) {
-        localStorage.removeItem('ytSearchCache');
-        for (const key in searchCache) {
-            delete searchCache[key];
+// Floating settings button functionality
+document.addEventListener("DOMContentLoaded", function() {
+    const settingsBtn = document.getElementById("settingsBtn");
+    const settingsMenu = document.getElementById("settingsMenu");
+    const settingsExportBtn = document.getElementById("settingsExportBtn");
+    const settingsImportBtn = document.getElementById("settingsImportBtn");
+    const settingsClearCacheBtn = document.getElementById("settingsClearCacheBtn");
+    const settingsCloseBtn = document.querySelector(".settings-close-btn");
+    const importFileInput = document.getElementById("importFileInput");
+    
+    // Toggle settings menu with animation
+    settingsBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        settingsMenu.classList.toggle("show");
+    });
+    
+    // Close menu when close button is clicked
+    settingsCloseBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        settingsMenu.classList.remove("show");
+    });
+    
+    // Export playlist functionality
+    settingsExportBtn.addEventListener("click", function() {
+        exportPlaylist();
+        settingsMenu.classList.remove("show");
+    });
+    
+    // Import playlist functionality
+    settingsImportBtn.addEventListener("click", function() {
+        importFileInput.click();
+        settingsMenu.classList.remove("show");
+    });
+    
+    // Handle file selection for import
+    importFileInput.addEventListener("change", function(e) {
+        if (e.target.files.length > 0) {
+            importPlaylist(e.target.files[0]);
         }
-        alert('Search cache cleared! New searches will fetch fresh results.');
-        console.log("Search cache cleared! New searches will fetch fresh results.");
-    }
+    });
+    
+    // Clear cache functionality
+    settingsClearCacheBtn.addEventListener("click", function() {
+        if (confirm('Are you sure you want to clear the search cache? This will remove all saved search results.')) {
+            localStorage.removeItem('ytSearchCache');
+            for (const key in searchCache) {
+                delete searchCache[key];
+            }
+            alert('Search cache cleared! New searches will fetch fresh results.');
+            console.log("Search cache cleared! New searches will fetch fresh results.");
+            settingsMenu.classList.remove("show");
+        }
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener("click", function(event) {
+        if (!event.target.closest(".floating-settings") && settingsMenu.classList.contains("show")) {
+            settingsMenu.classList.remove("show");
+        }
+    });
+    
+    // Also close with Escape key
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape" && settingsMenu.classList.contains("show")) {
+            settingsMenu.classList.remove("show");
+        }
+    });
 });
+
+// Export playlist function
+function exportPlaylist() {
+    try {
+        // Get current playlist
+        const playlistData = JSON.stringify(playlist, null, 2);
+        
+        // Create a blob and download link
+        const blob = new Blob([playlistData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        // Create download link
+        const a = document.createElement('a');
+        const date = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `youtube-music-playlist-${date}.json`;
+        a.style.display = 'none';
+        
+        // Trigger download
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+        
+        console.log("Playlist exported successfully");
+    } catch (error) {
+        console.error("Error exporting playlist:", error);
+        alert("Error exporting playlist. Please try again.");
+    }
+}
+
+// Import playlist function
+function importPlaylist(file) {
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            const importedPlaylist = JSON.parse(e.target.result);
+            
+            // Validate the imported playlist structure
+            if (!Array.isArray(importedPlaylist)) {
+                throw new Error("Invalid playlist format: Expected an array");
+            }
+            
+            // Check if each item has the required properties
+            const isValid = importedPlaylist.every(item => {
+                return item && 
+                       typeof item.videoId === 'string' && 
+                       typeof item.songName === 'string' && 
+                       typeof item.authorName === 'string';
+            });
+            
+            if (!isValid) {
+                throw new Error("Invalid playlist format: Missing required fields");
+            }
+            
+            // Confirm replacement
+            if (confirm(`Import ${importedPlaylist.length} songs? This will replace your current playlist.`)) {
+                // Replace current playlist
+                playlist = importedPlaylist;
+                savePlaylist();
+                renderPlaylist(playlist);
+                
+                // Play the first song if playlist was empty before
+                if (playlist.length > 0 && (!player || !playing)) {
+                    const firstSong = playlist[0];
+                    loadNewVideo(firstSong.videoId, firstSong.albumArt, firstSong);
+                }
+                
+                alert(`Successfully imported ${importedPlaylist.length} songs!`);
+            }
+        } catch (error) {
+            console.error("Error importing playlist:", error);
+            alert("Error importing playlist: " + error.message);
+        }
+    };
+    
+    reader.onerror = function() {
+        alert("Error reading file. Please try again.");
+    };
+    
+    reader.readAsText(file);
+}
+
+// Add these helper functions to validate playlist structure
+function isValidPlaylistItem(item) {
+    return item && 
+           typeof item === 'object' &&
+           typeof item.videoId === 'string' &&
+           typeof item.songName === 'string' &&
+           typeof item.authorName === 'string' &&
+           (typeof item.albumArt === 'string' || item.albumArt === undefined);
+}
+
+function validatePlaylist(playlistData) {
+    if (!Array.isArray(playlistData)) return false;
+    
+    return playlistData.every(isValidPlaylistItem);
+}
