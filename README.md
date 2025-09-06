@@ -9,23 +9,13 @@
 ## Screenshots
 ![Alt text](resource/image/1.png)
 ![Alt text](resource/image/2.png)
+![Alt text](resource/image/3.png)
 
 ## Information
 
 This project is a **YouTube Music Player Web Application** that allows users to stream and control YouTube videos as an interactive music player. It features a custom playlist, enabling users to select and play songs seamlessly. The app includes auto-play, repeat mode, and volume control, along with a progress bar for tracking playback. Additionally, a dark mode toggle enhances user experience. The interface is styled using Bootstrap and custom CSS animations, while JavaScript manages the YouTube IFrame API for video playback. The app also dynamically updates the background image based on the selected song, creating a visually engaging experience.
 
 The player in this project is created using the **YouTube IFrame API**, which allows embedding and controlling YouTube videos through JavaScript.
-
-## ✨ Enhanced Features (Fork)
-
-This forked version includes additional features:
-
-- **🔍 YouTube Search**: Search all of YouTube directly from the app and add songs to your playlist
-- **💾 Persistent Playlist**: Your playlist is saved in browser storage and persists across sessions
-- **❌ Remove Songs**: Delete songs from your playlist with a simple click
-- **🔎 Playlist Search**: Filter your existing playlist to find songs quickly
-- **🎨 Enhanced UI**: Improved user interface with better organization and attribution
-- **🔐 Secure API Key Management**: Uses GitHub Secrets for secure API key storage
 
 ## 🚀 Setup Instructions
 
@@ -82,10 +72,16 @@ If you don't want to set up the YouTube API, you can still:
 1. **Playing Songs**: Click on any song in your playlist to play it
 2. **Search YouTube**: Use the search bar to find new songs on YouTube
 3. **Add Songs**: Click the "Add" button next to search results to add them to your playlist
-4. **Remove Songs**: Click the trash icon next to songs in your playlist to remove them
-5. **Search Playlist**: Use the playlist search bar to filter your existing songs
-6. **Controls**: Use play/pause, next/previous, volume, and repeat controls
-7. **Dark Mode**: Toggle dark mode for better viewing experience
+4. **Persistent Playlist**: Your playlist is saved in browser storage and persists across sessions
+5. **Remove Songs**: Click the trash icon next to songs in your playlist to remove them
+6. **Search Playlist**: Use the playlist search bar to filter your existing songs
+7. **Controls**: Use play/pause, next/previous, volume, and repeat controls
+8. **Dark Mode**: Toggle dark mode for better viewing experience
+9. **Secure API Key Management**: Uses GitHub Secrets for secure API key storage
+10. **Optimized Search**: Searched result will store in browser storage (No need to waste Quota for same results)
+11. **Import Playlist**: Import playlist with JSON files
+12. **Export Playlist**: Export playlist as JSON files
+13. **Delete Search Cache**: Delete search cache from browser storage
 
 ## 🔧 GitHub Actions Workflow
 
