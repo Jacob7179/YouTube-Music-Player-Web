@@ -1353,3 +1353,34 @@ function validatePlaylist(playlistData) {
     
     return playlistData.every(isValidPlaylistItem);
 }
+
+// Scroll to Top functionality
+function initScrollToTop() {
+    const goTopBtn = document.getElementById('goTopBtn');
+    const floatingTop = document.querySelector('.floating-top');
+    const scrollThreshold = 300; // Show button after scrolling 300px
+    
+    if (!goTopBtn) return;
+    
+    // Scroll event listener
+    window.addEventListener('scroll', function() {
+        if (window.pageYOffset > scrollThreshold) {
+            floatingTop.classList.add('visible');
+        } else {
+            floatingTop.classList.remove('visible');
+        }
+    });
+    
+    // Click event listener
+    goTopBtn.addEventListener('click', function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initScrollToTop();
+});
