@@ -8,7 +8,7 @@ let selectedVideoId;
 let countdownInterval;
 let darkModeToggleInProgress = false;
 
-// YOUTUBE_API_KEY is now loaded from config.js
+// YOUTUBE_API_KEY is now loaded from config.js 
 
 // Search Cache to minimize API calls for repeated searches
 const searchCache = JSON.parse(localStorage.getItem('ytSearchCache') || '{}');
