@@ -111,7 +111,14 @@
                         <!-- YouTube Search Bar -->
                         <div class="input-group mb-3">
                             <input type="text" id="youtubeSearchInput" class="form-control" placeholder="Search YouTube for songs to add...">
-                            <button class="btn btn-primary" type="button" id="youtubeSearchBtn"><i class='bx bx-search'></i> Search</button>
+                            <button class="btn btn-primary" type="button" id="youtubeSearchBtn" title="Search YouTube"><i class='bx bx-search'></i> Search</button>
+                        </div>
+
+                        <!-- Add this cache clearing button -->
+                        <div class="d-flex justify-content-end mb-3">
+                            <button id="clearCacheBtn" class="btn btn-warning btn-sm" title="Clear Search Cache">
+                                <i class='bx bx-trash'></i> Clear Search Cache
+                            </button>
                         </div>
 
                         <!-- Search Results -->
@@ -146,8 +153,8 @@
                     <img src="https://github.com/Jacob7179.png" alt="Original Creator" class="rounded-circle img-fluid" style="width: 100px; height: 100px; object-fit: cover;" draggable="false">
                     <h5 class="card-title mt-2">Jacob7179</h5>
                     <p class="card-text">Original creator of this YouTube Music Player project.</p>
-                    <a href="https://github.com/Jacob7179" target="_blank" class="btn btn-dark-mode-toggle"><i class='bx bx-link-external'></i> Original Creator</a>
-                    <a href="https://github.com/Jacob7179/YouTube-Music-Player-Web" target="_blank" class="btn btn-primary" style="margin-top: 10px;"><i class='bx bx-link-external'></i> Visit Repository</a>
+                    <a href="https://github.com/Jacob7179" target="_blank" class="btn btn-dark-mode-toggle" title="Visit Original Creator's Profile"><i class='bx bx-link-external'></i> Original Creator</a>
+                    <a href="https://github.com/Jacob7179/YouTube-Music-Player-Web" target="_blank" class="btn btn-primary" style="margin-top: 10px;" title="Visit Original Repository"><i class='bx bx-link-external'></i> Visit Repository</a>
                 </div>
             </div>
 
@@ -157,8 +164,8 @@
                     <img src="https://github.com/Farwalker3.png" alt="Fork Maintainer" class="rounded-circle img-fluid" style="width: 100px; height: 100px; object-fit: cover;" draggable="false">
                     <h5 class="card-title mt-2">Farwalker3</h5>
                     <p class="card-text">Maintainer of this forked version with enhanced features.</p>
-                    <a href="https://github.com/Farwalker3" target="_blank" class="btn btn-dark-mode-toggle"><i class='bx bx-link-external'></i> Fork Maintainer</a>
-                    <a href="https://github.com/Farwalker3/YouTube-Music-Player-Web" target="_blank" class="btn btn-primary" style="margin-top: 10px;"><i class='bx bx-link-external'></i> Visit Repository</a>
+                    <a href="https://github.com/Farwalker3" target="_blank" class="btn btn-dark-mode-toggle" title="Visit Fork Maintainer's Profile"><i class='bx bx-link-external'></i> Fork Maintainer</a>
+                    <a href="https://github.com/Farwalker3/YouTube-Music-Player-Web" target="_blank" class="btn btn-primary" style="margin-top: 10px;" title="Visit Forked Repository"><i class='bx bx-link-external'></i> Visit Repository</a>
                 </div>
             </div>
 
@@ -174,7 +181,7 @@
             
             <div class="card shadow-lg" style="width: 16rem;">
                 <div class="card-body text-center">
-                    <h5 class="card-title fw-bold"><i class='bx bxs-moon' ></i> Dark Mode</h5>
+                    <h5 class="card-title fw-bold"><i class='bx bxs-moon'></i> Dark Mode</h5>
                     <button id="darkModeToggle" class="btn btn-dark">Enable</button>
                     </div>
                 </div>
@@ -193,14 +200,14 @@
             <div class="card shadow-lg" style="width: 16rem;">
                 <div class="card-body text-center">
                     <h5 class="card-title fw-bold"><i class='bx bxs-file'></i> Read Excel Files Methods</h5>
-                    <button onclick="window.location.href='/YouTube-Music-Player-Web/beta/'" class="btn btn-primary w-100">View Beta Test Project</button>
+                    <button onclick="window.location.href='/YouTube-Music-Player-Web/beta/'" class="btn btn-primary w-100" title="View Beta Test Project">View Beta Test Project</button>
                 </div>
             </div>
             
             <div class="card shadow-lg" style="width: 16rem;">
                 <div class="card-body text-center">
                     <h5 class="card-title fw-bold"><i class='bx bxs-key'></i> Read API Keys Methods</h5>
-                    <button onclick="window.location.href='/YouTube-Music-Player-Web/alpha/'" class="btn btn-secondary w-100">View Alpha Test Project</button>
+                    <button onclick="window.location.href='/YouTube-Music-Player-Web/alpha/'" class="btn btn-secondary w-100" title="View Alpha Test Project">View Alpha Test Project</button>
                 </div>
             </div>
         </div>

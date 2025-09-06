@@ -10,6 +10,11 @@ let darkModeToggleInProgress = false;
 
 // YOUTUBE_API_KEY is now loaded from config.js
 
+// Search Cache to minimize API calls for repeated searches
+const searchCache = JSON.parse(localStorage.getItem('ytSearchCache') || '{}');
+const CACHE_EXPIRY = 3600000; // 1 hour in milliseconds
+let searchTimeout;
+
 // CORS Proxy URL - Used to bypass CORS restrictions for YouTube API calls
 // You can change this if you find a more reliable proxy.
 // Example: https://corsproxy.io/?
@@ -113,6 +118,7 @@ function renderPlaylist(songsToRender) {
         removeButton.classList.add('btn', 'btn-danger', 'btn-sm', 'remove-song-btn');
         removeButton.innerHTML = ICON_TRASH; // Use constant
         removeButton.setAttribute('data-video', song.videoId); // Identify song to remove
+        removeButton.setAttribute('title', 'Remove Song'); // Add tooltip text
 
         listItem.appendChild(songNumberSpan);
         listItem.appendChild(songDetailsSpan);
@@ -215,8 +221,20 @@ document.getElementById('clearPlaylistSearchBtn').addEventListener('click', func
 
 // YouTube Search Functionality
 document.getElementById('youtubeSearchBtn').addEventListener('click', searchYouTube);
+// Add debouncing to search input
+document.getElementById('youtubeSearchInput').addEventListener('input', function(event) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        if (this.value.trim().length > 2) { // Only search after 3+ characters
+            searchYouTube();
+        }
+    }, 500); // Wait 500ms after typing stops
+});
+
+// Keep the Enter key functionality
 document.getElementById('youtubeSearchInput').addEventListener('keypress', function(event) {
     if (event.key === 'Enter') {
+        clearTimeout(searchTimeout);
         searchYouTube();
     }
 });
@@ -237,6 +255,14 @@ async function searchYouTube() {
     searchResultsContainer.classList.add('d-none'); // Hide results container initially
 
     if (!searchTerm) {
+        return;
+    }
+
+    // Check cache first
+    const cachedResults = getCachedResults(searchTerm);
+    if (cachedResults) {
+        console.log("Using cached results for:", searchTerm);
+        displaySearchResults(cachedResults);
         return;
     }
 
@@ -271,6 +297,9 @@ async function searchYouTube() {
         }
 
         const data = await response.json();
+
+        // Cache the results
+        cacheSearchResults(searchTerm, data);
 
         searchLoading.classList.add('d-none'); // Hide loading indicator
         searchResultsContainer.classList.remove('d-none'); // Show results container
@@ -323,6 +352,91 @@ async function searchYouTube() {
         searchError.classList.remove('d-none');
     }
 }
+
+// Add these helper functions for caching after the searchYouTube function
+function cacheSearchResults(term, results) {
+    searchCache[term] = {
+        results: results,
+        timestamp: Date.now()
+    };
+    localStorage.setItem('ytSearchCache', JSON.stringify(searchCache));
+}
+
+function getCachedResults(term) {
+    const cached = searchCache[term];
+    // Return if cached and less than 1 hour old
+    if (cached && (Date.now() - cached.timestamp < CACHE_EXPIRY)) {
+        return cached.results;
+    }
+    return null;
+}
+
+function displaySearchResults(data) {
+    const searchResultsList = document.getElementById('searchResultsList');
+    const searchResultsContainer = document.getElementById('searchResults');
+    
+    searchResultsContainer.classList.remove('d-none');
+
+    if (data.items && data.items.length > 0) {
+        data.items.forEach(item => {
+            if (item.id.videoId) {
+                const videoId = item.id.videoId;
+                const title = item.snippet.title;
+                const channelTitle = item.snippet.channelTitle;
+                const thumbnailUrl = item.snippet.thumbnails.high.url;
+
+                const resultItem = document.createElement('div');
+                resultItem.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'align-items-center', 'mb-2', 'rounded');
+                resultItem.innerHTML = `
+                    <img src="${thumbnailUrl}" alt="${title}" class="me-3 rounded" style="width: 80px; height: 45px; object-fit: cover;">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${title}</h6>
+                        <p class="mb-0 text-muted"><small>${channelTitle}</small></p>
+                    </div>
+                    <button class="btn btn-success btn-sm add-from-search-btn" 
+                            data-video-id="${videoId}" 
+                            data-song-title="${title.replace(/"/g, '&quot;')}" 
+                            data-author-name="${channelTitle.replace(/"/g, '&quot;')}" 
+                            data-album-art="${thumbnailUrl}">
+                        ${ICON_PLUS} Add
+                    </button>
+                `;
+                searchResultsList.appendChild(resultItem);
+            }
+        });
+        
+        document.querySelectorAll('.add-from-search-btn').forEach(button => {
+            button.addEventListener('click', addSongFromSearch);
+        });
+
+        if (document.body.classList.contains('dark-mode')) {
+            applyDarkModeToElements(true);
+        }
+
+    } else {
+        searchResultsList.innerHTML = '<p class="text-center text-muted">No results found.</p>';
+    }
+}
+
+// Add cache clearing functionality
+function clearExpiredCache() {
+    let hasChanges = false;
+    const now = Date.now();
+    
+    for (const term in searchCache) {
+        if (now - searchCache[term].timestamp > CACHE_EXPIRY) {
+            delete searchCache[term];
+            hasChanges = true;
+        }
+    }
+    
+    if (hasChanges) {
+        localStorage.setItem('ytSearchCache', JSON.stringify(searchCache));
+    }
+}
+
+// Call this on startup
+clearExpiredCache();
 
 function addSongFromSearch(event) {
     const button = event.currentTarget;
@@ -1066,4 +1180,16 @@ document.addEventListener("selectstart", function(event) {
 // Prevent dragging of elements
 document.addEventListener("dragstart", function(event) {
     event.preventDefault();
+});
+
+// Add cache clearing button functionality
+document.getElementById('clearCacheBtn').addEventListener('click', function() {
+    if (confirm('Are you sure you want to clear the search cache? This will remove all saved search results.')) {
+        localStorage.removeItem('ytSearchCache');
+        for (const key in searchCache) {
+            delete searchCache[key];
+        }
+        alert('Search cache cleared! New searches will fetch fresh results.');
+        console.log("Search cache cleared! New searches will fetch fresh results.");
+    }
 });
