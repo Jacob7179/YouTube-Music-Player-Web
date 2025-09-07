@@ -1346,7 +1346,12 @@ function importPlaylist(file) {
                     //loadNewVideo(firstSong.videoId, firstSong.albumArt, firstSong);
                 }
                 
-                alert(`Successfully imported ${importedPlaylist.length} songs!`);
+                if (importDarkMode !== undefined) {
+                const darkModeStatus = importDarkMode ? "enabled" : "disabled";
+                alert(`Successfully imported ${importedPlaylist.length} songs! Dark mode was ${darkModeStatus} in the imported file.`);
+                } else {
+                    alert(`Successfully imported ${importedPlaylist.length} songs!`);
+                }
             }
         } catch (error) {
             console.error("Error importing playlist:", error);
@@ -1375,13 +1380,6 @@ function validatePlaylist(playlistData) {
     if (!Array.isArray(playlistData)) return false;
     
     return playlistData.every(isValidPlaylistItem);
-}
-
-if (importDarkMode !== undefined) {
-    const darkModeStatus = importDarkMode ? "enabled" : "disabled";
-    alert(`Successfully imported ${importedPlaylist.length} songs! Dark mode was ${darkModeStatus} in the imported file.`);
-} else {
-    alert(`Successfully imported ${importedPlaylist.length} songs!`);
 }
 
 // Scroll to Top functionality
