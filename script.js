@@ -543,6 +543,7 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
             setTimeout(() => {
                 albumArt.style.opacity = "1";
                 if (playing && albumArtSpinEnabled) {
+                    albumArt.classList.remove("rotate-paused");
                     albumArt.classList.add("rotate");
                 } else {
                     albumArt.classList.remove("rotate", "rotate-paused");
@@ -772,6 +773,7 @@ function applyAlbumArtSpinSetting() {
     if (!albumArtSpinEnabled) {
         albumArt.classList.remove("rotate", "rotate-paused");
     } else if (playing) {
+        albumArt.classList.remove("rotate-paused");
         albumArt.classList.add("rotate");
     }
 }
