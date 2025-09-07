@@ -79,9 +79,10 @@ If you don't want to set up the YouTube API, you can still:
 8. **Dark Mode**: Toggle dark mode for better viewing experience
 9. **Secure API Key Management**: Uses GitHub Secrets for secure API key storage
 10. **Optimized Search**: Searched result will store in browser storage (No need to waste Quota for same results)
-11. **Import Playlist & Data**: Import playlist and data (Dark mode settings) with JSON files
-12. **Export Playlist & Data**: Export playlist and data (Dark mode settings) as JSON files
-13. **Delete Search Cache**: Delete search cache from browser storage
+11. **Import Playlist & Data**: Import playlist and data (Dark mode & Album Art spin settings) with JSON files
+12. **Export Playlist & Data**: Export playlist and data (Dark mode & Album Art spin settings) as JSON files
+13. **Album Art Spin Toggle**: Toggle Album Art Spin option to enable or disable album art spinning
+14. **Delete Search Cache**: Delete search cache from browser storage
 
 ## 🔧 GitHub Actions Workflow
 

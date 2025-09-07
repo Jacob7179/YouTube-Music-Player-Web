@@ -7,6 +7,7 @@ let errorTimeout;
 let selectedVideoId;
 let countdownInterval;
 let darkModeToggleInProgress = false;
+let albumArtSpinEnabled = JSON.parse(localStorage.getItem("albumArtSpin")) ?? true;
 
 // YOUTUBE_API_KEY is now loaded from config.js 
 
@@ -541,8 +542,10 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
         albumArt.onload = () => {
             setTimeout(() => {
                 albumArt.style.opacity = "1";
-                if (playing) {
+                if (playing && albumArtSpinEnabled) {
                     albumArt.classList.add("rotate");
+                } else {
+                    albumArt.classList.remove("rotate", "rotate-paused");
                 }
             }, 500);
         };
@@ -748,6 +751,31 @@ document.addEventListener("DOMContentLoaded", function () {
     updateVolumeUI(volumeControl.value);
 });
 
+document.addEventListener("DOMContentLoaded", function () {
+    const albumArtSpinToggle = document.getElementById("albumArtSpinToggle");
+    if (albumArtSpinToggle) {
+        albumArtSpinToggle.checked = albumArtSpinEnabled;
+        applyAlbumArtSpinSetting();
+        
+        albumArtSpinToggle.addEventListener("change", function () {
+            albumArtSpinEnabled = this.checked;
+            localStorage.setItem("albumArtSpin", JSON.stringify(albumArtSpinEnabled));
+            applyAlbumArtSpinSetting();
+        });
+    }
+});
+
+function applyAlbumArtSpinSetting() {
+    const albumArt = document.getElementById("albumArt");
+    if (!albumArt) return;
+
+    if (!albumArtSpinEnabled) {
+        albumArt.classList.remove("rotate", "rotate-paused");
+    } else if (playing) {
+        albumArt.classList.add("rotate");
+    }
+}
+
 window.onload = function () {
     let firstSong = document.querySelector('#songList li.selected');
     
@@ -779,14 +807,20 @@ document.getElementById("playPauseBtn").addEventListener("click", function () {
             player.pauseVideo();
             this.innerHTML = ICON_PLAY; // Use constant
             clearInterval(progressInterval);
-            albumArt.classList.add("rotate-paused");
+            if (albumArtSpinEnabled) {
+                albumArt.classList.add("rotate-paused");
+            }
         } else {
             player.playVideo();
             this.innerHTML = ICON_PAUSE; // Use constant
             updateProgressBar();
-            albumArt.classList.remove("rotate-paused");
-            albumArt.classList.add("rotate");
-
+            if (albumArtSpinEnabled) {
+                albumArt.classList.remove("rotate-paused");
+                albumArt.classList.add("rotate");
+            } else {
+                // If disabled → remove all spin classes
+                albumArt.classList.remove("rotate", "rotate-paused");
+            }
             // ✅ If bx-revision is showing, reset it to Play/Pause
             if (this.innerHTML.includes("bx-revision")) {
                 this.innerHTML = ICON_PAUSE;
@@ -1064,8 +1098,11 @@ function handlePlayerStateChange(event) {
     } else if (event.data === 1) { // ✅ 1 means PLAYING
         playPauseBtn.innerHTML = ICON_PAUSE; // Use constant
         playing = true;
-        albumArt.classList.remove("rotate-paused");
-        albumArt.classList.add("rotate");
+        if (albumArtSpinEnabled) {
+            albumArt.classList.add("rotate");
+        } else {
+            albumArt.classList.remove("rotate-paused");
+        }
     }
 }
 
@@ -1224,9 +1261,10 @@ function exportPlaylist() {
         // Get current playlist and dark mode status
         const exportData = {
             playlist: playlist,
+            albumArtSpin: albumArtSpinEnabled,
             darkMode: localStorage.getItem("darkMode") === "enabled",
             exportDate: new Date().toISOString(),
-            version: "1.0"
+            version: "1.1"
         };
         
         const playlistData = JSON.stringify(exportData, null, 2);
@@ -1312,7 +1350,74 @@ function importPlaylist(file) {
                     const firstSong = playlist[0];
                     //loadNewVideo(firstSong.videoId, firstSong.albumArt, firstSong);
                 }
-                
+
+                if (importedData.albumArtSpin !== undefined) {
+                    albumArtSpinEnabled = importedData.albumArtSpin;
+                    localStorage.setItem("albumArtSpin", JSON.stringify(albumArtSpinEnabled));
+                    const toggle = document.getElementById("albumArtSpinToggle");
+                    if (toggle) toggle.checked = albumArtSpinEnabled;
+                    applyAlbumArtSpinSetting();
+                }
+
+                // ✅ Reset playing state
+                playing = false;
+                if (player) {
+                    player.stopVideo();
+                    document.getElementById("playPauseBtn").innerHTML = ICON_PLAY;
+                }
+                clearInterval(progressInterval);
+
+                // ✅ Select first song and load into player (no autoplay)
+                if (playlist.length > 0) {
+                    const firstSong = playlist[0];
+                    const albumArtElem = document.getElementById("albumArt");
+                    const background = document.getElementById("background");
+                    const songTitleElem = document.querySelector("#nowPlaying .song-title");
+                    const authorNameElem = document.querySelector("#nowPlaying .author-name");
+
+                    // Update UI
+                    albumArtElem.src = firstSong.albumArt;
+                    background.style.backgroundImage = `url('${firstSong.albumArt}')`;
+                    songTitleElem.innerText = firstSong.songName;
+                    authorNameElem.innerText = firstSong.authorName;
+
+                    // Highlight in playlist
+                    document.querySelectorAll("#songList li").forEach(li => li.classList.remove("selected"));
+                    const firstLi = document.querySelector("#songList li");
+                    if (firstLi) firstLi.classList.add("selected");
+
+                    // ✅ Load video but don’t autoplay
+                    selectedVideoId = firstSong.videoId;
+                    if (player && player.loadVideoById) {
+                        player.cueVideoById(firstSong.videoId); // cue = load but don’t play
+                    } else {
+                        // If player not ready, create with autoplay off
+                        player = new YT.Player('player', {
+                            videoId: firstSong.videoId,
+                            playerVars: {
+                                autoplay: 0,
+                                controls: 0,
+                                modestbranding: 1,
+                                showinfo: 0,
+                                rel: 0
+                            },
+                            events: {
+                                'onReady': (event) => {
+                                    event.target.setVolume(100);
+                                    updateVolumeUI(100);
+                                },
+                                'onStateChange': handlePlayerStateChange, 
+                                'onError': handleVideoError
+                            }
+                        });
+                    }
+
+                    // Reset progress bar + time display
+                    document.getElementById("progress").style.width = "0%";
+                    document.getElementById("currentTime").innerText = "0:00";
+                    document.getElementById("totalTime").innerText = "0:00";
+                }
+
                 if (importDarkMode !== undefined) {
                 const darkModeStatus = importDarkMode ? "enabled" : "disabled";
                 alert(`Successfully imported ${importedPlaylist.length} songs! Dark mode was ${darkModeStatus} in the imported file.`);
