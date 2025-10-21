@@ -105,20 +105,22 @@
             </div>
 
             <!-- Card 3: YouTube Search -->
-            <div class="col-md-8 col-12 mt-4 mt-md-0">
+            <div class="col-md-11 col-12 mt-4 mx-auto">
                 <!-- YouTube Search Section -->
-                <div class="card shadow-lg mt-4">
+                <div class="card shadow-lg">
                     <div class="card-body">
                         <h5 class="card-title text-center fw-bold"><i class='bx bx-search'></i> Search YouTube</h5>
                         
                         <!-- YouTube Search Bar -->
                         <div class="input-group mb-3">
                             <input type="text" id="youtubeSearchInput" class="form-control" placeholder="Search YouTube for songs to add...">
-                            <button class="btn btn-primary" type="button" id="youtubeSearchBtn" title="Search YouTube"><i class='bx bx-search'></i> Search</button>
+                            <button class="btn btn-primary" type="button" id="youtubeSearchBtn" title="Search YouTube">
+                                <i class='bx bx-search'></i> Search
+                            </button>
                         </div>
 
                         <!-- Search Results -->
-                        <div id="searchResults" class="d-none">
+                        <div id="searchResults" class="d-none mt-3">
                             <h6 class="fw-bold mb-3">Search Results:</h6>
                             <div id="searchResultsList" class="overflow-auto" style="max-height: 400px;">
                                 <!-- Search results will be populated here -->
@@ -126,7 +128,7 @@
                         </div>
 
                         <!-- Loading indicator -->
-                        <div id="searchLoading" class="text-center d-none">
+                        <div id="searchLoading" class="text-center d-none mt-3">
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">Searching...</span>
                             </div>
@@ -134,7 +136,7 @@
                         </div>
 
                         <!-- Search error message -->
-                        <div id="searchError" class="alert alert-danger d-none" role="alert">
+                        <div id="searchError" class="alert alert-danger d-none mt-3" role="alert">
                             <i class='bx bx-error'></i> Unable to search YouTube. Please check your internet connection and try again.
                         </div>
                     </div>

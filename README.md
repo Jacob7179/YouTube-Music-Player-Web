@@ -10,6 +10,7 @@
 ![Alt text](resource/image/1.png)
 ![Alt text](resource/image/2.png)
 ![Alt text](resource/image/3.png)
+![Alt text](resource/image/4.png)
 
 ## Information
 
