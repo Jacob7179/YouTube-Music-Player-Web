@@ -16,7 +16,7 @@
         <div class="row justify-content-center align-items-stretch">        
             <!-- Card 1: Music Player -->
             <div class="col-md-3 col-12 d-flex">
-                <div class="card shadow-lg w-100 h-100" style="max-height: 890px;">
+                <div class="card shadow-lg w-100 h-100" style="max-height: 670px;">
                     <div class="card-body text-center d-flex flex-column">
                         <h5 class="card-title fw-bold"><i class='bx bxs-music'></i> YouTube Music Player</h5>
     
@@ -81,7 +81,7 @@
     
             <!-- Card 2: Song Selector -->
             <div class="col-md-8 col-12 mt-4 mt-md-0">
-                <div class="card shadow-lg">
+                <div class="card shadow-lg" style="max-height: 670px; min-height: 670px;">
                     <div class="card-body">
                         <h5 class="card-title text-center fw-bold"><i class='bx bxs-playlist' ></i> My Playlist</h5>
 
@@ -97,12 +97,15 @@
                             <span>Author Name</span>
                         </div>
 
-                        <ul id="songList" class="list-group overflow-auto" style="max-height: 620px;">
+                        <ul id="songList" class="list-group overflow-auto" style="max-height: 520px;">
                             <!-- Songs will be dynamically loaded here by script.js -->
                         </ul>                        
                     </div>
                 </div>
+            </div>
 
+            <!-- Card 3: YouTube Search -->
+            <div class="col-md-8 col-12 mt-4 mt-md-0">
                 <!-- YouTube Search Section -->
                 <div class="card shadow-lg mt-4">
                     <div class="card-body">
@@ -162,7 +165,7 @@
                 </div>
             </div>
 
-            <div class="card shadow-lg" style="width: 18rem;">
+            <div class="card shadow-lg" style="width: 18rem; min-height: 110px;">
                 <div class="card-body text-center">
                     <h5 class="card-title fw-bold"><i class='bx bxs-videos'></i> Video Player</h5>
                     <button id="togglePlayerBtn" class="btn btn-primary">Show Player</button>
@@ -172,7 +175,7 @@
                 </div>
             </div>
             
-            <div class="card shadow-lg" style="width: 16rem;">
+            <div class="card shadow-lg" style="width: 16rem; min-height: 110px;">
                 <div class="card-body text-center">
                     <h5 class="card-title fw-bold"><i class='bx bxs-moon'></i> Dark Mode</h5>
                     <button id="darkModeToggle" class="btn btn-dark">Enable</button>
@@ -234,7 +237,7 @@
             <input type="file" id="importFileInput" accept=".json" style="display: none;">
         </div>
 
-        <div class="floating-top">
+        <div class="floating-top" style="right: 20px !important;">
             <button id="goTopBtn" class="btn btn-secondary rounded-circle go-top-btn" title="Go to Top">
                 <i class='bx bx-chevron-up'></i>
             </button>
