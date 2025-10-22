@@ -1302,8 +1302,9 @@ function exportPlaylist() {
             playlist: playlist,
             albumArtSpin: albumArtSpinEnabled,
             darkMode: localStorage.getItem("darkMode") === "enabled",
+            showLyrics: localStorage.getItem("showLyrics") === "true",
             exportDate: new Date().toISOString(),
-            version: "1.1"
+            version: "1.2"
         };
         
         const playlistData = JSON.stringify(exportData, null, 2);
@@ -1382,6 +1383,17 @@ function importPlaylist(file) {
                     localStorage.setItem("darkMode", "disabled");
                     document.getElementById("darkModeToggle").innerHTML = "Enable";
                     applyDarkModeToElements(false);
+                }
+
+                if (importedData.showLyrics !== undefined) {
+                    const lyricsPanel = document.getElementById("lyricsPanel");
+                    const lyricsToggle = document.getElementById("lyricsToggle"); // or your checkbox ID
+
+                    const showLyrics = importedData.showLyrics;
+
+                    localStorage.setItem("showLyrics", showLyrics);
+                    lyricsToggle.checked = showLyrics;
+                    lyricsPanel.style.display = showLyrics ? "block" : "none";
                 }
                 
                 // Play the first song if playlist was empty before
