@@ -1048,3 +1048,105 @@ body.dark-mode .settings-close-btn {
     background: linear-gradient(135deg, #0056b3, #004494);
     color: white;
 }
+
+/* === Alpha-style Lyrics Panel === */
+#lyricsPanel {
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+}
+
+#lyricsTitle {
+    font-weight: bold;
+}
+
+#lyricsPanel {
+  background-color: #fafafa;
+  color: #222;
+  border-radius: 6px;
+  padding: 10px;
+  width: 800px;
+  margin: 20px auto;
+  max-height: 400px;
+  overflow-y: auto;
+  font-family: "Segoe UI", sans-serif;
+  border: none;
+}
+
+body.dark-mode #lyricsPanel {
+  background-color: #222;
+  color: #e6e6e6;
+  border: none
+}
+
+#lyricsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+#lyricsText {
+  overflow-y: auto;
+  font-size: 15px;
+  line-height: 1.7;
+  max-height: 300px;
+  scroll-behavior: smooth;
+}
+
+.lrc-line {
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background 0.2s ease, color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.lrc-time {
+  font-size: 13px;
+  color: #a0a0a0;
+  width: 50px;
+  text-align: right;
+}
+
+.lrc-line.highlight {
+  background: rgba(0, 123, 255, 0.18);
+  color: #fff;
+  font-weight: bold;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.lyrics-controls button {
+  background: #222;
+  color: #eee;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.lyrics-controls button:hover {
+  background: #2a2a2a;
+}
+
+body.dark-mode .lrc-line {
+  color: #e0e0e0;
+}
+
+body.dark-mode .lrc-line .lrc-time {
+  color: #aaa;
+}
+
+/* Highlighted lyric line */
+.lrc-line.highlight {
+  color: black;
+}
+
+#lyricsPanel {
+  transition: all 0.3s ease-in-out;
+  opacity: 1;
+}
+#lyricsPanel.hidden {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+}
