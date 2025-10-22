@@ -131,6 +131,7 @@ function renderPlaylist(songsToRender) {
             document.getElementById("background").style.backgroundImage = `url('${firstAlbumArtUrl}')`;
             document.querySelector("#nowPlaying .song-title").innerText = firstSongObj.songName;
             document.querySelector("#nowPlaying .author-name").innerText = firstSongObj.authorName;
+            loadLyricsFor(firstSongObj.songName, firstSongObj.authorName);
 
             // Only prepare player, don’t autoplay
             if (!player) {
