@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>YouTube Music Player</title>
     <link rel="icon" type="icon" href="../resource/icon/Jacob_profile_picture_icon.ico">
     <style>
@@ -23,7 +23,7 @@
             object-fit: cover;
             border-radius: 50%;
             margin-bottom: 10px;
-        }        
+        }
         #playerContainer {
             width: 560px;
             margin: auto;
@@ -60,7 +60,7 @@
             gap: 10px;
             margin: 10px auto;
         }
-        
+
         #progressBar {
             width: 300px;
             height: 10px;
@@ -70,7 +70,7 @@
             border-radius: 5px;
             overflow: hidden;
         }
-        
+
         #progress {
             height: 100%;
             width: 0%;
@@ -78,19 +78,95 @@
             position: absolute;
             transition: width 0.1s linear;
         }
-        
+
         #currentTime, #totalTime {
             font-size: 14px;
             font-weight: bold;
             width: 50px;
-        }        
+        }
+
+        /* Lyrics panel */
+        #lyricsPanel {
+            width: 560px;
+            margin: 18px auto;
+            text-align: left;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 12px;
+            max-height: 350px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+        body.dark-mode #lyricsPanel {
+            background: #1a1a1a;
+            border-color: #333;
+        }
+        #lyricsHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        #lyricsText {
+            white-space: pre-wrap;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        .lrc-line {
+            padding: 6px 4px;
+            transition: background 0.2s ease;
+            border-radius: 4px;
+        }
+        .lrc-line.highlight {
+            background: rgba(0,123,255,0.12);
+            font-weight: 600;
+        }
+
+        #songList li:hover {
+            background: rgba(0,0,0,0.03);
+        }
+
+        /* Mobile tweaks */
+        @media (max-width: 640px) {
+            #playerContainer, #lyricsPanel {
+                width: 95%;
+            }
+            img#albumArt {
+                width: 220px;
+                height: 220px;
+            }
+        }
+
+        #lyricsPanel {
+            max-width: 560px;
+            margin: 20px auto;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+            text-align: left;
+        }
+        #lyricsHeader {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        #lyricsText {
+            max-height: 300px;
+            overflow-y: auto;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        .lyric-line {
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body>
     <h1>Alpha Version - Read API Keys</h1>
     <br>
     <h2>🎵 YouTube Music Player</h2>
-    
+
     <img id="albumArt" src="https://via.placeholder.com/300" alt="Album Art">
 
     <div id="playerContainer">
@@ -103,8 +179,25 @@
                 <div id="progress"></div>
             </div>
             <span id="totalTime">0:00</span>
-        </div>        
-    </div>    
+        </div>
+    </div>
+
+    <!-- Lyrics Panel -->
+    <div id="lyricsPanel" aria-live="polite">
+        <div id="lyricsHeader">
+            <div>
+                <strong id="lyricsTitle">Lyrics</strong>
+                <div id="lyricsMeta" style="font-size:12px;color:gray;">No lyrics loaded</div>
+            </div>
+            <div>
+                <button id="toggleSyncBtn" title="Toggle auto-sync">Auto-Sync: ON</button>
+                <button id="refreshLyricsBtn" title="Refetch lyrics">Refresh</button>
+                <button id="openRawBtn" title="Open fetched raw lyrics in new tab">Open Raw</button>
+            </div>
+        </div>
+        <div id="lyricsText">No lyrics loaded.</div>
+    </div>
+
     <button id="darkModeToggle">Enable Dark Mode</button>
     <br><br>
     <input type="text" id="searchInput" placeholder="Search for a song...">
@@ -112,7 +205,6 @@
 
     <ul id="songList"></ul>
 
-    
     <input type="text" id="apiKeyInput" placeholder="Enter API Key">
     <button id="saveApiKeyBtn">Save API Key</button>
     <button id="deleteApiKeyBtn">Delete API Key</button>
@@ -129,7 +221,13 @@
         let player;
         let videoDuration = 0;
         let progressInterval;
+        let lyricsData = null; // { raw: string, lrcLines: [{time, text}], isLrc: bool }
+        let lyricsSyncEnabled = true;
+        let lyricsAutoScroll = true;
+        let lyricsPollingInterval = null;
+        let rawLyricsUrl = null; // used for "Open Raw" (data URI)
 
+        // ---------- API key handling ----------
         async function fetchApiKey() {
             try {
                 const response = await fetch('../api_keys.txt');
@@ -141,14 +239,14 @@
                 return null;
             }
         }
-        
+
         async function initializeApiKey() {
             let userApiKey = localStorage.getItem("youtubeApiKey");
-        
+
             if (!userApiKey) {
                 userApiKey = await fetchApiKey();
             }
-        
+
             if (userApiKey) {
                 localStorage.setItem("youtubeApiKey", userApiKey);
                 document.getElementById("apiKeyInput").style.display = "none";
@@ -168,26 +266,27 @@
                 alert("API Key saved successfully!");
             }
         });
-        
+
         window.onload = initializeApiKey;
 
+        // ---------- YouTube search & player ----------
         async function searchYouTube(query, callback) {
             let userApiKey = localStorage.getItem("youtubeApiKey");
-        
+
             if (!userApiKey) {
                 userApiKey = await fetchApiKey();
                 if (userApiKey) {
                     localStorage.setItem("youtubeApiKey", userApiKey);
                 }
             }
-        
+
             if (!userApiKey) {
                 alert("YouTube API key is required!");
                 return;
             }
-        
+
             const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=5&key=${userApiKey}`;
-        
+
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
@@ -202,20 +301,20 @@
                     console.error("Error fetching YouTube data:", error);
                     alert("Error fetching YouTube data. Check the console.");
                 });
-        }        
+        }
 
         document.getElementById("searchBtn").addEventListener("click", function () {
             let query = document.getElementById("searchInput").value;
             searchYouTube(query, function (results) {
                 let songList = document.getElementById("songList");
                 songList.innerHTML = ""; // Clear previous results
-        
+
                 results.forEach(video => {
                     let videoId = video.id.videoId;
                     let thumbnail = video.snippet.thumbnails.medium.url;
                     let title = video.snippet.title;
                     let channel = video.snippet.channelTitle;
-        
+
                     let li = document.createElement("li");
                     li.className = "list-group-item";
                     li.style.cursor = "pointer";
@@ -223,7 +322,7 @@
                     li.style.borderBottom = "1px solid #ccc";
                     li.style.display = "flex";
                     li.style.alignItems = "center";
-        
+
                     let img = document.createElement("img");
                     img.src = thumbnail;
                     img.alt = title;
@@ -231,43 +330,43 @@
                     img.style.height = "90px";
                     img.style.marginRight = "10px";
                     img.style.borderRadius = "8px";
-        
+
                     let textContainer = document.createElement("div");
-        
+
                     let titleElement = document.createElement("p");
                     titleElement.innerText = title;
                     titleElement.style.fontWeight = "bold";
                     titleElement.style.margin = "0";
-        
+
                     let channelElement = document.createElement("p");
                     channelElement.innerText = channel;
                     channelElement.style.color = "gray";
                     channelElement.style.fontSize = "12px";
                     channelElement.style.margin = "0";
-        
+
                     textContainer.appendChild(titleElement);
                     textContainer.appendChild(channelElement);
                     li.appendChild(img);
                     li.appendChild(textContainer);
-        
+
                     // When clicked, play the song
                     li.addEventListener("click", function () {
                         playSong(videoId, thumbnail, title, channel);
                     });
-        
+
                     songList.appendChild(li);
                 });
             });
         });
-        
+
         function playSong(videoId, thumbnail, title, channel) {
             document.getElementById('albumArt').src = thumbnail;
-        
+
             // Update "Now Playing" text
             let nowPlayingText = document.getElementById("nowPlaying");
             nowPlayingText.innerHTML = `Now Playing:<br> ${title} - ${channel}`;
             nowPlayingText.style.display = "block";
-        
+
             if (!player) {
                 player = new YT.Player('player', {
                     height: '315',
@@ -280,14 +379,23 @@
                 });
             } else {
                 player.loadVideoById(videoId);
+                fetchAndDisplayLyrics(title, channel);
                 startProgressTracking();
             }
+
+            const { artist, track } = cleanTitle(title, channel);
+            fetchLyrics(artist, track);
+
+
+            // fetch lyrics for this selection
+            fetchAndDisplayLyrics(title, channel);
+
         }
-        
+
         function onPlayerReady(event) {
             updateProgress();
         }
-        
+
         function onPlayerStateChange(event) {
             if (event.data === YT.PlayerState.PLAYING) {
                 startProgressTracking();
@@ -295,47 +403,56 @@
                 clearInterval(progressInterval);
             }
         }
-        
+
         function startProgressTracking() {
             clearInterval(progressInterval); // Clear any existing interval
-        
+
             progressInterval = setInterval(() => {
                 if (player && player.getDuration) {
                     let duration = player.getDuration();
                     let currentTime = player.getCurrentTime();
                     let progressPercent = (currentTime / duration) * 100;
-        
+
                     document.getElementById("progress").style.width = progressPercent + "%";
                     document.getElementById("currentTime").textContent = formatTime(currentTime);
                     document.getElementById("totalTime").textContent = formatTime(duration);
+
+                    // sync lyrics if available and enabled
+                    if (lyricsData && lyricsData.isLrc && autoSyncEnabled) {
+                        syncLyricsToTime(currentTime);
+                    }
                 }
             }, 500);
         }
-        
+
         function seekVideo(event) {
             if (!player || !player.getDuration) return;
-        
+
             let progressBar = document.getElementById("progressBar");
             let rect = progressBar.getBoundingClientRect();
             let offsetX = event.clientX - rect.left;
             let newTime = (offsetX / rect.width) * player.getDuration();
-        
+
             player.seekTo(newTime, true);
+            // Immediately update lyrics position if synced
+            if (lyricsData && lyricsData.isLrc) {
+                syncLyricsToTime(newTime);
+            }
         }
-        
+
         function formatTime(seconds) {
             let minutes = Math.floor(seconds / 60);
             let secs = Math.floor(seconds % 60);
             return `${minutes}:${secs < 10 ? "0" + secs : secs}`;
         }
-        
+
         // Load YouTube API
         let tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         let firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-        // YouTube API script
+        // Extra wrapper to avoid duplicate loads
         function loadYouTubeAPI() {
             let tag = document.createElement('script');
             tag.src = "https://www.youtube.com/iframe_api";
@@ -357,13 +474,14 @@
             document.getElementById("tutorialModal").style.display = "none";
         });
 
+        // dark mode
         document.addEventListener("DOMContentLoaded", function () {
             if (localStorage.getItem("darkMode") === "enabled") {
                 document.body.classList.add("dark-mode");
                 document.getElementById("darkModeToggle").innerText = "Disable Dark Mode";
             }
         });
-        
+
         document.getElementById("darkModeToggle").addEventListener("click", function () {
             const isDarkMode = document.body.classList.toggle("dark-mode");
             localStorage.setItem("darkMode", isDarkMode ? "enabled" : "disabled");
@@ -375,6 +493,467 @@
             document.getElementById("apiKeyInput").style.display = "inline";
             document.getElementById("saveApiKeyBtn").style.display = "inline";
             alert("API Key deleted successfully!");
+        });
+
+        function cleanTitle(rawTitle, channelTitle) {
+            let title = rawTitle;
+
+            // Remove both ASCII and full-width brackets content like [Official Video] or ［Official Video］
+            title = title.replace(/\[[^\]]*\]|\([^\)]*\)|［[^］]*］|【[^】]*】/g, "");
+
+            // Remove common words like "official video", "lyrics", "MV", etc.
+            title = title.replace(/official\s*video|music\s*video|mv|lyrics?|HD|4K|ver\.?/gi, "");
+
+            // Normalize hyphens and spacing
+            title = title.replace(/[\uFF5E\u2013\-–—]+/g, "-"); // Normalize hyphens (－–—～ etc.)
+            title = title.replace(/\s{2,}/g, " ").trim();
+
+            // Extract artist and track if formatted like "Artist - Song"
+            let artist = channelTitle.trim();
+            let track = title;
+
+            const match = title.match(/^(.+?)\s*-\s*(.+)$/);
+            if (match) {
+                artist = match[1].trim();
+                track = match[2].trim();
+            }
+
+            // Remove any stray brackets or trailing punctuation
+            track = track.replace(/[\[\]［］()（）【】]/g, "").trim();
+
+            return { artist, track };
+        }
+
+        // ---------- Lyrics system (lrclib) ----------
+        // Attempts to call lrclib using: https://lrclib.net/api/get?artist_name=...&track_name=...
+        // Note: depending on lrclib CORS settings you might get CORS errors when fetching directly from the browser.
+        // If that happens, route requests through a lightweight server-side proxy or use a CORS proxy during development.
+        let autoSyncEnabled = true;
+        let autoSyncInterval = null; // store interval ID
+        let currentLyricsData = null;
+        let currentSongInfo = { title: "", artist: "" };
+        let lrcLines = [];
+
+                async function fetchAndDisplayLyrics(rawTitle, rawArtist) {
+            const lyricsText = document.getElementById("lyricsText");
+            const lyricsMeta = document.getElementById("lyricsMeta");
+            const lyricsTitle = document.getElementById("lyricsTitle");
+
+            lyricsText.textContent = "Fetching lyrics...";
+            lyricsMeta.textContent = "";
+            lyricsTitle.textContent = "Lyrics";
+            lyricsText.dataset.loaded = "false";
+
+            currentSongInfo = { title: rawTitle, artist: rawArtist };
+            currentLyricsData = null;
+            lrcLines = [];
+
+            const artist = (rawArtist || "").trim()
+                .replace(/\[.*?\]|\(.*?\)|【.*?】|（.*?）/g, "")
+                .replace(/official\s*(video|mv)/gi, "")
+                .trim();
+
+            const title = (rawTitle || "").trim()
+                .replace(/\[.*?\]|\(.*?\)|【.*?】|（.*?）/g, "")
+                .replace(/official\s*(video|mv)/gi, "")
+                .trim();
+
+            const attempts = [
+                { a: artist, t: title },
+                { a: artist, t: title.split(" - ")[1] || title },
+                { a: "", t: `${artist} - ${title}` },
+                { a: "", t: title }
+            ];
+
+            const proxyBase = "https://api.allorigins.win/get?url=";
+            let found = false;
+
+            for (const combo of attempts) {
+                if (found) break;
+                if (!combo.a && !combo.t) continue;
+
+                const baseUrl = `https://lrclib.net/api/get?${
+                    combo.a ? "artist_name=" + encodeURIComponent(combo.a) + "&" : ""
+                }track_name=${encodeURIComponent(combo.t)}`;
+
+                try {
+                    const proxyUrl = proxyBase + encodeURIComponent(baseUrl);
+                    const res = await fetch(proxyUrl);
+                    if (!res.ok) continue;
+
+                    const dataRaw = await res.json();
+                    const data = JSON.parse(dataRaw.contents || "{}");
+                    currentLyricsData = data; // save for Open Raw
+
+                    let lyrics = data.syncedLyrics || data.plainLyrics || "";
+                    if (!lyrics) continue;
+
+                    found = true;
+                    const lrcRegex = /^\s*\[\d{1,2}:\d{2}(?:\.\d{1,3})?\]/m;
+                    const isLrc = lrcRegex.test(lyrics);
+
+                    // Only show "(Synced)" when auto-sync is ON
+                    if (autoSyncEnabled) {
+                        activeLine.textContent = lyricsData.lines[currentIndex].text + " (Synced)";
+                    } else {
+                        activeLine.textContent = lyricsData.lines[currentIndex].text;
+                    }
+
+                    lyricsText.dataset.loaded = "true";
+                } catch (err) {
+                    console.warn("Lyrics fetch attempt failed:", err);
+                }
+            }
+
+            if (!found) {
+                lyricsText.textContent = "Lyrics not found. Try manual search or use a proxy.";
+                lyricsMeta.textContent = "No lyrics found";
+            }
+        }
+
+        // --- Toggle Auto-Sync ---
+        document.getElementById("toggleSyncBtn").addEventListener("click", () => {
+            autoSyncEnabled = !autoSyncEnabled;
+            const btn = document.getElementById("toggleSyncBtn");
+            btn.textContent = `Auto-Sync: ${autoSyncEnabled ? "ON" : "OFF"}`;
+            btn.style.background = autoSyncEnabled ? "#0f0" : "#f66";
+        });
+
+        // --- Refresh Lyrics ---
+        document.getElementById("refreshLyricsBtn").addEventListener("click", () => {
+            if (currentSongInfo.title) {
+                fetchAndDisplayLyrics(currentSongInfo.title, currentSongInfo.artist);
+            } else {
+                alert("No song is currently loaded.");
+            }
+        });
+
+        // --- Open Raw Lyrics JSON ---
+        document.getElementById("openRawBtn").addEventListener("click", () => {
+            if (currentLyricsData) {
+                const blob = new Blob([JSON.stringify(currentLyricsData, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                window.open(url, "_blank");
+            } else {
+                alert("No lyrics data loaded yet.");
+            }
+        });
+
+        function startAutoSync() {
+            stopAutoSync(); // clear any old loop first
+            if (!player || !lrcLines.length) return;
+
+            autoSyncInterval = setInterval(() => {
+                if (!autoSyncEnabled || !player) return;
+
+                const currentTime = player.getCurrentTime();
+                const activeIndex = lrcLines.findIndex(
+                    (line, i) =>
+                        currentTime >= line.time &&
+                        (i === lrcLines.length - 1 || currentTime < lrcLines[i + 1].time)
+                );
+
+                // Optional: if you still highlight lyrics
+                // highlightActiveLine(activeIndex);
+            }, 800);
+        }
+
+        function stopAutoSync() {
+            if (autoSyncInterval) {
+                clearInterval(autoSyncInterval);
+                autoSyncInterval = null;
+            }
+        }
+
+        function renderPlainLyrics(lyrics) {
+            const lyricsText = document.getElementById("lyricsText");
+            lyricsText.innerHTML = lyrics
+                .replace(/\r/g, "")
+                .split("\n")
+                .map(line => `<div>${line || "&nbsp;"}</div>`)
+                .join("");
+        }
+
+        function parseLrc(lrcText) {
+            return lrcText.split("\n").map(line => {
+                const match = line.match(/\[(\d{1,2}):(\d{2})(?:\.(\d{1,2}))?\](.*)/);
+                if (!match) return null;
+                const minutes = parseInt(match[1]) || 0;
+                const seconds = parseInt(match[2]) || 0;
+                const ms = parseInt(match[3]) || 0;
+                return {
+                    time: minutes * 60 + seconds + ms / 100,
+                    text: match[4].trim()
+                };
+            }).filter(Boolean);
+        }
+
+        function renderLrcLines(lines) {
+            const lyricsText = document.getElementById("lyricsText");
+            lyricsText.innerHTML = lines.map(l => `<div>${l.text}</div>`).join("");
+        }
+
+        function parseTitleForArtistTrack(fullTitle) {
+            // Best-effort parse common patterns like "Artist - Song Title" or "Song Title - Artist"
+            // We'll try to detect which side looks like an artist (short names, capitalized)
+            let s = fullTitle || '';
+            s = s.replace(/^Now Playing:\s*/i, ''); // strip prefix if present
+            // Split on hyphen or em dash
+            let parts = s.split(/\s[-–—]\s/);
+            let artist = '';
+            let track = '';
+            if (parts.length >= 2) {
+                // Heuristics: if left side contains words like 'feat.' or short, treat as artist
+                const left = parts[0].trim();
+                const right = parts.slice(1).join(' - ').trim();
+                // If left contains commas or 'feat' or fewer than 5 words, consider artist
+                if (left.match(/feat\.?|ft\.?/i) || left.split(/\s+/).length <= 4) {
+                    artist = left;
+                    track = right;
+                } else {
+                    // else assume right is artist
+                    artist = right;
+                    track = left;
+                }
+            } else {
+                // no dash found — attempt to split by '|' or ':' or parentheses
+                const altSplit = s.split(/\s\|\s|\s:\s/);
+                if (altSplit.length >= 2) {
+                    artist = altSplit[0].trim();
+                    track = altSplit.slice(1).join(' ').trim();
+                } else {
+                    // fallback: no artist found, treat entire as track
+                    artist = '';
+                    track = s.trim();
+                }
+            }
+            return { artist, track };
+        }
+
+        function renderPlainLyrics(plain) {
+            const el = document.getElementById('lyricsText');
+            el.innerHTML = '';
+            if (!plain) {
+                el.textContent = 'No lyrics found.';
+                return;
+            }
+            // keep as pre-wrap
+            el.textContent = plain;
+        }
+
+        function renderLrcLines(lines) {
+            const el = document.getElementById('lyricsText');
+            el.innerHTML = '';
+            // lines: [{time: seconds, text: '...'}]
+            lines.forEach((ln, idx) => {
+                const div = document.createElement('div');
+                div.className = 'lrc-line';
+                div.dataset.time = ln.time;
+                div.dataset.index = idx;
+                div.innerHTML = `<span class="lrc-time" style="opacity:.6;font-size:12px;margin-right:8px">${formatTimeShort(ln.time)}</span> ${escapeHtml(ln.text)}`;
+                el.appendChild(div);
+            });
+        }
+
+        function formatTimeShort(seconds) {
+            if (seconds === undefined || seconds === null || isNaN(seconds)) return '';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s < 10 ? '0' + s : s}`;
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+        }
+
+        function parseLrc(text) {
+            // returns array of {time (sec), text}
+            const lines = text.split(/\r?\n/);
+            const timeTagRegex = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
+            const results = [];
+            for (const raw of lines) {
+                let match;
+                const times = [];
+                while ((match = timeTagRegex.exec(raw)) !== null) {
+                    const min = parseInt(match[1], 10);
+                    const sec = parseInt(match[2], 10);
+                    const ms = match[3] ? parseInt(match[3].padEnd(3, '0'), 10) : 0;
+                    const total = min * 60 + sec + ms / 1000;
+                    times.push(total);
+                }
+                // remove timestamps to get text
+                const textOnly = raw.replace(timeTagRegex, '').trim();
+                if (times.length > 0) {
+                    times.forEach(t => results.push({ time: t, text: textOnly || '...' }));
+                }
+            }
+            // sort by time
+            results.sort((a, b) => a.time - b.time);
+            return results;
+        }
+
+        function syncLyricsToTime(currentTime) {
+            if (!lyricsData || !lyricsData.isLrc) return;
+            const lines = lyricsData.lrcLines;
+            // find last line with time <= currentTime
+            let low = 0, high = lines.length - 1, found = 0;
+            while (low <= high) {
+                const mid = Math.floor((low + high) / 2);
+                if (lines[mid].time <= currentTime) {
+                    found = mid;
+                    low = mid + 1;
+                } else {
+                    high = mid - 1;
+                }
+            }
+            // highlight `found`
+            const el = document.getElementById('lyricsText');
+            const children = el.children;
+            if (!children || children.length === 0) return;
+            // remove previous highlights
+            for (let i = 0; i < children.length; i++) {
+                children[i].classList.remove('highlight');
+            }
+            const toHighlight = el.querySelector(`.lrc-line[data-index="${found}"]`);
+            if (toHighlight) {
+                toHighlight.classList.add('highlight');
+                if (lyricsAutoScroll) {
+                    // scroll centered-ish
+                    const parent = el;
+                    const parentRect = parent.getBoundingClientRect();
+                    const childRect = toHighlight.getBoundingClientRect();
+                    const offset = childRect.top - parentRect.top - parent.clientHeight / 2 + childRect.height / 2;
+                    parent.scrollBy({ top: offset, behavior: 'smooth' });
+                }
+            }
+        }
+
+        // ---------- Utility: manual lyrics search box (optional) ----------
+        // If you want a manual lyrics search input you can add it; for now we offer refresh + open raw.
+
+        // ---------- small helpers ----------
+        function updateProgress() {
+            if (!player) return;
+            // Called when player is ready
+            startProgressTracking();
+        }
+
+        async function fetchLyrics(artist, track, isRefresh = false) {
+            const lyricsText = document.getElementById("lyricsText");
+            const lyricsMeta = document.getElementById("lyricsMeta");
+            const lyricsTitle = document.getElementById("lyricsTitle");
+
+            // Only clear if no lyrics yet or doing manual refresh
+            if (!lyricsText.dataset.loaded || isRefresh) {
+                lyricsText.textContent = "Fetching lyrics...";
+                lyricsMeta.textContent = `${artist} – ${track}`;
+                lyricsTitle.textContent = "Lyrics";
+            }
+
+            const apiUrl = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(track)}`;
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
+
+            try {
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error("Proxy request failed");
+
+                const proxyData = await response.json();
+                const data = JSON.parse(proxyData.contents || "{}");
+
+                // Handle both plain and synced (LRC) lyrics
+                let lyrics = data.syncedLyrics || data.plainLyrics || "";
+
+                if (!lyrics) {
+                    lyricsText.textContent = "Lyrics not found.";
+                    lyricsMeta.textContent = "No lyrics available for this song.";
+                    return;
+                }
+
+                // Detect LRC format
+                const lrcRegex = /^\s*\[\d{1,2}:\d{2}(?:\.\d{1,3})?\]/m;
+                const isLrc = lrcRegex.test(lyrics);
+
+                if (isLrc) {
+                    const parsed = parseLrc(lyrics);
+                    lyricsData = { raw: lyrics, isLrc: true, lrcLines: parsed };
+                    renderLrcLines(parsed);
+                    lyricsMeta.textContent = `Synced lyrics found for ${artist} – ${track}`;
+                    syncLyricsToTime(player?.getCurrentTime?.() || 0);
+                } else {
+                    lyricsData = { raw: lyrics, isLrc: false };
+                    renderPlainLyrics(lyrics);
+                    lyricsMeta.textContent = `Plain lyrics for ${artist} – ${track}`;
+                }
+
+                // Mark as loaded
+                lyricsText.dataset.loaded = "true";
+            } catch (err) {
+                console.error("Error fetching lyrics:", err);
+                lyricsText.textContent = "Failed to fetch lyrics.";
+                lyricsMeta.textContent = "Error loading lyrics.";
+            }
+        }
+
+        if (!success) throw new Error("All proxies failed");
+
+        function setupSyncedLyrics(syncedLyricsText) {
+            const lyricsText = document.getElementById("lyricsText");
+            const lines = syncedLyricsText.split("\n").filter(l => l.trim());
+            const parsed = lines.map(line => {
+                const match = line.match(/\[(\d{2}):(\d{2})(?:\.(\d{2,3}))?\](.*)/);
+                if (!match) return null;
+                const [, m, s, ms, text] = match;
+                const time = parseInt(m) * 60 + parseInt(s) + (parseInt(ms || 0) / 100);
+                return { time, text: text.trim() };
+            }).filter(Boolean);
+
+            lyricsText.innerHTML = parsed.map(l => `<div class="lyric-line">${l.text}</div>`).join("");
+            const lyricLines = lyricsText.querySelectorAll(".lyric-line");
+
+            clearInterval(window.syncInterval);
+            window.syncInterval = setInterval(() => {
+                if (!player || !player.getCurrentTime) return;
+                const t = player.getCurrentTime();
+                let currentIndex = parsed.findIndex((l, i) => t >= l.time && (!parsed[i + 1] || t < parsed[i + 1].time));
+                if (currentIndex >= 0) {
+                    lyricLines.forEach((line, i) => {
+                        line.style.color = i === currentIndex ? "#007bff" : "";
+                        line.style.fontWeight = i === currentIndex ? "bold" : "";
+                    });
+                    lyricsText.scrollTop = Math.max(0, lyricLines[currentIndex].offsetTop - 120);
+                }
+            }, 500);
+        }
+
+        // Toggle Auto-Sync
+        document.getElementById("toggleSyncBtn").addEventListener("click", function () {
+            const isEnabled = this.dataset.enabled === "true";
+            this.dataset.enabled = !isEnabled;
+            this.textContent = `Auto-Sync: ${!isEnabled ? "ON" : "OFF"}`;
+        });
+
+        // Refresh Lyrics
+        document.getElementById("refreshLyricsBtn").addEventListener("click", function () {
+            if (window.lastLyrics) {
+                const { artist, track } = window.lastLyrics;
+                fetchLyrics(artist, track, true);
+            } else {
+                alert("No previous lyrics to refresh.");
+            }
+        });
+
+        // Open Raw Lyrics
+        document.getElementById("openRawBtn").addEventListener("click", function () {
+            if (window.lastLyrics) {
+                const { artist, track } = window.lastLyrics;
+                const apiUrl = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(track)}`;
+                window.open(apiUrl, "_blank");
+            } else {
+                alert("No lyrics loaded yet.");
+            }
         });
     </script>
     <script async src="https://www.youtube.com/iframe_api"></script>
