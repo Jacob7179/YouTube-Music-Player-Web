@@ -236,7 +236,12 @@ async function searchYouTube() {
     }
 
     if (typeof YOUTUBE_API_KEY === 'undefined' || YOUTUBE_API_KEY === 'YOUR_YOUTUBE_API_KEY') {
-        searchError.textContent = 'YouTube API Key is not configured. Please ensure config.js is loaded and the key is set.';
+        const t = translations[currentLang];
+        const searchError = document.getElementById('searchError');
+        const searchLoading = document.getElementById('searchLoading');
+
+        // Use innerHTML to properly structure the error message
+        searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeApiKeyError}`;
         searchError.classList.remove('d-none');
         searchLoading.classList.add('d-none');
         return;
@@ -317,7 +322,7 @@ async function searchYouTube() {
     } catch (error) {
         console.error('Error searching YouTube (via proxy):', error);
         searchLoading.classList.add('d-none');
-        searchError.textContent = 'An unexpected error occurred while searching YouTube. Please try again.';
+        searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeSearchError}`;
         searchError.classList.remove('d-none');
     }
 }
@@ -492,7 +497,8 @@ function handleVideoError(event) {
     clearTimeout(errorTimeout);
 
     function updateCountdown() {
-        errorMsg.innerHTML = `⚠ This song is unavailable. Skipping in ${countdown} ...`;
+        const t = translations[currentLang];
+        errorMsg.innerHTML = `⚠ ${t.songUnavailable} ${countdown} ${t.seconds} ...`;
         countdown--;
         if (countdown < 0) {
             clearInterval(countdownInterval);
@@ -1113,13 +1119,14 @@ function handlePlayerStateChange(event) {
 
 document.getElementById("togglePlayerBtn").addEventListener("click", function () {
     let playerContainer = document.getElementById("playerContainer");
+    const t = translations[currentLang];
 
     if (playerContainer.classList.contains("d-none")) {
         playerContainer.classList.remove("d-none"); // Show player
-        this.innerText = "Hide Player";
+        this.innerText = t.hidePlayer;
     } else {
         playerContainer.classList.add("d-none"); // Hide player
-        this.innerText = "Show Player";
+        this.innerText = t.showPlayer;
     }
 });
 
@@ -1159,7 +1166,8 @@ document.getElementById("darkModeToggle").addEventListener("click", function () 
             });
 
         // Change button text
-        this.innerHTML = isDarkMode ? "Disable" : "Enable";
+        const t = translations[currentLang];
+        this.innerHTML = isDarkMode ? t.darkModeDisable : t.darkModeEnable;
 
         // Prevent rapid toggling
         setTimeout(() => {
@@ -1303,8 +1311,9 @@ function exportPlaylist() {
             albumArtSpin: albumArtSpinEnabled,
             darkMode: localStorage.getItem("darkMode") === "enabled",
             showLyrics: localStorage.getItem("showLyrics") === "true",
+            language: currentLang,
             exportDate: new Date().toISOString(),
-            version: "1.2"
+            version: "1.3"
         };
         
         const playlistData = JSON.stringify(exportData, null, 2);
@@ -1348,6 +1357,7 @@ function importPlaylist(file) {
             // Handle both old format (array) and new format (object with playlist property)
             let importedPlaylist;
             let importDarkMode = false;
+            let importLanguage = currentLang;
             
             if (Array.isArray(importedData)) {
                 // Old format - just the playlist array
@@ -1394,6 +1404,20 @@ function importPlaylist(file) {
                     localStorage.setItem("showLyrics", showLyrics);
                     lyricsToggle.checked = showLyrics;
                     lyricsPanel.style.display = showLyrics ? "block" : "none";
+                }
+
+                // Apply language settings if included in export
+                if (importedData.language && translations[importedData.language]) {
+                    currentLang = importedData.language;
+                    localStorage.setItem("language", currentLang);
+                    applyLanguage(currentLang);
+                    
+                    // Reload lyrics for current song to update metadata with new language
+                    const currentTitle = document.querySelector("#nowPlaying .song-title")?.innerText;
+                    const currentArtist = document.querySelector("#nowPlaying .author-name")?.innerText;
+                    if (currentTitle && currentArtist) {
+                        loadLyricsFor(currentTitle, currentArtist);
+                    }
                 }
                 
                 // Play the first song if playlist was empty before
@@ -1468,13 +1492,25 @@ function importPlaylist(file) {
                     document.getElementById("currentTime").innerText = "0:00";
                     document.getElementById("totalTime").innerText = "0:00";
                 }
-
+                // Show import success message with settings applied
+                let message = `Successfully imported ${importedPlaylist.length} songs!`;
                 if (importDarkMode !== undefined) {
-                const darkModeStatus = importDarkMode ? "enabled" : "disabled";
-                alert(`Successfully imported ${importedPlaylist.length} songs! Dark mode was ${darkModeStatus} in the imported file.`);
-                } else {
-                    alert(`Successfully imported ${importedPlaylist.length} songs!`);
+                    const darkModeStatus = importDarkMode ? "enabled" : "disabled";
+                    message += ` Dark mode was ${darkModeStatus}.`;
                 }
+                if (importedData.albumArtSpin !== undefined) {
+                    const spinStatus = importedData.albumArtSpin ? "enabled" : "disabled";
+                    message += ` Album art spin was ${spinStatus}.`;
+                }
+                if (importedData.showLyrics !== undefined) {
+                    const lyricsStatus = importedData.showLyrics ? "enabled" : "disabled";
+                    message += ` Lyrics panel was ${lyricsStatus}.`;
+                }
+                if (importedData.language) {
+                    const langName = importedData.language === 'zh' ? 'Chinese' : 'English';
+                    message += ` Language set to ${langName}.`;
+                }
+                alert(message);
             }
         } catch (error) {
             console.error("Error importing playlist:", error);
@@ -1611,43 +1647,54 @@ function syncLyricsToTime(currentTime) {
   }
 }
 
+let lyricsState = {
+  status: "idle", // idle | loading | synced | plain | error | notfound
+  artist: "",
+  title: ""
+};
+
 async function fetchLyrics(title, artist) {
   const meta = document.getElementById("lyricsMeta");
   const textEl = document.getElementById("lyricsText");
-  meta.textContent = "Fetching lyrics...";
-  textEl.textContent = "Fetching lyrics...";
+  const t = translations[currentLang];
+
+  lyricsState = { status: "loading", artist, title };
+  meta.textContent = t.searching;
+  textEl.textContent = t.searching;
 
   try {
     const base = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`;
-    console.log("Fetching lyrics from:", base);
     const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(base)}`;
     const res = await fetch(proxy);
     const data = await res.json();
     const json = JSON.parse(data.contents || "{}");
 
     const lyrics = json.syncedLyrics || json.plainLyrics;
-    if (!lyrics) throw 0;
+    if (!lyrics) throw new Error("No lyrics");
 
     const isLrc = /^\s*\[\d{1,2}:\d{2}/m.test(lyrics);
     if (isLrc) {
       const parsed = parseLrc(lyrics);
       lyricsData = { isLrc: true, lrcLines: parsed };
       renderLrcLines(parsed);
-      meta.textContent = `Synced lyrics found for ${artist} – ${title}`;
+      meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}`;
+      lyricsState.status = "synced";
     } else {
-        lyricsData = { isLrc: false, plain: lyrics };
-        
-        // Split by newline and render each line in its own div
-        const lines = lyrics.split(/\r?\n/).filter(l => l.trim().length > 0);
-        const html = lines.map(line => `<div class="plain-line">${line}</div>`).join("");
-        textEl.innerHTML = html;
-
-        meta.textContent = `Plain lyrics found for ${artist} – ${title}`;
-        }
+      lyricsData = { isLrc: false, plain: lyrics };
+      const lines = lyrics.split(/\r?\n/).filter(l => l.trim().length > 0);
+      textEl.innerHTML = lines.map(line => `<div class="plain-line">${line}</div>`).join("");
+      meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}`;
+      lyricsState.status = "plain";
+    }
   } catch (e) {
-    textEl.textContent = "Lyrics not found.";
-    meta.textContent = "Error fetching lyrics.";
+    lyricsData = null;
+    textEl.textContent = t.lyricsNotFound;
+    meta.textContent = t.lyricsError;
+    lyricsState.status = "error";
   }
+
+  window.currentSongArtist = artist;
+  window.currentSongTitle = title;
 }
 
 function startLyricsSync() {
@@ -1701,9 +1748,10 @@ function loadLyricsFor(title, artist) {
 }
 
 // buttons
-document.getElementById("toggleSyncBtn").addEventListener("click", () => {
+document.getElementById("toggleSyncBtn")?.addEventListener("click", () => {
   autoSyncEnabled = !autoSyncEnabled;
-  document.getElementById("toggleSyncBtn").textContent = `Auto-Sync: ${autoSyncEnabled ? "ON" : "OFF"}`;
+  const btn = document.getElementById("toggleSyncBtn");
+  btn.textContent = autoSyncEnabled ? translations[currentLang].autoSyncOn : translations[currentLang].autoSyncOff;
 });
 document.getElementById("refreshLyricsBtn").addEventListener("click", () => {
   const title = (document.querySelector("#nowPlaying .song-title")?.innerText || "").trim();
@@ -1715,3 +1763,402 @@ document.getElementById("openRawBtn").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(lyricsData, null, 2)], { type: "application/json" });
   window.open(URL.createObjectURL(blob), "_blank");
 });
+
+/* ==================== Language System ==================== */
+const translations = {
+  en: {
+    playerTitle: "YouTube Music Player",
+    autoPlay: "Auto-Play",
+    repeat: "Repeat",
+    lyrics: "Lyrics",
+    lyricsNoLoad: "No lyrics loaded",
+    lyricsSyncedFound: "Synced lyrics found for",
+    lyricsPlainFound: "Plain lyrics found for",
+    lyricsNotFound: "Lyrics not found.",
+    lyricsError: "Error fetching lyrics.",
+    lyricsFetching: "Fetching lyrics...",
+    autoSyncOn: "Auto-Sync: ON",
+    autoSyncOff: "Auto-Sync: OFF",
+    refresh: "Refresh",
+    raw: "Raw",
+    playlistTitle: "My Playlist",
+    searchPlaylist: "Search your playlist...",
+    songName: "Song Name",
+    authorName: "Author Name",
+    songUnavailable: "This song is unavailable. Skipping in",
+    seconds: "seconds",
+    youtubeSearchTitle: "Search YouTube",
+    youtubeSearchPlaceholder: "Search YouTube for songs to add...",
+    youtubeSearchBtn: "Search",
+    searchResultsTitle: "Search Results:",
+    youtubeSearching: "Searching YouTube...",
+    youtubeSearchError: "Unable to search YouTube. Please check your internet connection and try again.",
+    youtubeApiKeyError: "YouTube API Key is not configured. Please ensure config.js is loaded and the key is set.",
+    removeSongTitle: "Remove song",
+    settingsTitle: "Settings",
+    searchYouTubeTitle: "Search YouTube",
+    visitForkProfile: "Visit Fork Maintainer's Profile",
+    visitForkRepo: "Visit Forked Repository",
+    visitCreatorProfile: "Visit Original Creator's Profile",
+    visitCreatorRepo: "Visit Original Repository",
+    exportTitle: "Export Playlist to JSON",
+    importTitle: "Import Playlist from JSON",
+    clearCacheTitle: "Clear Search Cache",
+    exportPlaylist: "Export Playlist & Data",
+    importPlaylist: "Import Playlist & Data",
+    clearCache: "Clear Search Cache",
+    albumArtSpin: "Album Art Spin",
+    showLyrics: "Show Lyrics Panel",
+    darkMode: "Dark Mode",
+    darkModeEnable: "Enable",
+    darkModeDisable: "Disable",
+    toggleLyricsTooltip: "Toggle to show or hide lyrics",
+    videoPlayer: "Video Player",
+    showPlayer: "Show Player",
+    hidePlayer: "Hide Player",
+    goTop: "Go to Top",
+    creatorTitle: "Original Creator",
+    creatorDesc: "Original creator of this YouTube Music Player project.",
+    creatorBtn: "Original Creator",
+    visitRepo: "Visit Repository",
+    maintainerTitle: "Fork Maintainer",
+    maintainerDesc: "Maintainer of <a href='https://github.com/Farwalker3/YouTube-Music-Player-Web' target='_blank'>this forked version</a> with enhanced features.",
+    maintainerBtn: "Fork Maintainer",
+    experimentalTitle: "Experimental Project",
+    experimentalWarning: "⚠ Warning: This project may be unstable and unsafe. Use at your own risk.",
+    readExcelTitle: "Read Excel Files Methods",
+    readApiKeyTitle: "Read API Keys Methods",
+    viewBetaBtn: "View Beta Test Project",
+    viewAlphaBtn: "View Alpha Test Project",
+    viewBetaTooltip: "View Beta Test Project",
+    viewAlphaTooltip: "View Alpha Test Project",
+    attributionText: "Original project by",
+    attributionEnhanced: "Enhanced version by",
+    attributionRepo: "Original Repository",
+    languageLabel: "Language",
+  },
+  zh: {
+    playerTitle: "YouTube 音乐播放器",
+    autoPlay: "自动播放",
+    repeat: "重复播放",
+    lyrics: "歌词",
+    lyricsNoLoad: "尚未载入歌词",
+    lyricsSyncedFound: "已找到同步歌词：",
+    lyricsPlainFound: "已找到普通歌词：",
+    lyricsNotFound: "未找到歌词。",
+    lyricsError: "获取歌词时出错。",
+    lyricsFetching: "正在载入歌词...",
+    autoSyncOn: "自动同步：开启",
+    autoSyncOff: "自动同步：关闭",
+    refresh: "刷新",
+    raw: "原始",
+    playlistTitle: "我的播放列表",
+    searchPlaylist: "搜索你的播放列表...",
+    songName: "歌曲名称",
+    authorName: "作者名称",
+    songUnavailable: "此歌曲不可用。将在",
+    seconds: "秒后跳过",
+    youtubeSearchTitle: "搜索 YouTube",
+    youtubeSearchPlaceholder: "在 YouTube 上搜索要添加的歌曲...",
+    youtubeSearchBtn: "搜索",
+    searchResultsTitle: "搜索结果：",
+    youtubeSearching: "正在搜索 YouTube...",
+    youtubeSearchError: "无法搜索 YouTube，请检查网络连接后重试。",
+    youtubeApiKeyError: "YouTube API 密钥未配置。请确保已加载 config.js 并设置密钥。",
+    removeSongTitle: "移除歌曲",
+    settingsTitle: "设置",
+    searchYouTubeTitle: "搜索 YouTube",
+    visitForkProfile: "访问分支维护者的个人资料",
+    visitForkRepo: "访问分支仓库",
+    visitCreatorProfile: "访问原始创作者的个人资料",
+    visitCreatorRepo: "访问原始仓库",
+    exportTitle: "导出播放列表到 JSON",
+    importTitle: "从 JSON 导入播放列表",
+    clearCacheTitle: "清除搜索缓存",
+    exportPlaylist: "导出播放列表和数据",
+    importPlaylist: "导入播放列表和数据",
+    clearCache: "清除搜索缓存",
+    albumArtSpin: "唱片旋转",
+    showLyrics: "显示歌词面板",
+    darkMode: "深色模式",
+    darkModeEnable: "启用",
+    darkModeDisable: "关闭",
+    toggleLyricsTooltip: "切换以显示或隐藏歌词",
+    videoPlayer: "视频播放器",
+    showPlayer: "显示播放器",
+    hidePlayer: "隐藏播放器",
+    goTop: "返回顶部",
+    creatorTitle: "原始创作者",
+    creatorDesc: "此 YouTube 音乐播放器项目的原始创作者。",
+    creatorBtn: "原始创作者",
+    visitRepo: "访问仓库",
+    maintainerTitle: "分支维护者",
+    maintainerDesc: "此 <a href='https://github.com/Farwalker3/YouTube-Music-Player-Web' target='_blank'>分支</a> 的维护者，具有增强功能。",
+    maintainerBtn: "分支维护者",
+    experimentalTitle: "实验性项目",
+    experimentalWarning: "⚠ 警告：此项目可能不稳定且存在风险，请自行承担使用风险。",
+    readExcelTitle: "读取 Excel 文件方法",
+    readApiKeyTitle: "读取 API 密钥方法",
+    viewBetaBtn: "查看 Beta 测试项目",
+    viewAlphaBtn: "查看 Alpha 测试项目",
+    viewBetaTooltip: "查看 Beta 测试项目",
+    viewAlphaTooltip: "查看 Alpha 测试项目",
+    attributionText: "原始项目作者",
+    attributionEnhanced: "增强版本维护者",
+    attributionRepo: "原始仓库",
+    languageLabel: "语言",
+  }
+};
+
+let currentLang = localStorage.getItem("language");
+
+if (!currentLang) {
+  const browserLang = navigator.language.toLowerCase();
+  if (browserLang.includes("zh")) {
+    currentLang = "zh";
+    localStorage.setItem("language", "zh");
+  } else {
+    currentLang = "en";
+    localStorage.setItem("language", "en");
+  }
+}
+
+function updateLanguageButtons() {
+  const enBtn = document.getElementById("lang-en");
+  const zhBtn = document.getElementById("lang-zh");
+
+  if (!enBtn || !zhBtn) return;
+
+  if (currentLang === "en") {
+    enBtn.classList.add("active");
+    zhBtn.classList.remove("active");
+  } else {
+    zhBtn.classList.add("active");
+    enBtn.classList.remove("active");
+  }
+}
+
+document.getElementById("lang-en").addEventListener("click", () => {
+  currentLang = "en";
+  localStorage.setItem("language", "en");
+  applyLanguage();
+});
+
+document.getElementById("lang-zh").addEventListener("click", () => {
+  currentLang = "zh";
+  localStorage.setItem("language", "zh");
+  applyLanguage();
+});
+
+function applyLanguage(lang) {
+    updateLanguageButtons();
+    currentLang = lang;
+    localStorage.setItem("language", lang);
+    const t = translations[lang];
+
+    // 🎧 Player & Labels
+    document.querySelector("h5.card-title i.bxs-music")?.nextSibling?.nodeValue && 
+    (document.querySelector("h5.card-title i.bxs-music").nextSibling.nodeValue = ` ${t.playerTitle}`);
+    document.querySelector("#lyricsTitle")?.lastChild?.nodeValue && 
+    (document.querySelector("#lyricsTitle").lastChild.nodeValue = ` ${t.lyrics}`);
+    
+    // ✅ Keep current meaning when switching language
+    const meta = document.getElementById("lyricsMeta");
+    const textEl = document.getElementById("lyricsText");
+
+    switch (lyricsState.status) {
+    case "idle":
+        meta.textContent = t.lyricsNoLoad;
+        textEl.textContent = t.lyricsNoLoad;
+        break;
+    case "loading":
+        meta.textContent = t.searching;
+        textEl.textContent = t.searching;
+        break;
+    case "synced":
+        meta.textContent = `${t.lyricsSyncedFound} ${lyricsState.artist} – ${lyricsState.title}`;
+        break;
+    case "plain":
+        meta.textContent = `${t.lyricsPlainFound} ${lyricsState.artist} – ${lyricsState.title}`;
+        break;
+    case "error":
+        meta.textContent = t.lyricsError;
+        textEl.textContent = t.lyricsNotFound;
+        break;
+    default:
+        meta.textContent = t.lyricsNoLoad;
+        textEl.textContent = t.lyricsNoLoad;
+    }
+
+    document.querySelector("#toggleSyncBtn") && (document.querySelector("#toggleSyncBtn").textContent = t.autoSyncOn);
+    document.querySelector("#refreshLyricsBtn") && (document.querySelector("#refreshLyricsBtn").textContent = t.refresh);
+    document.querySelector("#openRawBtn") && (document.querySelector("#openRawBtn").textContent = t.raw);
+
+    // Add this line to the applyLanguage function
+    document.getElementById("autoPlayText") && (document.getElementById("autoPlayText").textContent = t.autoPlay);
+    document.querySelector("#repeatBtn")?.nextElementSibling && 
+    (document.querySelector("#repeatBtn").nextElementSibling.textContent = t.repeat);
+
+    document.querySelector(".bxs-playlist")?.parentElement && 
+    (document.querySelector(".bxs-playlist").parentElement.lastChild.textContent = ` ${t.playlistTitle}`);
+    document.querySelector("#searchPlaylistInput")?.setAttribute("placeholder", t.searchPlaylist);
+    document.querySelector(".fw-bold.border-bottom span:first-child")?.textContent && 
+    (document.querySelector(".fw-bold.border-bottom span:first-child").textContent = t.songName);
+    document.querySelector(".fw-bold.border-bottom span:last-child")?.textContent && 
+    (document.querySelector(".fw-bold.border-bottom span:last-child").textContent = t.authorName);
+
+    document.querySelector(".bxs-videos")?.parentElement && 
+    (document.querySelector(".bxs-videos").parentElement.lastChild.textContent = ` ${t.videoPlayer}`);
+    const playerToggleBtn = document.getElementById("togglePlayerBtn");
+    if (playerToggleBtn) {
+    const isHidden = document.getElementById("playerContainer")?.classList.contains("d-none");
+    playerToggleBtn.textContent = isHidden ? t.showPlayer : t.hidePlayer;
+    }
+
+    document.querySelector("#goTopBtn")?.setAttribute("title", t.goTop);
+
+    // Floating settings button
+    document.getElementById("settingsBtn")?.setAttribute("title", t.settingsTitle);
+
+    // YouTube search button
+    document.getElementById("youtubeSearchBtn")?.setAttribute("title", t.searchYouTubeTitle);
+
+    // Remove song buttons (loop all)
+    document.querySelectorAll(".remove-song-btn").forEach(btn => {
+    btn.setAttribute("title", t.removeSongTitle);
+    });
+
+    // Fork / Creator profile links
+    document.querySelector("#maintainerBtn")?.setAttribute("title", t.visitForkProfile);
+    document.querySelector("#maintainerRepoBtn")?.setAttribute("title", t.visitForkRepo);
+    document.querySelector("#creatorBtn")?.setAttribute("title", t.visitCreatorProfile);
+    document.querySelector("#creatorRepoBtn")?.setAttribute("title", t.visitCreatorRepo);
+
+    // Settings submenu buttons
+    document.querySelector("#settingsExportBtn")?.setAttribute("title", t.exportTitle);
+    document.querySelector("#settingsImportBtn")?.setAttribute("title", t.importTitle);
+    document.querySelector("#settingsClearCacheBtn")?.setAttribute("title", t.clearCacheTitle);
+
+
+    // 🧩 Settings Menu
+    document.querySelector(".settings-header h6")?.childNodes[1] && 
+    (document.querySelector(".settings-header h6").childNodes[1].nodeValue = ` ${t.settingsTitle}`);
+    document.querySelector("#settingsExportBtn") && (document.querySelector("#settingsExportBtn").innerHTML = `<i class='bx bx-export'></i> ${t.exportPlaylist}`);
+    document.querySelector("#settingsImportBtn") && (document.querySelector("#settingsImportBtn").innerHTML = `<i class='bx bx-import'></i> ${t.importPlaylist}`);
+    document.querySelector("#settingsClearCacheBtn") && (document.querySelector("#settingsClearCacheBtn").innerHTML = `<i class='bx bx-trash'></i> ${t.clearCache}`);
+    document.querySelector("label[for='albumArtSpinToggle']") && (document.querySelector("label[for='albumArtSpinToggle']").textContent = t.albumArtSpin);
+    document.querySelector("label[for='lyricsToggle']") && (document.querySelector("label[for='lyricsToggle']").textContent = t.showLyrics);
+    const darkModeBtn = document.getElementById("darkModeToggle");
+    if (darkModeBtn) {
+    const isDarkMode = document.body.classList.contains("dark-mode");
+    darkModeBtn.textContent = isDarkMode ? t.darkModeDisable : t.darkModeEnable;
+    }
+    document.querySelector(".bxs-moon")?.parentElement && 
+    (document.querySelector(".bxs-moon").parentElement.lastChild.textContent = ` ${t.darkMode}`);
+
+    // 🔍 YouTube Search
+    document.querySelector(".bxs-search")?.parentElement && 
+    (document.querySelector(".bxs-search").parentElement.lastChild.textContent = ` ${t.searchYouTube}`);
+    document.querySelector("#youtubeSearchInput")?.setAttribute("placeholder", t.searchPlaceholder);
+    document.querySelector("#searchLoading p") && (document.querySelector("#searchLoading p").textContent = t.searching);
+
+    if (document.getElementById("searchResultsTitle"))
+  document.getElementById("searchResultsTitle").textContent = t.searchResultsTitle;
+
+    // Update search error messages if they're currently visible
+    const searchError = document.getElementById("searchError");
+    if (searchError && !searchError.classList.contains("d-none")) {
+        const currentErrorText = searchError.textContent || searchError.innerText;
+        
+        // Check if it's an API key error (contains "API Key" or similar)
+        if (currentErrorText.includes("API") || currentErrorText.includes("config.js") || currentErrorText.includes("YOUR_YOUTUBE_API_KEY")) {
+            searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeApiKeyError}`;
+        } else if (currentErrorText.includes("Unable to search") || currentErrorText.includes("internet connection")) {
+            // It's a general search error
+            searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeSearchError}`;
+        }
+    }
+    
+    // 🔍 YouTube Search Section
+    document.getElementById("youtubeSearchTitle") &&
+    (document.getElementById("youtubeSearchTitle").innerHTML = `<i class='bx bx-search'></i> ${t.youtubeSearchTitle}`);
+
+    document.getElementById("youtubeSearchInput") &&
+    (document.getElementById("youtubeSearchInput").placeholder = t.youtubeSearchPlaceholder);
+
+    document.getElementById("youtubeSearchBtn") &&
+    ((document.getElementById("youtubeSearchBtn").innerHTML = `<i class='bx bx-search'></i> ${t.youtubeSearchBtn}`),
+    document.getElementById("youtubeSearchBtn").setAttribute("title", t.youtubeSearchTitle));
+
+    document.getElementById("youtubeResultsTitle") &&
+    (document.getElementById("youtubeResultsTitle").textContent = t.youtubeResultsTitle);
+
+    document.getElementById("youtubeSearchingText") &&
+    (document.getElementById("youtubeSearchingText").textContent = t.youtubeSearching);
+
+    document.getElementById("youtubeSearchErrorText") &&
+    (document.getElementById("youtubeSearchErrorText").textContent = t.youtubeSearchError);
+
+
+    // 🎨 Creator & Maintainer Cards
+    document.getElementById("creatorDesc").textContent = t.creatorDesc;
+    document.getElementById("creatorBtn").innerHTML = `<i class='bx bx-link-external'></i> ${t.creatorBtn}`;
+    document.getElementById("creatorRepoBtn").innerHTML = `<i class='bx bx-link-external'></i> ${t.visitRepo}`;
+
+    document.getElementById("maintainerDesc").innerHTML =
+    `${t.maintainerDesc.replace("this forked version", "<a href='https://github.com/Farwalker3/YouTube-Music-Player-Web' target='_blank'>this forked version</a>")}`;
+    document.getElementById("maintainerBtn").innerHTML = `<i class='bx bx-link-external'></i> ${t.maintainerBtn}`;
+    document.getElementById("maintainerRepoBtn").innerHTML = `<i class='bx bx-link-external'></i> ${t.visitRepo}`;
+
+    // 🧪 Experimental Project Section
+    document.getElementById("experimentalTitle") && 
+    (document.getElementById("experimentalTitle").innerHTML = `<i class='bx bxs-flask'></i> ${t.experimentalTitle}`);
+
+    document.getElementById("experimentalWarning") && 
+    (document.getElementById("experimentalWarning").textContent = t.experimentalWarning);
+
+    document.getElementById("readExcelTitle") && 
+    (document.getElementById("readExcelTitle").innerHTML = `<i class='bx bxs-file'></i> ${t.readExcelTitle}`);
+
+    document.getElementById("readApiKeyTitle") && 
+    (document.getElementById("readApiKeyTitle").innerHTML = `<i class='bx bxs-key'></i> ${t.readApiKeyTitle}`);
+
+    document.getElementById("viewBetaBtn") && 
+    ((document.getElementById("viewBetaBtn").textContent = t.viewBetaBtn),
+    document.getElementById("viewBetaBtn").setAttribute("title", t.viewBetaTooltip));
+
+    document.getElementById("viewAlphaBtn") && 
+    ((document.getElementById("viewAlphaBtn").textContent = t.viewAlphaBtn),
+    document.getElementById("viewAlphaBtn").setAttribute("title", t.viewAlphaTooltip));
+
+
+    // 🎨 Attribution Section (footer)
+    document.getElementById("attributionText") && 
+    (document.getElementById("attributionText").textContent = t.attributionText);
+
+    document.getElementById("attributionEnhanced") && 
+    (document.getElementById("attributionEnhanced").textContent = t.attributionEnhanced);
+
+    document.getElementById("attributionRepo") && 
+    (document.getElementById("attributionRepo").textContent = t.attributionRepo);
+
+    // 🌐 Language Switch Section
+    if (document.getElementById("languageLabel"))
+    document.getElementById("languageLabel").textContent = t.languageLabel;
+}
+
+// 🌐 Language switch event
+document.getElementById("lang-en")?.addEventListener("click", () => {
+  applyLanguage("en");
+  document.getElementById("lang-en").classList.add("active");
+  document.getElementById("lang-zh").classList.remove("active");
+});
+
+document.getElementById("lang-zh")?.addEventListener("click", () => {
+  applyLanguage("zh");
+  document.getElementById("lang-zh").classList.add("active");
+  document.getElementById("lang-en").classList.remove("active");
+});
+
+// Apply saved language on page load
+document.addEventListener("DOMContentLoaded", () => applyLanguage(currentLang));

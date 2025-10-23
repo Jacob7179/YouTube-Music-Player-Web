@@ -11,6 +11,7 @@
 ![Alt text](resource/image/2.png)
 ![Alt text](resource/image/3.png)
 ![Alt text](resource/image/4.png)
+![Alt text](resource/image/5.png)
 
 ## Information
 
@@ -78,12 +79,14 @@ If you don't want to set up the YouTube API, you can still:
 6. **Search Playlist**: Use the playlist search bar to filter your existing songs
 7. **Controls**: Use play/pause, next/previous, volume, and repeat controls
 8. **Dark Mode**: Toggle dark mode for better viewing experience
-9. **Secure API Key Management**: Uses GitHub Secrets for secure API key storage
-10. **Optimized Search**: Searched result will store in browser storage (No need to waste Quota for same results)
-11. **Import Playlist & Data**: Import playlist and data (Dark mode & Album Art spin settings) with JSON files
-12. **Export Playlist & Data**: Export playlist and data (Dark mode & Album Art spin settings) as JSON files
-13. **Album Art Spin Toggle**: Toggle Album Art Spin option to enable or disable album art spinning
-14. **Delete Search Cache**: Delete search cache from browser storage
+9. **Lyrics**: Toggle to view the song’s lyrics
+10. **Language**: Languages available: English, 中文
+11. **Secure API Key Management**: Uses GitHub Secrets for secure API key storage
+12. **Optimized Search**: Searched result will store in browser storage (No need to waste Quota for same results)
+13. **Import Playlist & Data**: Import playlist and data (Dark mode, Album Art spin settings & Lyrics settings) with JSON files
+14. **Export Playlist & Data**: Export playlist and data (Dark mode, Album Art spin settings & Lyrics settings) as JSON files
+15. **Album Art Spin Toggle**: Toggle Album Art Spin option to enable or disable album art spinning
+16. **Delete Search Cache**: Delete search cache from browser storage
 
 ## 🔧 GitHub Actions Workflow
 

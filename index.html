@@ -52,7 +52,7 @@
                                     <input type="checkbox" id="autoPlayToggle" checked>
                                     <span class="slider"></span>
                                 </label>
-                                <span>Auto-Play</span>
+                                <span id="autoPlayText">Auto-Play</span>
                             </div>       
                         
                             <div class="d-flex align-items-center gap-2">
@@ -125,7 +125,7 @@
                 <!-- YouTube Search Section -->
                 <div class="card shadow-lg">
                     <div class="card-body">
-                        <h5 class="card-title text-center fw-bold"><i class='bx bx-search'></i> Search YouTube</h5>
+                        <h5 id="youtubeSearchTitle" class="card-title text-center fw-bold"><i class='bx bx-search'></i> Search YouTube</h5>
                         
                         <!-- YouTube Search Bar -->
                         <div class="input-group mb-3">
@@ -137,7 +137,7 @@
 
                         <!-- Search Results -->
                         <div id="searchResults" class="d-none mt-3">
-                            <h6 class="fw-bold mb-3">Search Results:</h6>
+                            <h6 id="searchResultsTitle" class="fw-bold mb-3">Search Results:</h6>
                             <div id="searchResultsList" class="overflow-auto" style="max-height: 400px;">
                                 <!-- Search results will be populated here -->
                             </div>
@@ -153,7 +153,7 @@
 
                         <!-- Search error message -->
                         <div id="searchError" class="alert alert-danger d-none mt-3" role="alert">
-                            <i class='bx bx-error'></i> Unable to search YouTube. Please check your internet connection and try again.
+                            <i class='bx bx-error'></i> <span id="youtubeSearchErrorText">Unable to search YouTube. Please check your internet connection and try again.</span>
                         </div>
                     </div>
                 </div>
@@ -166,9 +166,9 @@
                 <div class="card-body text-center">
                     <img src="https://github.com/Jacob7179.png" alt="Original Creator" class="rounded-circle img-fluid" style="width: 100px; height: 100px; object-fit: cover;" draggable="false">
                     <h5 class="card-title mt-2">Jacob7179</h5>
-                    <p class="card-text">Original creator of this YouTube Music Player project.</p>
-                    <a href="https://github.com/Jacob7179" target="_blank" class="btn btn-dark-mode-toggle" title="Visit Original Creator's Profile"><i class='bx bx-link-external'></i> Original Creator</a>
-                    <a href="https://github.com/Jacob7179/YouTube-Music-Player-Web" target="_blank" class="btn btn-primary" style="margin-top: 10px;" title="Visit Original Repository"><i class='bx bx-link-external'></i> Visit Repository</a>
+                    <p id="creatorDesc" class="card-text">Original creator of this YouTube Music Player project.</p>
+                    <a id="creatorBtn" href="https://github.com/Jacob7179" target="_blank" class="btn btn-dark-mode-toggle" title="Visit Original Creator's Profile"><i class='bx bx-link-external'></i> Original Creator</a>
+                    <a id="creatorRepoBtn" href="https://github.com/Jacob7179/YouTube-Music-Player-Web" target="_blank" class="btn btn-primary" style="margin-top: 10px;" title="Visit Original Repository"><i class='bx bx-link-external'></i> Visit Repository</a>
                 </div>
             </div>
 
@@ -177,9 +177,9 @@
                 <div class="card-body text-center">
                     <img src="https://github.com/Farwalker3.png" alt="Fork Maintainer" class="rounded-circle img-fluid" style="width: 100px; height: 100px; object-fit: cover;" draggable="false">
                     <h5 class="card-title mt-2">Farwalker3</h5>
-                    <p class="card-text">Maintainer of <a href="https://github.com/Farwalker3/YouTube-Music-Player-Web" target="_blank">this</a> forked version with enhanced features.</p>
-                    <a href="https://github.com/Farwalker3" target="_blank" class="btn btn-dark-mode-toggle" title="Visit Fork Maintainer's Profile"><i class='bx bx-link-external'></i> Fork Maintainer</a>
-                    <a href="https://github.com/Farwalker3/YouTube-Music-Player-Web" target="_blank" class="btn btn-primary" style="margin-top: 10px;" title="Visit Forked Repository"><i class='bx bx-link-external'></i> Visit Repository</a>
+                    <p id="maintainerDesc" class="card-text">Maintainer of <a href="https://github.com/Farwalker3/YouTube-Music-Player-Web" target="_blank">this forked version</a> with enhanced features.</p>
+                    <a id="maintainerBtn" href="https://github.com/Farwalker3" target="_blank" class="btn btn-dark-mode-toggle" title="Visit Fork Maintainer's Profile"><i class='bx bx-link-external'></i> Fork Maintainer</a>
+                    <a id="maintainerRepoBtn" href="https://github.com/Farwalker3/YouTube-Music-Player-Web" target="_blank" class="btn btn-primary" style="margin-top: 10px;" title="Visit Forked Repository"><i class='bx bx-link-external'></i> Visit Repository</a>
                 </div>
             </div>
 
@@ -204,24 +204,24 @@
 
         <div class="d-flex justify-content-center align-items-start flex-wrap" style="margin-top: 20px; gap: 20px; padding-bottom: 20px;">
             <div class="w-100 text-center border-bottom mb-3">
-                <h4 class="fw-bold"><i class='bx bxs-flask' ></i> Experimental Project</h4>
+                <h4 id="experimentalTitle" class="fw-bold"><i class='bx bxs-flask' ></i> Experimental Project</h4>
             </div>
             
             <div class="w-100 text-center mt-3">
-                <p class="text-danger fw-bold">⚠ Warning: This project may be unstable and unsafe. Use at your own risk.</p>
+                <p id="experimentalWarning" class="text-danger fw-bold">⚠ Warning: This project may be unstable and unsafe. Use at your own risk.</p>
             </div>
 
             <div class="card shadow-lg" style="width: 16rem;">
                 <div class="card-body text-center">
-                    <h5 class="card-title fw-bold"><i class='bx bxs-file'></i> Read Excel Files Methods</h5>
-                    <button onclick="window.location.href='/YouTube-Music-Player-Web/beta/'" class="btn btn-primary w-100" title="View Beta Test Project">View Beta Test Project</button>
+                    <h5 id="readExcelTitle" class="card-title fw-bold"><i class='bx bxs-file'></i> Read Excel Files Methods</h5>
+                    <button id="viewBetaBtn" onclick="window.location.href='/YouTube-Music-Player-Web/beta/'" class="btn btn-primary w-100" title="View Beta Test Project">View Beta Test Project</button>
                 </div>
             </div>
             
             <div class="card shadow-lg" style="width: 16rem;">
                 <div class="card-body text-center">
-                    <h5 class="card-title fw-bold"><i class='bx bxs-key'></i> Read API Keys Methods</h5>
-                    <button onclick="window.location.href='/YouTube-Music-Player-Web/alpha/'" class="btn btn-secondary w-100" title="View Alpha Test Project">View Alpha Test Project</button>
+                    <h5 id="readApiKeyTitle" class="card-title fw-bold"><i class='bx bxs-key'></i> Read API Keys Methods</h5>
+                    <button id="viewAlphaBtn" onclick="window.location.href='/YouTube-Music-Player-Web/alpha/'" class="btn btn-secondary w-100" title="View Alpha Test Project">View Alpha Test Project</button>
                 </div>
             </div>
         </div>
@@ -253,6 +253,13 @@
                         <input class="form-check-input" type="checkbox" id="lyricsToggle">
                         <label class="form-check-label" for="lyricsToggle">Show Lyrics Panel</label>
                     </div>
+                    <div class="d-flex flex-column align-items-start w-100" role="group" aria-label="Language toggle">
+                        <span id="languageLabel" class="fw-bold mb-1">Language:</span>
+                        <div class="btn-group w-100" role="group">
+                            <button id="lang-en" class="btn btn-sm btn-outline-primary flex-fill active">English</button>
+                            <button id="lang-zh" class="btn btn-sm btn-outline-primary flex-fill">中文</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <!-- Hidden file input for import -->
@@ -269,9 +276,9 @@
         <div class="text-center mt-4 mb-4">
             <p>
                 <small>
-                    Original project by <a href="https://github.com/Jacob7179" target="_blank" class="text-decoration-none">Jacob7179</a> | 
-                    Enhanced version by <a href="https://github.com/Farwalker3" target="_blank" class="text-decoration-none">Farwalker3</a> | 
-                    <a href="https://github.com/Jacob7179/YouTube-Music-Player-Web" target="_blank" class="text-decoration-none">Original Repository</a>
+                    <span id="attributionText">Original project by</span> <a href="https://github.com/Jacob7179" target="_blank" class="text-decoration-none">Jacob7179</a> | 
+                    <span id="attributionEnhanced">Enhanced version by</span> <a href="https://github.com/Farwalker3" target="_blank" class="text-decoration-none">Farwalker3</a> | 
+                    <a id="attributionRepo" href="https://github.com/Jacob7179/YouTube-Music-Player-Web" target="_blank" class="text-decoration-none">Original Repository</a>
                 </small>
             </p>
         </div>
