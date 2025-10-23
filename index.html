@@ -17,7 +17,7 @@
         <div class="row justify-content-center align-items-stretch">        
             <!-- Card 1: Music Player -->
             <div class="col-md-3 col-12 d-flex">
-                <div class="card shadow-lg w-100 h-100" style="max-height: 670px;">
+                <div class="card shadow-lg w-100 h-100" style="max-height: 680px;">
                     <div class="card-body text-center d-flex flex-column">
                         <h5 class="card-title fw-bold"><i class='bx bxs-music'></i> YouTube Music Player</h5>
     
@@ -82,7 +82,7 @@
     
             <!-- Card 2: Song Selector -->
             <div class="col-md-8 col-12 mt-4 mt-md-0">
-                <div class="card shadow-lg" style="max-height: 670px; min-height: 670px;">
+                <div class="card shadow-lg" style="max-height: 680px; min-height: 670px;">
                     <div class="card-body">
                         <h5 class="card-title text-center fw-bold"><i class='bx bxs-playlist' ></i> My Playlist</h5>
 
@@ -93,9 +93,11 @@
                         </div>
 
                         <!-- Song List Headers -->
-                        <div class="d-flex justify-content-between px-3 fw-bold border-bottom pb-2">
-                            <span>Song Name</span>
-                            <span>Author Name</span>
+                        <div class="playlist-headers d-flex justify-content-between px-3 fw-bold border-bottom pb-2">
+                            <span class="number-header" style="width: 50px; text-align: center;">No.</span>
+                            <span class="song-header" style="flex: 2; text-align: left;">Song Name</span>
+                            <span class="author-header" style="flex: 1.5; text-align: left;">Author Name</span>
+                            <span class="action-header" style="width: 70px; text-align: center;">Action</span>
                         </div>
 
                         <ul id="songList" class="list-group overflow-auto" style="max-height: 520px;">
@@ -112,9 +114,9 @@
                     <div id="lyricsMeta" style="font-size:12px;color:gray;">No lyrics loaded</div>
                     </div>
                     <div class="lyrics-controls">
-                    <button id="toggleSyncBtn">Auto-Sync: ON</button>
-                    <button id="refreshLyricsBtn">Refresh</button>
-                    <button id="openRawBtn">Open Raw</button>
+                        <button id="toggleSyncBtn">Auto-Sync: ON</button>
+                        <button id="refreshLyricsBtn">Refresh</button>
+                        <button id="openRawBtn">Raw Data</button>
                     </div>
                 </div>
                 <div id="lyricsText">No lyrics loaded.</div>

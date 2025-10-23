@@ -50,8 +50,8 @@ For secure API key management, this project uses GitHub Secrets:
 For local development, you can still manually add the API key:
 
 1. **Clone the repository locally**
-2. **Open `script.js`**
-3. **Find the line**: `const YOUTUBE_API_KEY = 'YOUR_YOUTUBE_API_KEY';`
+2. **Create `script.js`**
+3. **Insert**: `const YOUTUBE_API_KEY = 'YOUR_YOUTUBE_API_KEY';`
 4. **Replace** `'YOUR_YOUTUBE_API_KEY'` with your actual API key
 5. **Important**: Never commit this change to prevent exposing your API key
 
@@ -104,12 +104,15 @@ The workflow file is located at `.github/workflows/deploy.yml`.
 - `style.css` - Styling and animations
 - `.github/workflows/deploy.yml` - GitHub Actions deployment workflow
 - `README.md` - This documentation
+- `/beta/index.html` - Read Excel Files Methods Version (Experimental Project)
+- `/alpha/index.html` - Read Api Keys Methods Version (Experimental Project)
+- `/resource` - Source of the project (Image, Files, Icon & Export data version)
 
 ## 🔐 Security Features
 
 - **GitHub Secrets**: API keys are stored securely in GitHub Secrets
 - **No Key Exposure**: API keys are never committed to the repository
-- **Automatic Injection**: Keys are injected during deployment only
+- **Automatic Injection**: Keys are injected during deployment only (But you can found api keys declaration on website [config.js])
 - **Restricted API Keys**: Recommended to restrict API keys to specific services
 
 ## 🤝 Attribution
@@ -145,6 +148,16 @@ For production deployment:
 2. Push to the `main` branch
 3. GitHub Actions will handle the rest!
 
----
+## Contributors
 
+<table>
+    <tbody>
+        <tr>
+            <td align="center" valign="top" width="14.28%"><a href="https://github.com/Jacob7179.png"><img src="https://avatars.githubusercontent.com/u/70430960?v=4" width="100px;" alt=""/><br /><sub><b>Jacob7179</b></sub></a></td>
+            <td align="center" valign="top" width="14.28%"><a href="https://github.com/Farwalker3.png"><img src="https://avatars.githubusercontent.com/u/30270971?v=4" width="100px;" alt=""/><br /><sub><b>Farwalker3</b></sub></a></td>
+        </tr>
+    </tbody>
+</table>
+
+---
 *This project builds upon the excellent work of [Jacob7179](https://github.com/Jacob7179). Thanks for creating such a solid foundation!*

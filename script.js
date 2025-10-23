@@ -59,13 +59,16 @@ function savePlaylist() {
     localStorage.setItem('youtubeMusicPlaylist', JSON.stringify(playlist));
 }
 
-// Render playlist to the DOM
+// In the renderPlaylist function, replace the list item creation with:
 function renderPlaylist(songsToRender) {
     const songListElement = document.getElementById('songList');
     songListElement.innerHTML = ''; // Clear existing list
 
     if (songsToRender.length === 0) {
-        songListElement.innerHTML = `<li class="list-group-item text-center text-muted">No songs in playlist. Add some using the YouTube search below!</li>`;
+        const emptyItem = document.createElement('li');
+        emptyItem.classList.add('list-group-item', 'text-center', 'text-muted', 'empty-playlist');
+        emptyItem.textContent = 'No songs in playlist. Add some using the YouTube search below!';
+        songListElement.appendChild(emptyItem);
         return;
     }
 
@@ -75,27 +78,55 @@ function renderPlaylist(songsToRender) {
         listItem.setAttribute('data-video', song.videoId);
         listItem.setAttribute('data-img', song.albumArt);
 
+        // Column 1: Number - Simple 1. 2. 3. format
         const songNumberSpan = document.createElement('span');
         songNumberSpan.classList.add('song-number');
-        songNumberSpan.textContent = (index + 1) + ".\u00A0";
+        songNumberSpan.textContent = `${index + 1}.`; // Simple 1. 2. 3. format
 
-        const songDetailsSpan = document.createElement('span');
-        songDetailsSpan.innerHTML = `<span class="song">${song.songName}</span>\n                                     <span class="author text-muted">${song.authorName}</span>`;
+        // Column 2: Song Name - Clean, no author name
+        const songNameSpan = document.createElement('span');
+        songNameSpan.classList.add('song-name');
+        
+        // Clean the song name - remove author name if it's included
+        let cleanSongName = song.songName;
+        // Remove common patterns where author name might be included
+        cleanSongName = cleanSongName.replace(new RegExp(`^${song.authorName}\\s*-\\s*`), '');
+        cleanSongName = cleanSongName.replace(new RegExp(`\\s*-\\s*${song.authorName}$`), '');
+        cleanSongName = cleanSongName.replace(new RegExp(`\\s*by\\s*${song.authorName}$`, 'i'), '');
+        
+        songNameSpan.textContent = cleanSongName;
+
+        // Column 3: Author Name - Separate column
+        const authorColumnSpan = document.createElement('span');
+        authorColumnSpan.classList.add('author-column');
+        authorColumnSpan.textContent = song.authorName;
+
+        // Column 4: Action
+        const actionDiv = document.createElement('div');
+        actionDiv.classList.add('song-action');
 
         const removeButton = document.createElement('button');
         removeButton.classList.add('btn', 'btn-danger', 'btn-sm', 'remove-song-btn');
-        removeButton.innerHTML = ICON_TRASH; // Use constant
-        removeButton.setAttribute('data-video', song.videoId); // Identify song to remove
-        removeButton.setAttribute('title', 'Remove Song'); // Add tooltip text
+        removeButton.innerHTML = ICON_TRASH;
+        removeButton.setAttribute('data-video', song.videoId);
+        removeButton.setAttribute('title', 'Remove Song');
 
+        // Assemble the structure - 4 separate columns
         listItem.appendChild(songNumberSpan);
-        listItem.appendChild(songDetailsSpan);
-        listItem.appendChild(removeButton);
+        listItem.appendChild(songNameSpan);
+        listItem.appendChild(authorColumnSpan);
+        actionDiv.appendChild(removeButton);
+        listItem.appendChild(actionDiv);
 
         songListElement.appendChild(listItem);
 
-        // Add click listener to play song
-        songDetailsSpan.addEventListener('click', function () {
+        // Add click listener to play song (click anywhere on the row)
+        listItem.addEventListener('click', function (event) {
+            // Don't trigger if remove button was clicked
+            if (event.target.closest('.remove-song-btn')) {
+                return;
+            }
+            
             // Remove highlight from previous selection
             document.querySelectorAll('#songList li').forEach(li => li.classList.remove('selected'));
             // Highlight the clicked song
@@ -117,6 +148,9 @@ function renderPlaylist(songsToRender) {
         applyDarkModeToElements(true);
     }
 
+    // Apply current language
+    applyLanguage(currentLang);
+
     // Select the first song if none is selected and playlist is not empty
     if (!document.querySelector('#songList li.selected') && songsToRender.length > 0) {
         const firstSongElement = document.querySelector('#songList li');
@@ -129,11 +163,18 @@ function renderPlaylist(songsToRender) {
             // ✅ Immediately update UI without autoplay
             document.getElementById("albumArt").src = firstAlbumArtUrl;
             document.getElementById("background").style.backgroundImage = `url('${firstAlbumArtUrl}')`;
-            document.querySelector("#nowPlaying .song-title").innerText = firstSongObj.songName;
+            
+            // Clean the song name for display
+            let cleanSongName = firstSongObj.songName;
+            cleanSongName = cleanSongName.replace(new RegExp(`^${firstSongObj.authorName}\\s*-\\s*`), '');
+            cleanSongName = cleanSongName.replace(new RegExp(`\\s*-\\s*${firstSongObj.authorName}$`), '');
+            cleanSongName = cleanSongName.replace(new RegExp(`\\s*by\\s*${firstSongObj.authorName}$`, 'i'), '');
+            
+            document.querySelector("#nowPlaying .song-title").innerText = cleanSongName;
             document.querySelector("#nowPlaying .author-name").innerText = firstSongObj.authorName;
             loadLyricsFor(firstSongObj.songName, firstSongObj.authorName);
 
-            // Only prepare player, don’t autoplay
+            // Only prepare player, don't autoplay
             if (!player) {
                 selectedVideoId = firstVideoId;
                 onYouTubeIframeAPIReady();
@@ -1664,6 +1705,7 @@ async function fetchLyrics(title, artist) {
 
   try {
     const base = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`;
+    console.log("Fetching lyrics from:", base);
     const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(base)}`;
     const res = await fetch(proxy);
     const data = await res.json();
@@ -1780,11 +1822,13 @@ const translations = {
     autoSyncOn: "Auto-Sync: ON",
     autoSyncOff: "Auto-Sync: OFF",
     refresh: "Refresh",
-    raw: "Raw",
+    raw: "Raw Data",
     playlistTitle: "My Playlist",
     searchPlaylist: "Search your playlist...",
     songName: "Song Name",
     authorName: "Author Name",
+    numberHeader: "No.",
+    actionHeader: "Action",
     songUnavailable: "This song is unavailable. Skipping in",
     seconds: "seconds",
     youtubeSearchTitle: "Search YouTube",
@@ -1851,11 +1895,13 @@ const translations = {
     autoSyncOn: "自动同步：开启",
     autoSyncOff: "自动同步：关闭",
     refresh: "刷新",
-    raw: "原始",
+    raw: "原始数据",
     playlistTitle: "我的播放列表",
     searchPlaylist: "搜索你的播放列表...",
     songName: "歌曲名称",
     authorName: "作者名称",
+    numberHeader: "序号",
+    actionHeader: "操作",
     songUnavailable: "此歌曲不可用。将在",
     seconds: "秒后跳过",
     youtubeSearchTitle: "搜索 YouTube",
@@ -2145,6 +2191,11 @@ function applyLanguage(lang) {
     // 🌐 Language Switch Section
     if (document.getElementById("languageLabel"))
     document.getElementById("languageLabel").textContent = t.languageLabel;
+
+    document.querySelector('.number-header') && (document.querySelector('.number-header').textContent = t.numberHeader);
+    document.querySelector('.song-header') && (document.querySelector('.song-header').textContent = t.songName);
+    document.querySelector('.author-header') && (document.querySelector('.author-header').textContent = t.authorName);
+    document.querySelector('.action-header') && (document.querySelector('.action-header').textContent = t.actionHeader);
 }
 
 // 🌐 Language switch event

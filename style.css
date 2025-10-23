@@ -439,14 +439,173 @@ select {
     border-radius: 0 !important;
 }
 
-/* Add horizontal lines between songs */
+/* Playlist Headers and Items Alignment */
+.playlist-headers {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 15px 10px 15px;
+    font-weight: bold;
+    border-bottom: 2px solid #dee2e6;
+    margin-bottom: 10px;
+    transition: all 0.8s ease-in-out;
+}
+
+.playlist-headers span {
+    font-size: 14px;
+    color: #495057; /* Normal color for headers */
+    transition: color 0.8s ease-in-out;
+}
+
+/* Song list items - 4-column layout */
 #songList .list-group-item {
-    border-bottom: 1px solid #ddd !important; /* Light grey separator */
-    border-top: none !important;
-    border-left: none !important;
-    border-right: none !important;
-    padding: 10px 15px; /* Adjust spacing for better readability */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    border: none !important;
+    border-bottom: 1px solid #e9ecef !important;
+    transition: all 0.8s ease-in-out;
+    gap: 10px;
+}
+
+#songList .list-group-item:last-child {
+    border-bottom: none !important;
+}
+
+#songList .list-group-item:hover {
+    background-color: #f8f9fa;
+    transition: background-color 0.3s ease;
+}
+
+#songList .list-group-item.selected {
+    background-color: #007bff !important;
+    color: white;
+}
+
+/* Column 1: Number - Simple 1. 2. 3. format */
+#songList .song-number {
+    width: 50px;
+    text-align: center;
+    font-size: 14px;
+    color: #212529; /* Normal black color (not muted) */
+    flex-shrink: 0;
+    transition: color 0.8s ease-in-out;
+}
+
+/* Column 2: Song Name - Clean, no author name */
+#songList .song-name {
+    flex: 2;
+    text-align: left;
+    font-weight: 500;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    color: #212529; /* Normal text color */
+    transition: color 0.8s ease-in-out;
+}
+
+/* Column 3: Author Name - Separate column */
+#songList .author-column {
+    flex: 1.5;
+    text-align: left;
+    font-size: 13px;
+    color: #212529; /* Normal black color (not muted) */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    transition: color 0.8s ease-in-out;
+}
+
+/* Column 4: Action */
+#songList .song-action {
+    width: 70px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* Remove button styling */
+.remove-song-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.8s ease-in-out;
+}
+
+/* Selected song - White text in both light and dark modes */
+#songList .list-group-item.selected .song-number,
+#songList .list-group-item.selected .song-name,
+#songList .list-group-item.selected .author-column {
+    color: white !important;
+}
+
+/* Dark mode support */
+body.dark-mode .playlist-headers {
+    border-bottom-color: #444;
+}
+
+body.dark-mode .playlist-headers span {
+    color: #ffffff; /* White color for headers in dark mode */
+}
+
+body.dark-mode #songList .list-group-item {
+    border-bottom-color: #444 !important;
+    background-color: #333;
+    color: #ffffff;
+}
+
+body.dark-mode #songList .song-number {
+    color: #ffffff; /* White color for numbers in dark mode */
+}
+
+body.dark-mode #songList .song-name {
+    color: #ffffff; /* White color for song names in dark mode */
+}
+
+body.dark-mode #songList .author-column {
+    color: #ffffff; /* White color for author names in dark mode */
+}
+
+body.dark-mode #songList .list-group-item:hover {
+    background-color: #3a3a3a;
+}
+
+body.dark-mode #songList .list-group-item.selected {
+    background-color: #007bff !important;
+}
+
+body.dark-mode #songList .list-group-item.selected .song-number,
+body.dark-mode #songList .list-group-item.selected .song-name,
+body.dark-mode #songList .list-group-item.selected .author-column {
+    color: white;
+}
+
+/* Light mode: Ensure normal colors */
+body:not(.dark-mode) #songList .song-number,
+body:not(.dark-mode) #songList .author-column {
+    color: #212529 !important; /* Force normal black color in light mode */
+}
+
+body:not(.dark-mode) #songList .list-group-item.selected .song-number,
+body:not(.dark-mode) #songList .list-group-item.selected .song-name,
+body:not(.dark-mode) #songList .list-group-item.selected .author-column {
+    color: white !important;
+}
+
+/* Ensure the card itself transitions smoothly */
+.card {
     transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
+}
+
+.card.dark-mode {
+    background-color: #222;
+    color: white;
 }
 
 /* Remove border from the last item to avoid extra line */
@@ -1051,14 +1210,7 @@ body.dark-mode .settings-close-btn {
 
 /* === Alpha-style Lyrics Panel === */
 #lyricsPanel {
-  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
-}
-
-#lyricsTitle {
-    font-weight: bold;
-}
-
-#lyricsPanel {
+  transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
   background-color: #fafafa;
   color: #222;
   border-radius: 6px;
@@ -1069,6 +1221,11 @@ body.dark-mode .settings-close-btn {
   overflow-y: auto;
   font-family: "Segoe UI", sans-serif;
   border: none;
+}
+
+#lyricsTitle {
+    font-weight: bold;
+    transition: color 0.8s ease-in-out;
 }
 
 body.dark-mode #lyricsPanel {
@@ -1082,23 +1239,31 @@ body.dark-mode #lyricsPanel {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  transition: all 0.8s ease-in-out;
 }
+
+#lyricsMeta {
+    font-size: 12px;
+    color: gray;
+    transition: color 0.8s ease-in-out;
+}
+
 #lyricsText {
   overflow-y: auto;
   font-size: 15px;
   line-height: 1.7;
   max-height: 300px;
   scroll-behavior: smooth;
+  transition: color 0.8s ease-in-out;
 }
 
 .lrc-line {
   padding: 6px 8px;
   border-radius: 4px;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: background 0.8s ease-in-out, color 0.8s ease-in-out;
   display: flex;
   align-items: center;
   gap: 10px;
-  transition: all 0.3s ease;
 }
 
 .lrc-time {
@@ -1106,26 +1271,33 @@ body.dark-mode #lyricsPanel {
   color: #a0a0a0;
   width: 50px;
   text-align: right;
+  transition: color 0.8s ease-in-out;
 }
 
 .lrc-line.highlight {
   background: rgba(0, 123, 255, 0.18);
   color: #fff;
   font-weight: bold;
-  transition: background 0.3s ease, color 0.3s ease;
+  transition: background 0.8s ease-in-out, color 0.8s ease-in-out;
 }
 
-.lyrics-controls button {
-  background: #222;
-  color: #eee;
-  border: 1px solid #444;
-  border-radius: 4px;
-  padding: 4px 8px;
-  cursor: pointer;
+.plain-line {
+  transition: color 0.8s ease-in-out;
 }
 
-.lyrics-controls button:hover {
-  background: #2a2a2a;
+/* Dark Mode Lyrics */
+body.dark-mode #lyricsPanel {
+  background-color: #222;
+  color: #e6e6e6;
+  border: none;
+}
+
+body.dark-mode #lyricsTitle {
+    color: #ffffff;
+}
+
+body.dark-mode #lyricsMeta {
+    color: #bbb !important;
 }
 
 body.dark-mode .lrc-line {
@@ -1136,17 +1308,73 @@ body.dark-mode .lrc-line .lrc-time {
   color: #aaa;
 }
 
+/* Lyrics Control Buttons - Match Dark Mode Toggle Style */
+.lyrics-controls button {
+  background: black;
+  color: white;
+  border: 2px solid black;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border 0.8s ease-in-out, opacity 0.8s ease-in-out !important;
+  opacity: 1;
+}
+
+.lyrics-controls button:hover {
+  opacity: 0.7;
+  transition: opacity 0.8s ease-in-out;
+}
+
+/* Dark Mode - Switch to white background like dark mode toggle */
+body.dark-mode .lyrics-controls button {
+  background: white !important;
+  color: black !important;
+  border: 2px solid white !important;
+  transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border 0.8s ease-in-out, opacity 0.8s ease-in-out;
+}
+
+body.dark-mode .lyrics-controls button:hover {
+  opacity: 0.7;
+  transition: opacity 0.8s ease-in-out;
+}
+
+/* Click Animation (Shrink Effect) - Match dark mode toggle */
+.lyrics-controls button:active {
+  transform: scale(0.9);
+  transition: transform 0.1s ease-in-out;
+}
+
+/* Ensure all buttons have consistent styling */
+#toggleSyncBtn,
+#refreshLyricsBtn, 
+#openRawBtn {
+  border-radius: 8px !important;
+}
+
 /* Highlighted lyric line */
 .lrc-line.highlight {
   color: black;
 }
 
+body.dark-mode .lrc-line.highlight {
+  color: white;
+}
+
 #lyricsPanel {
-  transition: all 0.3s ease-in-out;
+  transition: all 0.8s ease-in-out;
   opacity: 1;
 }
+
 #lyricsPanel.hidden {
   opacity: 0;
   max-height: 0;
   overflow: hidden;
+  transition: all 0.8s ease-in-out;
+}
+
+/* Smooth transitions for lyrics text content */
+#lyricsText * {
+  transition: color 0.8s ease-in-out, background-color 0.8s ease-in-out;
 }
