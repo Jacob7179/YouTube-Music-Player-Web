@@ -8,6 +8,7 @@ let selectedVideoId;
 let countdownInterval;
 let darkModeToggleInProgress = false;
 let albumArtSpinEnabled = JSON.parse(localStorage.getItem("albumArtSpin")) ?? true;
+let actualSelectedVideoId = null;
 
 // YOUTUBE_API_KEY is now loaded from config.js 
 
@@ -62,6 +63,8 @@ function savePlaylist() {
 // In the renderPlaylist function, replace the list item creation with:
 function renderPlaylist(songsToRender) {
     const songListElement = document.getElementById('songList');
+    const currentlySelectedVideoId = actualSelectedVideoId || (player ? player.getVideoData().video_id : null);
+    
     songListElement.innerHTML = ''; // Clear existing list
 
     if (songsToRender.length === 0) {
@@ -78,10 +81,16 @@ function renderPlaylist(songsToRender) {
         listItem.setAttribute('data-video', song.videoId);
         listItem.setAttribute('data-img', song.albumArt);
 
+        // ✅ Preserve selection - check if this is the actual selected song
+        if (song.videoId === currentlySelectedVideoId) {
+            listItem.classList.add('selected');
+        }
+
+        // ... rest of your existing code for creating list items ...
         // Column 1: Number - Simple 1. 2. 3. format
         const songNumberSpan = document.createElement('span');
         songNumberSpan.classList.add('song-number');
-        songNumberSpan.textContent = `${index + 1}.`; // Simple 1. 2. 3. format
+        songNumberSpan.textContent = `${index + 1}.`;
 
         // Column 2: Song Name - Clean, no author name
         const songNameSpan = document.createElement('span');
@@ -89,7 +98,6 @@ function renderPlaylist(songsToRender) {
         
         // Clean the song name - remove author name if it's included
         let cleanSongName = song.songName;
-        // Remove common patterns where author name might be included
         cleanSongName = cleanSongName.replace(new RegExp(`^${song.authorName}\\s*-\\s*`), '');
         cleanSongName = cleanSongName.replace(new RegExp(`\\s*-\\s*${song.authorName}$`), '');
         cleanSongName = cleanSongName.replace(new RegExp(`\\s*by\\s*${song.authorName}$`, 'i'), '');
@@ -132,6 +140,9 @@ function renderPlaylist(songsToRender) {
             // Highlight the clicked song
             listItem.classList.add('selected');
 
+            // ✅ Update the actual selected video ID
+            actualSelectedVideoId = song.videoId;
+
             loadNewVideo(song.videoId, song.albumArt, song);
             listItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
         });
@@ -151,31 +162,36 @@ function renderPlaylist(songsToRender) {
     // Apply current language
     applyLanguage(currentLang);
 
-    // Select the first song if none is selected and playlist is not empty
-    if (!document.querySelector('#songList li.selected') && songsToRender.length > 0) {
-        const firstSongElement = document.querySelector('#songList li');
-        if (firstSongElement) {
-            firstSongElement.classList.add('selected');
-            const firstVideoId = firstSongElement.getAttribute('data-video');
-            const firstAlbumArtUrl = firstSongElement.getAttribute('data-img');
-            const firstSongObj = songsToRender[0];
+    // ✅ Only auto-select first song on VERY FIRST page load (when player doesn't exist)
+    if (!player && songsToRender.length > 0) {
+        const searchInput = document.getElementById('searchPlaylistInput');
+        // ✅ Only auto-select if NOT searching (search input is empty)
+        if (!searchInput || searchInput.value.trim() === '') {
+            const firstSongElement = document.querySelector('#songList li');
+            if (firstSongElement) {
+                firstSongElement.classList.add('selected');
+                const firstVideoId = firstSongElement.getAttribute('data-video');
+                const firstAlbumArtUrl = firstSongElement.getAttribute('data-img');
+                const firstSongObj = songsToRender[0];
 
-            // ✅ Immediately update UI without autoplay
-            document.getElementById("albumArt").src = firstAlbumArtUrl;
-            document.getElementById("background").style.backgroundImage = `url('${firstAlbumArtUrl}')`;
-            
-            // Clean the song name for display
-            let cleanSongName = firstSongObj.songName;
-            cleanSongName = cleanSongName.replace(new RegExp(`^${firstSongObj.authorName}\\s*-\\s*`), '');
-            cleanSongName = cleanSongName.replace(new RegExp(`\\s*-\\s*${firstSongObj.authorName}$`), '');
-            cleanSongName = cleanSongName.replace(new RegExp(`\\s*by\\s*${firstSongObj.authorName}$`, 'i'), '');
-            
-            document.querySelector("#nowPlaying .song-title").innerText = cleanSongName;
-            document.querySelector("#nowPlaying .author-name").innerText = firstSongObj.authorName;
-            loadLyricsFor(firstSongObj.songName, firstSongObj.authorName);
+                // ✅ Update the actual selected video ID
+                actualSelectedVideoId = firstVideoId;
 
-            // Only prepare player, don't autoplay
-            if (!player) {
+                // ✅ Immediately update UI without autoplay
+                document.getElementById("albumArt").src = firstAlbumArtUrl;
+                document.getElementById("background").style.backgroundImage = `url('${firstAlbumArtUrl}')`;
+                
+                // Clean the song name for display
+                let cleanSongName = firstSongObj.songName;
+                cleanSongName = cleanSongName.replace(new RegExp(`^${firstSongObj.authorName}\\s*-\\s*`), '');
+                cleanSongName = cleanSongName.replace(new RegExp(`\\s*-\\s*${firstSongObj.authorName}$`), '');
+                cleanSongName = cleanSongName.replace(new RegExp(`\\s*by\\s*${firstSongObj.authorName}$`, 'i'), '');
+                
+                document.querySelector("#nowPlaying .song-title").innerText = cleanSongName;
+                document.querySelector("#nowPlaying .author-name").innerText = firstSongObj.authorName;
+                loadLyricsFor(firstSongObj.songName, firstSongObj.authorName);
+
+                // Only prepare player, don't autoplay
                 selectedVideoId = firstVideoId;
                 onYouTubeIframeAPIReady();
             }
@@ -192,6 +208,11 @@ function removeSong(videoIdToRemove) {
     savePlaylist();
     renderPlaylist(playlist);
 
+    // ✅ If the removed song was the actual selected one, clear the selection
+    if (actualSelectedVideoId === videoIdToRemove) {
+        actualSelectedVideoId = null;
+    }
+
     // If the removed song was the currently playing one
     if (wasPlayingCurrent) {
         if (playlist.length > 0) {
@@ -201,7 +222,7 @@ function removeSong(videoIdToRemove) {
             // If playlist is empty, stop playback and reset UI
             player.stopVideo();
             playing = false;
-            document.getElementById('playPauseBtn').innerHTML = ICON_PLAY; // Use constant
+            document.getElementById('playPauseBtn').innerHTML = ICON_PLAY;
             document.getElementById('albumArt').src = 'https://via.placeholder.com/300';
             document.getElementById('nowPlaying .song-title').innerText = 'No Song';
             document.getElementById('nowPlaying .author-name').innerText = '';
@@ -210,6 +231,9 @@ function removeSong(videoIdToRemove) {
             document.getElementById('totalTime').innerText = '0:00';
             document.getElementById('background').style.backgroundImage = 'none';
             clearInterval(progressInterval);
+            
+            // ✅ Clear the actual selected video ID when playlist is empty
+            actualSelectedVideoId = null;
         }
     }
 }
@@ -958,8 +982,37 @@ function playNextSong() {
     let nextAlbumArtUrl = nextSongElement.getAttribute("data-img");
     const nextSongObject = playlist.find(s => s.videoId === nextVideoId);
 
+    // ✅ Update the actual selected video ID
+    actualSelectedVideoId = nextVideoId;
+
     loadNewVideo(nextVideoId, nextAlbumArtUrl, nextSongObject);
     nextSongElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function playPreviousSong() {
+    let songItems = document.querySelectorAll("#songList li");
+    if (songItems.length === 0) return; // No songs to play
+
+    let currentSongElement = document.querySelector("#songList li.selected");
+    let currentIndex = Array.from(songItems).indexOf(currentSongElement);
+
+    let prevIndex = (currentIndex - 1 + songItems.length) % songItems.length;
+
+    let prevSongElement = songItems[prevIndex];
+    if (currentSongElement) {
+        currentSongElement.classList.remove("selected");
+    }
+    prevSongElement.classList.add("selected");
+
+    let prevVideoId = prevSongElement.getAttribute("data-video");
+    let prevAlbumArtUrl = prevSongElement.getAttribute("data-img");
+    const prevSongObject = playlist.find(s => s.videoId === prevVideoId);
+
+    // ✅ Update the actual selected video ID
+    actualSelectedVideoId = prevVideoId;
+
+    loadNewVideo(prevVideoId, prevAlbumArtUrl, prevSongObject);
+    prevSongElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function updateProgressBar() {
