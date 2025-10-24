@@ -1475,33 +1475,27 @@ function exportPlaylist() {
         
         const playlistData = JSON.stringify(exportData, null, 2);
         
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-        const fileExtension = isIOS ? 'txt' : 'json';
-        const mimeType = isIOS ? 'text/plain' : 'application/json';
+        // Always export as TXT
+        const fileExtension = 'txt';
+        const mimeType = 'text/plain';
         
-        // Create a blob and download link
         const blob = new Blob([playlistData], { type: mimeType });
         const url = URL.createObjectURL(blob);
         
-        // Create download link
         const a = document.createElement('a');
         const date = new Date().toISOString().slice(0, 10);
         a.href = url;
         a.download = `youtube-music-playlist-${date}.${fileExtension}`;
         a.style.display = 'none';
         
-        // Trigger download
         document.body.appendChild(a);
         a.click();
         
-        // Clean up
         setTimeout(() => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }, 100);
 
-        console.log("Playlist exported successfully with dark mode status");
     } catch (error) {
         console.error("Error exporting playlist:", error);
         alert("Error exporting playlist. Please try again.");
@@ -2016,8 +2010,8 @@ const translations = {
     visitForkRepo: "Visit Forked Repository",
     visitCreatorProfile: "Visit Original Creator's Profile",
     visitCreatorRepo: "Visit Original Repository",
-    exportTitle: "Export Playlist to JSON",
-    importTitle: "Import Playlist from JSON",
+    exportTitle: "Export Playlist & Data",
+    importTitle: "Import Playlist & Data",
     clearCacheTitle: "Clear Search Cache",
     exportPlaylist: "Export Playlist & Data",
     importPlaylist: "Import Playlist & Data",
@@ -2089,8 +2083,8 @@ const translations = {
     visitForkRepo: "访问分支仓库",
     visitCreatorProfile: "访问原始创作者的个人资料",
     visitCreatorRepo: "访问原始仓库",
-    exportTitle: "导出播放列表到 JSON",
-    importTitle: "从 JSON 导入播放列表",
+    exportTitle: "导出播放列表和数据",
+    importTitle: "导入播放列表和数据",
     clearCacheTitle: "清除搜索缓存",
     exportPlaylist: "导出播放列表和数据",
     importPlaylist: "导入播放列表和数据",

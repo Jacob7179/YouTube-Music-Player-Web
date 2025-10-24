@@ -83,8 +83,8 @@ If you don't want to set up the YouTube API, you can still:
 10. **Language**: Languages available: English, 中文
 11. **Secure API Key Management**: Uses GitHub Secrets for secure API key storage
 12. **Optimized Search**: Searched result will store in browser storage (No need to waste Quota for same results)
-13. **Import Playlist & Data**: Import playlist and data (Dark mode, Album Art spin settings & Lyrics settings) with JSON files
-14. **Export Playlist & Data**: Export playlist and data (Dark mode, Album Art spin settings & Lyrics settings) as JSON files
+13. **Import Playlist & Data**: Import playlist and data (Dark mode, Album Art spin settings & Lyrics settings) from JSON or TXT file
+14. **Export Playlist & Data**: Export playlist and data (Dark mode, Album Art spin settings & Lyrics settings) to TXT file
 15. **Album Art Spin Toggle**: Toggle Album Art Spin option to enable or disable album art spinning
 16. **Delete Search Cache**: Delete search cache from browser storage
 
