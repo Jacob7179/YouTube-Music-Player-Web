@@ -1553,13 +1553,26 @@ function importPlaylist(file) {
 
                 if (importedData.showLyrics !== undefined) {
                     const lyricsPanel = document.getElementById("lyricsPanel");
-                    const lyricsToggle = document.getElementById("lyricsToggle"); // or your checkbox ID
-
+                    const lyricsToggle = document.getElementById("lyricsToggle");
                     const showLyrics = importedData.showLyrics;
 
                     localStorage.setItem("showLyrics", showLyrics);
-                    lyricsToggle.checked = showLyrics;
-                    lyricsPanel.style.display = showLyrics ? "block" : "none";
+                    
+                    // Update toggle switch
+                    if (lyricsToggle) {
+                        lyricsToggle.checked = showLyrics;
+                    }
+                    
+                    // Update panel visibility
+                    if (lyricsPanel) {
+                        if (showLyrics) {
+                            lyricsPanel.style.display = "block";
+                            lyricsPanel.classList.remove("hidden");
+                        } else {
+                            lyricsPanel.style.display = "none";
+                            lyricsPanel.classList.add("hidden");
+                        }
+                    }
                 }
 
                 // Apply language settings if included in export
