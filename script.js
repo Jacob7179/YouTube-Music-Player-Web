@@ -568,6 +568,25 @@ function resetErrorState() {
         }
 }
 
+function removeArtistFromTitle(title, artist) {
+  if (!title) return title;
+
+  let cleanedTitle = title.trim();
+
+  // ✅ Rule 1: Exact author at start → remove author + optional dash
+  if (artist) {
+    const pattern = new RegExp(`^${artist}\\s*-?\\s*`, "i");
+    cleanedTitle = cleanedTitle.replace(pattern, "").trim();
+  }
+
+  // ✅ Rule 2: If still contains dash → remove everything before first dash
+  if (cleanedTitle.includes("-")) {
+    cleanedTitle = cleanedTitle.split("-").slice(1).join("-").trim();
+  }
+
+  return cleanedTitle;
+}
+
 // Attach reset function to song change event
 document.getElementById("songList").addEventListener("click", resetErrorState); // Example event listener
 
@@ -613,7 +632,8 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
             songTitleElem.style.transition = "opacity 0.5s ease-in-out";
             songTitleElem.style.opacity = "0";
             setTimeout(() => {
-                songTitleElem.innerText = songName;
+                const displayTitle = removeArtistFromTitle(songName, authorName);
+                songTitleElem.innerText = displayTitle;
                 songTitleElem.style.opacity = "1";
             }, 500);
             lastSong = songName;
@@ -1695,6 +1715,16 @@ let lyricsState = {
 };
 
 async function fetchLyrics(title, artist) {
+  const tryFetch = async (a, t) => {
+    const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(a)}&track_name=${encodeURIComponent(t)}`;
+    console.log("Trying:", url);
+
+    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxy);
+    const data = await res.json();
+    return JSON.parse(data.contents || "{}");
+  };
+
   const meta = document.getElementById("lyricsMeta");
   const textEl = document.getElementById("lyricsText");
   const t = translations[currentLang];
@@ -1704,12 +1734,20 @@ async function fetchLyrics(title, artist) {
   textEl.textContent = t.searching;
 
   try {
-    const base = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`;
-    console.log("Fetching lyrics from:", base);
-    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(base)}`;
-    const res = await fetch(proxy);
-    const data = await res.json();
-    const json = JSON.parse(data.contents || "{}");
+    // ✅ Try full name first
+    let json = await tryFetch(artist, title);
+
+    // ✅ If no lyrics found, try CJK-only artist
+    if (!json.syncedLyrics && !json.plainLyrics) {
+      const cjkOnlyArtist = artist.replace(/[\u0020A-Za-z]+/g, "").trim();
+      if (cjkOnlyArtist && cjkOnlyArtist !== artist) {
+        console.log("Retrying with CJK only:", cjkOnlyArtist);
+        json = await tryFetch(cjkOnlyArtist, title);
+        if (json.syncedLyrics || json.plainLyrics) {
+          artist = cjkOnlyArtist; // ✅ Update to working version
+        }
+      }
+    }
 
     const lyrics = json.syncedLyrics || json.plainLyrics;
     if (!lyrics) throw new Error("No lyrics");
@@ -1752,31 +1790,62 @@ function cleanTitleAndArtist(rawTitle, rawArtist) {
   let title = rawTitle || "";
   let artist = rawArtist || "";
 
-  // Remove brackets like [Official Video], (Lyrics), 【MV】, etc.
-  title = title.replace(/\[[^\]]*\]|\([^\)]*\)|［[^］]*］|【[^】]*】/g, "");
+  // Remove any extra brackets/annotations
+  title = title.replace(
+    /\[[^\]]*\]|\([^)]*\)|［[^］]*］|【[^】]*】|「[^」]*」|『[^』]*』/g,
+    ""
+  );
 
-  // Remove common words (case-insensitive)
-  title = title.replace(/official\s*video|music\s*video|mv|lyrics?|lyric\s*video|ver\.?|HD|4K|provided\s*to\s*youtube\s*by|auto[-\s]*generated\s*by\s*youtube|topic/gi,"");
+  // Remove noise keywords
+  title = title.replace(
+    /official\s*video|music\s*video|mv|lyrics?|lyric\s*video|ver\.?|HD|4K|provided\s*to\s*youtube\s*by|auto[-\s]*generated\s*by\s*youtube|topic/gi,
+    ""
+  );
 
-  // Normalize special hyphens and symbols
   title = title.replace(/[\uFF5E\u2013\u2014\-–—]+/g, "-");
-
-  // Remove extra spaces and punctuation
   title = title.replace(/\s{2,}/g, " ").trim();
 
-  // Try to split "Artist - Song" pattern
-  let extractedArtist = artist;
-  let extractedTrack = title;
+  let extractedArtist = artist.trim();
+  let extractedTrack = title.trim();
 
-  const dashMatch = title.match(/^(.+?)\s*-\s*(.+)$/);
+  // Japanese Artist「Track」 detection
+  const jpMatch = rawTitle.match(/^(.+?)「(.+?)」/);
+  if (jpMatch) {
+    extractedArtist = jpMatch[1].trim();
+    extractedTrack = jpMatch[2].trim();
+  }
+
+  // Artist - Track format
+  const dashMatch = extractedTrack.match(/^(.+?)\s*-\s*(.+)$/);
   if (dashMatch) {
     extractedArtist = dashMatch[1].trim();
     extractedTrack = dashMatch[2].trim();
   }
 
-  // Final cleanup
-  extractedArtist = extractedArtist.replace(/[\[\]()【】]/g, "").trim();
-  extractedTrack = extractedTrack.replace(/[\[\]()【】]/g, "").trim();
+  // ✅ Remove leftover brackets
+  extractedArtist = extractedArtist.replace(/[【】\[\]()「」『』]/g, "").trim();
+  extractedTrack = extractedTrack.replace(/[【】\[\]()「」『』]/g, "").trim();
+
+  // ✅ YouTube Auto Generated “- Topic” fix
+  extractedArtist = extractedArtist.replace(/\s*-\s*topic$/i, "").trim();
+
+  // ✅ Remove trailing/leading hyphens in artist
+  extractedArtist = extractedArtist.replace(/^[-–—]+|[-–—]+$/g, "").trim();
+
+  // ✅ Avoid cases like "SEKAI NO OWARI - SEKAI NO OWARI"
+  if (extractedTrack.toLowerCase().startsWith(extractedArtist.toLowerCase())) {
+    extractedTrack = extractedTrack.slice(extractedArtist.length).trim();
+  }
+
+  // If still empty or same → fallback to title-only parsed track
+  if (
+    !extractedTrack ||
+    extractedTrack.toLowerCase() === extractedArtist.toLowerCase()
+  ) {
+    // Try to extract non-letter characters (JP titles etc.)
+    const fallbackJP = rawTitle.match(/「(.+?)」/);
+    if (fallbackJP) extractedTrack = fallbackJP[1].trim();
+  }
 
   return { artist: extractedArtist, track: extractedTrack };
 }
