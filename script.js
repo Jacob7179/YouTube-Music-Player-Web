@@ -1366,8 +1366,15 @@ document.addEventListener("DOMContentLoaded", function() {
     });
     
     // Import playlist functionality
-    settingsImportBtn.addEventListener("click", function() {
-        importFileInput.click();
+    settingsImportBtn.addEventListener('click', function() {
+        // ✅ Check if iOS/iPadOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        
+        if (isIOS) {
+            showImportOptions();
+        } else {
+            importFileInput.click();
+        }
         closeSettingsMenu();
     });
     
@@ -1671,6 +1678,217 @@ function importPlaylist(file) {
     };
     
     reader.readAsText(file);
+}
+
+//iOS-friendly import methods
+function showImportOptions() {
+    const importMethods = [
+        { method: "file", text: "Select JSON File" },
+        { method: "paste", text: "Paste JSON Text" },
+        { method: "url", text: "Load from URL" }
+    ];
+    
+    let message = "Choose import method:\n\n";
+    importMethods.forEach((item, index) => {
+        message += `${index + 1}. ${item.text}\n`;
+    });
+    
+    const choice = prompt(message);
+    if (choice === null) return;
+    
+    const selectedIndex = parseInt(choice) - 1;
+    if (selectedIndex >= 0 && selectedIndex < importMethods.length) {
+        const selectedMethod = importMethods[selectedIndex].method;
+        
+        switch(selectedMethod) {
+            case "file":
+                document.getElementById("importFileInput").click();
+                break;
+            case "paste":
+                showPasteImportDialog();
+                break;
+            case "url":
+                showUrlImportDialog();
+                break;
+        }
+    }
+}
+
+// ✅ Paste JSON text method
+function showPasteImportDialog() {
+    const jsonText = prompt("Paste your playlist JSON data:");
+    if (jsonText) {
+        try {
+            const importedData = JSON.parse(jsonText);
+            processImportedData(importedData);
+        } catch (error) {
+            alert("Invalid JSON format. Please check your data and try again.");
+        }
+    }
+}
+
+// ✅ URL import method
+function showUrlImportDialog() {
+    const url = prompt("Enter URL to JSON playlist:");
+    if (url) {
+        loadPlaylistFromUrl(url);
+    }
+}
+
+// ✅ Load from URL
+async function loadPlaylistFromUrl(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const importedData = await response.json();
+        processImportedData(importedData);
+    } catch (error) {
+        alert(`Error loading from URL: ${error.message}`);
+    }
+}
+
+// ✅ Process imported data (extract from your existing importPlaylist function)
+function processImportedData(importedData) {
+    try {
+        // Handle both old format (array) and new format (object with playlist property)
+        let importedPlaylist;
+        let importDarkMode = false;
+        let importLanguage = currentLang;
+        
+        if (Array.isArray(importedData)) {
+            // Old format - just the playlist array
+            importedPlaylist = importedData;
+        } else if (importedData.playlist && Array.isArray(importedData.playlist)) {
+            // New format - object with playlist and darkMode properties
+            importedPlaylist = importedData.playlist;
+            importDarkMode = importedData.darkMode === true;
+        } else {
+            throw new Error("Invalid playlist format");
+        }
+        
+        // Validate the imported playlist structure
+        if (!validatePlaylist(importedPlaylist)) {
+            throw new Error("Invalid playlist format: Missing required fields");
+        }
+        
+        // Confirm replacement
+        if (confirm(`Import ${importedPlaylist.length} songs? This will replace your current playlist.`)) {
+            // Replace current playlist
+            playlist = importedPlaylist;
+            savePlaylist();
+            renderPlaylist(playlist);
+            
+            // Apply dark mode if included in export
+            if (importDarkMode) {
+                document.body.classList.add("dark-mode");
+                localStorage.setItem("darkMode", "enabled");
+                document.getElementById("darkModeToggle").innerHTML = "Disable";
+                applyDarkModeToElements(true);
+            } else {
+                document.body.classList.remove("dark-mode");
+                localStorage.setItem("darkMode", "disabled");
+                document.getElementById("darkModeToggle").innerHTML = "Enable";
+                applyDarkModeToElements(false);
+            }
+
+            if (importedData.showLyrics !== undefined) {
+                const lyricsPanel = document.getElementById("lyricsPanel");
+                const lyricsToggle = document.getElementById("lyricsToggle");
+
+                const showLyrics = importedData.showLyrics;
+                localStorage.setItem("showLyrics", showLyrics);
+                lyricsToggle.checked = showLyrics;
+                lyricsPanel.style.display = showLyrics ? "block" : "none";
+            }
+
+            // Apply language settings if included in export
+            if (importedData.language && translations[importedData.language]) {
+                currentLang = importedData.language;
+                localStorage.setItem("language", currentLang);
+                applyLanguage(currentLang);
+                
+                // Reload lyrics for current song to update metadata with new language
+                const currentTitle = document.querySelector("#nowPlaying .song-title")?.innerText;
+                const currentArtist = document.querySelector("#nowPlaying .author-name")?.innerText;
+                if (currentTitle && currentArtist) {
+                    loadLyricsFor(currentTitle, currentArtist);
+                }
+            }
+            
+            if (importedData.albumArtSpin !== undefined) {
+                albumArtSpinEnabled = importedData.albumArtSpin;
+                localStorage.setItem("albumArtSpin", JSON.stringify(albumArtSpinEnabled));
+                const toggle = document.getElementById("albumArtSpinToggle");
+                if (toggle) toggle.checked = albumArtSpinEnabled;
+                applyAlbumArtSpinSetting();
+            }
+
+            // ✅ Reset playing state
+            playing = false;
+            if (player) {
+                player.stopVideo();
+                document.getElementById("playPauseBtn").innerHTML = ICON_PLAY;
+            }
+            clearInterval(progressInterval);
+
+            // ✅ Select first song and load into player (no autoplay)
+            if (playlist.length > 0) {
+                const firstSong = playlist[0];
+                const albumArtElem = document.getElementById("albumArt");
+                const background = document.getElementById("background");
+                const songTitleElem = document.querySelector("#nowPlaying .song-title");
+                const authorNameElem = document.querySelector("#nowPlaying .author-name");
+
+                // Update UI
+                albumArtElem.src = firstSong.albumArt;
+                background.style.backgroundImage = `url('${firstSong.albumArt}')`;
+                songTitleElem.innerText = firstSong.songName;
+                authorNameElem.innerText = firstSong.authorName;
+
+                // Highlight in playlist
+                document.querySelectorAll("#songList li").forEach(li => li.classList.remove("selected"));
+                const firstLi = document.querySelector("#songList li");
+                if (firstLi) firstLi.classList.add("selected");
+
+                // ✅ Load video but don't autoplay
+                selectedVideoId = firstSong.videoId;
+                if (player && player.loadVideoById) {
+                    player.cueVideoById(firstSong.videoId);
+                } else {
+                    player = new YT.Player('player', {
+                        videoId: firstSong.videoId,
+                        playerVars: {
+                            autoplay: 0,
+                            controls: 0,
+                            modestbranding: 1,
+                            showinfo: 0,
+                            rel: 0
+                        },
+                        events: {
+                            'onReady': (event) => {
+                                event.target.setVolume(currentVolume);
+                                updateVolumeUI(currentVolume);
+                                document.getElementById("volumeControl").value = currentVolume;
+                            },
+                            'onStateChange': handlePlayerStateChange, 
+                            'onError': handleVideoError
+                        }
+                    });
+                }
+
+                // Reset progress bar + time display
+                document.getElementById("progress").style.width = "0%";
+                document.getElementById("currentTime").innerText = "0:00";
+                document.getElementById("totalTime").innerText = "0:00";
+            }
+            
+            alert(`Successfully imported ${importedPlaylist.length} songs!`);
+        }
+    } catch (error) {
+        console.error("Error processing imported data:", error);
+        alert("Error importing playlist: " + error.message);
+    }
 }
 
 // Add these helper functions to validate playlist structure
