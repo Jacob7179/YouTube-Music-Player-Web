@@ -153,11 +153,22 @@ For production deployment:
 <table>
     <tbody>
         <tr>
-            <td align="center" valign="top" width="14.28%"><a href="https://github.com/Jacob7179.png"><img src="https://avatars.githubusercontent.com/u/70430960?v=4" width="100px;" alt=""/><br /><sub><b>Jacob7179</b></sub></a></td>
-            <td align="center" valign="top" width="14.28%"><a href="https://github.com/Farwalker3.png"><img src="https://avatars.githubusercontent.com/u/30270971?v=4" width="100px;" alt=""/><br /><sub><b>Farwalker3</b></sub></a></td>
+            <td align="center" valign="top" width="14.28%">
+                <a href="https://github.com/Jacob7179" target="_blank">
+                    <img src="https://avatars.githubusercontent.com/u/70430960?v=4" width="100px;" alt="Jacob7179 Avatar"/><br />
+                    <sub><b>Jacob7179</b></sub>
+                </a>
+            </td>
+            <td align="center" valign="top" width="14.28%">
+                <a href="https://github.com/Farwalker3" target="_blank">
+                    <img src="https://avatars.githubusercontent.com/u/30270971?v=4" width="100px;" alt="Farwalker3 Avatar"/><br />
+                    <sub><b>Farwalker3</b></sub>
+                </a>
+            </td>
         </tr>
     </tbody>
 </table>
+
 
 ---
 *This project builds upon the excellent work of [Jacob7179](https://github.com/Jacob7179). Thanks for creating such a solid foundation!*
