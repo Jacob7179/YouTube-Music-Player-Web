@@ -1372,12 +1372,22 @@ document.addEventListener("DOMContentLoaded", function() {
     });
     
     // Handle file selection for import
-    importFileInput.addEventListener("change", function(e) {
-        if (e.target.files.length > 0) {
-            importPlaylist(e.target.files[0]);
+    importFileInput.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            
+            if (file.type === 'application/json' || 
+                file.type === 'text/plain' || 
+                file.name.endsWith('.json') || 
+                file.name.endsWith('.txt')) {
+                importPlaylist(file);
+            } else {
+                alert('Please select a JSON file or TXT file containing JSON data.');
+            }
+            this.value = '';
         }
     });
-    
+
     // Clear cache functionality
     settingsClearCacheBtn.addEventListener("click", function() {
         if (confirm('Are you sure you want to clear the search cache? This will remove all saved search results.')) {
@@ -1465,15 +1475,20 @@ function exportPlaylist() {
         
         const playlistData = JSON.stringify(exportData, null, 2);
         
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        const fileExtension = isIOS ? 'txt' : 'json';
+        const mimeType = isIOS ? 'text/plain' : 'application/json';
+        
         // Create a blob and download link
-        const blob = new Blob([playlistData], { type: 'application/json' });
+        const blob = new Blob([playlistData], { type: mimeType });
         const url = URL.createObjectURL(blob);
         
         // Create download link
         const a = document.createElement('a');
         const date = new Date().toISOString().slice(0, 10);
         a.href = url;
-        a.download = `youtube-music-playlist-${date}.json`;
+        a.download = `youtube-music-playlist-${date}.${fileExtension}`;
         a.style.display = 'none';
         
         // Trigger download
@@ -1485,6 +1500,12 @@ function exportPlaylist() {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }, 100);
+
+        if (isIOS) {
+            setTimeout(() => {
+                alert('Playlist exported as TXT file for better iOS compatibility.\n\nThe file contains JSON data and can be re-imported using the "Paste JSON Text" option.');
+            }, 500);
+        }
         
         console.log("Playlist exported successfully with dark mode status");
     } catch (error) {
