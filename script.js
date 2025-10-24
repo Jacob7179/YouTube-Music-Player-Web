@@ -964,7 +964,7 @@ function playPreviousSong() {
 }
 
 function playNextSong() {
-    let songItems = document.querySelectorAll("#songList li");
+    let songItems = document.querySelectorAll("#songList li:not(.empty-playlist)");
     if (songItems.length === 0) return; // No songs to play
 
     let currentSongElement = document.querySelector("#songList li.selected");
@@ -990,7 +990,7 @@ function playNextSong() {
 }
 
 function playPreviousSong() {
-    let songItems = document.querySelectorAll("#songList li");
+    let songItems = document.querySelectorAll("#songList li:not(.empty-playlist)");
     if (songItems.length === 0) return; // No songs to play
 
     let currentSongElement = document.querySelector("#songList li.selected");
@@ -1501,12 +1501,6 @@ function exportPlaylist() {
             URL.revokeObjectURL(url);
         }, 100);
 
-        if (isIOS) {
-            setTimeout(() => {
-                alert('Playlist exported as TXT file for better iOS compatibility.\n\nThe file contains JSON data and can be re-imported using the "Paste JSON Text" option.');
-            }, 500);
-        }
-        
         console.log("Playlist exported successfully with dark mode status");
     } catch (error) {
         console.error("Error exporting playlist:", error);
