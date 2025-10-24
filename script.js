@@ -1280,6 +1280,7 @@ document.addEventListener("dragstart", function(event) {
 document.addEventListener("DOMContentLoaded", function() {
     const settingsBtn = document.getElementById("settingsBtn");
     const settingsMenu = document.getElementById("settingsMenu");
+    const floatingSettings = document.querySelector(".floating-settings");
     const settingsExportBtn = document.getElementById("settingsExportBtn");
     const settingsImportBtn = document.getElementById("settingsImportBtn");
     const settingsClearCacheBtn = document.getElementById("settingsClearCacheBtn");
@@ -1289,25 +1290,32 @@ document.addEventListener("DOMContentLoaded", function() {
     // Toggle settings menu with animation
     settingsBtn.addEventListener("click", function(e) {
         e.stopPropagation();
-        settingsMenu.classList.toggle("show");
+        const isOpening = !settingsMenu.classList.contains("show");
+        
+        if (isOpening) {
+            floatingSettings.classList.add("active");
+            settingsMenu.classList.add("show");
+        } else {
+            closeSettingsMenu();
+        }
     });
     
     // Close menu when close button is clicked
     settingsCloseBtn.addEventListener("click", function(e) {
         e.stopPropagation();
-        settingsMenu.classList.remove("show");
+        closeSettingsMenu();
     });
     
     // Export playlist functionality
     settingsExportBtn.addEventListener("click", function() {
         exportPlaylist();
-        settingsMenu.classList.remove("show");
+        closeSettingsMenu();
     });
     
     // Import playlist functionality
     settingsImportBtn.addEventListener("click", function() {
         importFileInput.click();
-        settingsMenu.classList.remove("show");
+        closeSettingsMenu();
     });
     
     // Handle file selection for import
@@ -1326,23 +1334,32 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             alert('Search cache cleared! New searches will fetch fresh results.');
             console.log("Search cache cleared! New searches will fetch fresh results.");
-            settingsMenu.classList.remove("show");
+            closeSettingsMenu();
         }
     });
     
     // Close menu when clicking outside
     document.addEventListener("click", function(event) {
         if (!event.target.closest(".floating-settings") && settingsMenu.classList.contains("show")) {
-            settingsMenu.classList.remove("show");
+            closeSettingsMenu();
         }
     });
     
     // Also close with Escape key
     document.addEventListener("keydown", function(event) {
         if (event.key === "Escape" && settingsMenu.classList.contains("show")) {
-            settingsMenu.classList.remove("show");
+            closeSettingsMenu();
         }
     });
+    
+    // Function to close settings menu with smooth animation
+    function closeSettingsMenu() {
+        settingsMenu.classList.remove("show");
+        // Remove active class after a short delay to allow the close animation
+        setTimeout(() => {
+            floatingSettings.classList.remove("active");
+        }, 300); // Match the duration of the settings menu close animation
+    }
 });
 
 // ---------- Lyrics Panel Toggle ----------

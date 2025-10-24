@@ -1073,28 +1073,53 @@ body.dark-mode .text-muted a:hover {
     height: 60px;
     font-size: 24px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: transform 0.5s ease, box-shadow 0.5s ease;
+    transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-/* Smooth hover scale + shadow */
+/* Hover state - ease out for smooth entry */
 .settings-btn:hover {
-    transition: 0.5s;
     transform: scale(1.1);
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+/* Active state when menu is open - instant apply */
+.floating-settings.active .settings-btn {
+    transform: scale(1.1);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+}
+
+/* Return to normal state - ease in for smooth exit */
+.settings-btn:not(:hover):not(.floating-settings.active .settings-btn) {
+    transition: transform 0.4s ease-in, box-shadow 0.4s ease-in;
 }
 
 /* Target the <i> icon inside button */
 .settings-btn i {
     display: inline-block;
-    transition: transform 0.8s ease; /* smooth rotation */
+    transition: transform 0.4s ease-in-out;
 }
 
-/* Rotate icon only on hover */
+/* Rotate icon on hover - ease out */
 .settings-btn:hover i {
     transform: rotate(180deg);
+    transition: transform 0.3s ease-out;
+}
+
+/* Rotate icon when menu is open */
+.floating-settings.active .settings-btn i {
+    transform: rotate(180deg);
+    transition: transform 0.3s ease-out;
+}
+
+/* Return icon to normal - ease in */
+.settings-btn:not(:hover):not(.floating-settings.active .settings-btn) i {
+    transform: rotate(0deg);
+    transition: transform 0.5s ease-in;
 }
 
 .settings-menu {
@@ -1109,13 +1134,14 @@ body.dark-mode .text-muted a:hover {
     opacity: 0;
     visibility: hidden;
     transform: translateY(10px);
-    transition: all 0.3s ease;
+    transition: all 0.3s ease-in-out;
 }
 
 .settings-menu.show {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+    transition: all 0.3s ease-out;
 }
 
 .settings-header {
