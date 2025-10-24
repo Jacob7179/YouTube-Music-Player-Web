@@ -50,7 +50,7 @@ For secure API key management, this project uses GitHub Secrets:
 For local development, you can still manually add the API key:
 
 1. **Clone the repository locally**
-2. **Create `script.js`**
+2. **Create `config.js` files**
 3. **Insert**: `const YOUTUBE_API_KEY = 'YOUR_YOUTUBE_API_KEY';`
 4. **Replace** `'YOUR_YOUTUBE_API_KEY'` with your actual API key
 5. **Important**: Never commit this change to prevent exposing your API key
