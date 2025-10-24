@@ -487,6 +487,8 @@ function addSongFromSearch(event) {
 let lastSong = '';
 let lastAuthor = '';
 
+let currentVolume = parseInt(localStorage.getItem("volumeLevel")) || 100;
+
 // Make onYouTubeIframeAPIReady globally accessible
 window.onYouTubeIframeAPIReady = function() {
     console.log("YouTube IFrame API is ready!");
@@ -507,8 +509,9 @@ window.onYouTubeIframeAPIReady = function() {
         },
         events: {
             'onReady': (event) => {
-                event.target.setVolume(100);
-                updateVolumeUI(100);
+                event.target.setVolume(currentVolume);
+                updateVolumeUI(currentVolume);
+                document.getElementById("volumeControl").value = currentVolume;
                 //event.target.playVideo();
             },
             'onStateChange': handlePlayerStateChange, 
@@ -675,8 +678,9 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
                 },
                 events: {
                     'onReady': (event) => {
-                        event.target.setVolume(100);
-                        updateVolumeUI(100);
+                        event.target.setVolume(currentVolume);
+                        updateVolumeUI(currentVolume);
+                        document.getElementById("volumeControl").value = currentVolume;
                         event.target.playVideo();
                     },
                     'onStateChange': handlePlayerStateChange, 
@@ -689,6 +693,7 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
         }
     } else {
         player.loadVideoById(videoId);
+        player.setVolume(currentVolume);
         player.playVideo();
     }
 
@@ -796,6 +801,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const volumeThumb = document.getElementById("volumeThumb");
     const volumeBarContainer = document.querySelector(".volume-bar-container");
 
+    volumeControl.value = currentVolume;
+    updateVolumeUI(currentVolume);
+
     function updateVolumeUI(volumeValue) {
         const progressBarWidth = volumeBarContainer.offsetWidth;
         const thumbWidth = volumeThumb.offsetWidth; 
@@ -807,6 +815,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     volumeControl.addEventListener("input", function () {
         let volumeValue = this.value;
+        currentVolume = volumeValue;
+        localStorage.setItem("volumeLevel", volumeValue);
+
         if (player) {
             player.setVolume(volumeValue);
         }
@@ -1116,6 +1127,9 @@ function adjustVolume(event) {
     let newVolume = Math.max(0, Math.min(100, (touchX / barWidth) * 100));
 
     volumeBar.value = newVolume;
+    currentVolume = newVolume;
+    localStorage.setItem("volumeLevel", newVolume);
+
     if (player) {
         player.setVolume(newVolume);
     }
@@ -1130,6 +1144,8 @@ document.getElementById("volumeControl").addEventListener("wheel", function (eve
     let newValue = Math.min(100, Math.max(0, parseInt(this.value, 10) + step)); // Keep within range
 
     this.value = newValue;
+    currentVolume = newValue;
+    localStorage.setItem("volumeLevel", newValue);
 
     if (player) {
         player.setVolume(newValue);
@@ -1539,8 +1555,9 @@ function importPlaylist(file) {
                             },
                             events: {
                                 'onReady': (event) => {
-                                    event.target.setVolume(100);
-                                    updateVolumeUI(100);
+                                    event.target.setVolume(currentVolume);
+                                    updateVolumeUI(currentVolume);
+                                    document.getElementById("volumeControl").value = currentVolume;
                                 },
                                 'onStateChange': handlePlayerStateChange, 
                                 'onError': handleVideoError
