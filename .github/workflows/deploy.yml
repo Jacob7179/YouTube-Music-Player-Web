@@ -32,41 +32,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Replace API key in all files
+      - name: Replace API key in script.js
         run: |
           echo "--- Debugging API Key Injection ---"
           echo "Checking for YOUTUBE_API_KEY secret..."
           if [ -z "${{ secrets.YOUTUBE_API_KEY }}" ]; then
             echo "⚠️ Warning: YOUTUBE_API_KEY secret not found in repository secrets. YouTube search will not work."
             echo "Please ensure it is added to Settings -> Secrets and variables -> Actions."
-            # Create config.js with placeholder if it doesn't exist
-            if [ ! -f config.js ]; then
-              echo "Creating config.js with placeholder..."
-              cat > config.js << 'EOF'
-              // YouTube API Key - Not configured
-              const YOUTUBE_API_KEY = "YOUR_YOUTUBE_API_KEY";
-              EOF
-              fi
+            # Exit with success if API key is not critical for basic deployment, but warn
+            # For now, we'll let it proceed but the app will show the 'not configured' message.
           else
             echo "✅ YOUTUBE_API_KEY secret found."
-            
-            # Create or update config.js with the actual API key
-            echo "Creating/updating config.js with API key..."
-            cat > config.js << EOF
-            // YouTube API Key - Injected during deployment
-            const YOUTUBE_API_KEY = "${{ secrets.YOUTUBE_API_KEY }}";
-            EOF
-            
-            # Also replace in script.js for backward compatibility
             echo "Content of script.js BEFORE replacement:"
-            grep "YOUTUBE_API_KEY" script.js || echo "No YOUTUBE_API_KEY found in script.js"
+            cat script.js | grep "YOUTUBE_API_KEY"
 
             API_KEY="${{ secrets.YOUTUBE_API_KEY }}"
             # Use perl for robust replacement and quote API_KEY for special characters
             perl -pi -e "s|YOUR_YOUTUBE_API_KEY|\Q$API_KEY\E|g" script.js
             
             echo "Content of script.js AFTER replacement:"
-            grep "YOUTUBE_API_KEY" script.js || echo "No YOUTUBE_API_KEY found in script.js"
+            cat script.js | grep "YOUTUBE_API_KEY"
 
             if grep -q "YOUR_YOUTUBE_API_KEY" script.js; then
               echo "❌ Error: API key placeholder 'YOUR_YOUTUBE_API_KEY' is still present in script.js after replacement attempt."
@@ -74,18 +59,8 @@ jobs:
             else
               echo "✅ API key replacement verified: Placeholder successfully replaced."
             fi
-            
-            echo "Content of config.js:"
-            cat config.js
           fi
           echo "-------------------------------------"
-
-      - name: Verify files exist
-        run: |
-          echo "Checking if required files exist:"
-          ls -la *.js *.html *.css 2>/dev/null || echo "Some files might be missing"
-          echo "Config.js content:"
-          cat config.js || echo "config.js not found"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
