@@ -12,7 +12,13 @@ body {
     /* Default Light Mode */
     background-color: white;
     color: black;
+    cursor: default !important;
     transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+}
+
+/* Only change cursor when actually dragging */
+body.dragging {
+    cursor: grabbing !important;
 }
 
 /* If dark mode is enabled, override before fade-in */

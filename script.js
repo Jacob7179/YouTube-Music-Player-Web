@@ -358,7 +358,11 @@ function initDragAndDrop(item) {
         
         // Restore cursor and selection
         document.body.style.userSelect = '';
-        document.body.style.cursor = '';
+        document.body.style.cursor = 'default';
+
+        document.querySelectorAll('*').forEach(el => {
+            el.style.cursor = '';
+        });
     }
 
     function findClosestItem(items, clientY) {
