@@ -1674,7 +1674,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Clear cache functionality
     settingsClearCacheBtn.addEventListener("click", function() {
-        if (confirm('Are you sure you want to clear the search cache? This will remove all saved search results.')) {
+        if (confirm(translations[currentLang].clearCacheConfirm)) {
             localStorage.removeItem('ytSearchCache');
             for (const key in searchCache) {
                 delete searchCache[key];
@@ -1816,7 +1816,7 @@ function importPlaylist(file) {
             }
             
             // Confirm replacement
-            if (confirm(`Import ${importedPlaylist.length} songs? This will replace your current playlist.`)) {
+            if (confirm(translations[currentLang].importConfirm.replace('${count}', importedPlaylist.length))) {
                 // Replace current playlist
                 playlist = importedPlaylist;
                 savePlaylist();
@@ -1947,22 +1947,22 @@ function importPlaylist(file) {
                     document.getElementById("totalTime").innerText = "0:00";
                 }
                 // Show import success message with settings applied
-                let message = `Successfully imported ${importedPlaylist.length} songs!`;
+                let message = translations[currentLang].importSuccess.replace('${count}', importedPlaylist.length);
                 if (importDarkMode !== undefined) {
-                    const darkModeStatus = importDarkMode ? "enabled" : "disabled";
-                    message += ` Dark mode was ${darkModeStatus}.`;
+                    const darkModeStatus = importDarkMode ? translations[currentLang].enabled : translations[currentLang].disabled;
+                    message += ' ' + translations[currentLang].darkModeStatus.replace('${status}', darkModeStatus);
                 }
                 if (importedData.albumArtSpin !== undefined) {
-                    const spinStatus = importedData.albumArtSpin ? "enabled" : "disabled";
-                    message += ` Album art spin was ${spinStatus}.`;
+                    const spinStatus = importedData.albumArtSpin ? translations[currentLang].enabled : translations[currentLang].disabled;
+                    message += ' ' + translations[currentLang].albumArtSpinStatus.replace('${status}', spinStatus);
                 }
                 if (importedData.showLyrics !== undefined) {
-                    const lyricsStatus = importedData.showLyrics ? "enabled" : "disabled";
-                    message += ` Lyrics panel was ${lyricsStatus}.`;
+                    const lyricsStatus = importedData.showLyrics ? translations[currentLang].enabled : translations[currentLang].disabled;
+                    message += ' ' + translations[currentLang].lyricsPanelStatus.replace('${status}', lyricsStatus);
                 }
                 if (importedData.language) {
-                    const langName = importedData.language === 'zh' ? 'Chinese' : 'English';
-                    message += ` Language set to ${langName}.`;
+                    const langName = importedData.language === 'zh' ? translations[currentLang].chinese : translations[currentLang].english;
+                    message += ' ' + translations[currentLang].languageSet.replace('${language}', langName);
                 }
                 alert(message);
             }
@@ -2353,6 +2353,17 @@ const translations = {
     importError: "Error importing playlist: ",
     fileReadError: "Error reading file. Please try again.",
     noLyricsLoaded: "No lyrics loaded.",
+    clearCacheConfirm: "Are you sure you want to clear the search cache? This will remove all saved search results.",
+    importConfirm: "Import ${count} songs? This will replace your current playlist.",
+    importSuccess: "Successfully imported ${count} songs!",
+    darkModeStatus: "Dark mode was ${status}.",
+    albumArtSpinStatus: "Album art spin was ${status}.",
+    lyricsPanelStatus: "Lyrics panel was ${status}.",
+    languageSet: "Language set to ${language}.",
+    enabled: "enabled",
+    disabled: "disabled",
+    chinese: "Chinese",
+    english: "English",
   },
   zh: {
     playerTitle: "YouTube 音乐播放器",
@@ -2437,6 +2448,17 @@ const translations = {
     importError: "导入播放列表时出错：",
     fileReadError: "读取文件时出错，请重试。",
     noLyricsLoaded: "未载入歌词。",
+    clearCacheConfirm: "您确定要清除搜索缓存吗？这将删除所有保存的搜索结果。",
+    importConfirm: "导入 ${count} 首歌曲？这将替换您当前的播放列表。",
+    importSuccess: "成功导入 ${count} 首歌曲！",
+    darkModeStatus: "深色模式已${status}。",
+    albumArtSpinStatus: "唱片旋转已${status}。",
+    lyricsPanelStatus: "歌词面板已${status}。",
+    languageSet: "语言设置为${language}。",
+    enabled: "启用",
+    disabled: "关闭",
+    chinese: "中文",
+    english: "英文",
   }
 };
 
