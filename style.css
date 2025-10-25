@@ -1234,7 +1234,7 @@ body.dark-mode .settings-close-btn {
     color: white;
 }
 
-/* === Alpha-style Lyrics Panel === */
+/* === Lyrics Panel === */
 #lyricsPanel {
   transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
   background-color: #fafafa;

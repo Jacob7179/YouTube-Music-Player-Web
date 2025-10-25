@@ -60,6 +60,34 @@ function savePlaylist() {
     localStorage.setItem('youtubeMusicPlaylist', JSON.stringify(playlist));
 }
 
+// Helper function to scroll playlist without focusing the window
+function scrollToSelectedSong() {
+    const selectedSong = document.querySelector("#songList li.selected");
+    const songList = document.getElementById("songList");
+    
+    if (!selectedSong || !songList) return;
+    
+    // Calculate positions relative to the playlist container
+    const songRect = selectedSong.getBoundingClientRect();
+    const listRect = songList.getBoundingClientRect();
+    
+    // Check if selected song is not fully visible in the playlist
+    const isNotFullyVisible = 
+        songRect.top < listRect.top || 
+        songRect.bottom > listRect.bottom;
+    
+    // Only scroll if the song is not visible in the playlist viewport
+    if (isNotFullyVisible) {
+        // Scroll the playlist container without focusing the window
+        const scrollTop = selectedSong.offsetTop - songList.offsetTop - (songList.clientHeight / 2) + (selectedSong.offsetHeight / 2);
+        
+        songList.scrollTo({
+            top: scrollTop,
+            behavior: "smooth"
+        });
+    }
+}
+
 // In the renderPlaylist function, replace the list item creation with:
 function renderPlaylist(songsToRender) {
     const songListElement = document.getElementById('songList');
@@ -144,7 +172,7 @@ function renderPlaylist(songsToRender) {
             actualSelectedVideoId = song.videoId;
 
             loadNewVideo(song.videoId, song.albumArt, song);
-            listItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            scrollToSelectedSong();
         });
 
         // Add click listener to remove song
@@ -960,7 +988,7 @@ function playPreviousSong() {
     const prevSongObject = playlist.find(s => s.videoId === prevVideoId);
 
     loadNewVideo(prevVideoId, prevAlbumArtUrl, prevSongObject);
-    prevSongElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    scrollToSelectedSong();
 }
 
 function playNextSong() {
@@ -986,7 +1014,7 @@ function playNextSong() {
     actualSelectedVideoId = nextVideoId;
 
     loadNewVideo(nextVideoId, nextAlbumArtUrl, nextSongObject);
-    nextSongElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    scrollToSelectedSong();
 }
 
 function playPreviousSong() {
@@ -1012,7 +1040,7 @@ function playPreviousSong() {
     actualSelectedVideoId = prevVideoId;
 
     loadNewVideo(prevVideoId, prevAlbumArtUrl, prevSongObject);
-    prevSongElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    scrollToSelectedSong();
 }
 
 function updateProgressBar() {
