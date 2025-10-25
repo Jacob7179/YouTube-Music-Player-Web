@@ -49,6 +49,152 @@ body.dark-mode #songList .author {
     transition: color 0.8s ease-in-out;
 }
 
+/* Enhanced Drag and Drop Styles */
+#songList .list-group-item.dragging {
+    opacity: 0.8;
+    transform: rotate(2deg);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    position: relative;
+}
+
+#songList .list-group-item.drag-over-top {
+    border-top: 3px solid #007bff !important;
+    padding-top: 20px;
+    transition: all 0.2s ease;
+}
+
+#songList .list-group-item.drag-over-bottom {
+    border-bottom: 3px solid #007bff !important;
+    padding-bottom: 20px;
+    transition: all 0.2s ease;
+}
+
+#songList .list-group-item .drag-handle {
+    cursor: grab;
+    width: 24px;
+    text-align: center;
+    margin-left: 8px; /* Changed from margin-right */
+    color: #6c757d;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    padding: 5px;
+    border-radius: 4px;
+    order: 4; /* Position before delete button */
+}
+
+#songList .list-group-item .drag-handle:hover {
+    color: #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+#songList .list-group-item .drag-handle:active {
+    cursor: grabbing;
+    color: #0056b3;
+}
+
+/* Dark mode support for drag handle */
+body.dark-mode #songList .list-group-item .drag-handle {
+    color: #aaa;
+}
+
+body.dark-mode #songList .list-group-item .drag-handle:hover {
+    color: #4dabf7;
+    background-color: rgba(77, 171, 247, 0.1);
+}
+
+/* Drag placeholder */
+.drag-ghost {
+    opacity: 0.7;
+    background-color: #f8f9fa;
+    border: 2px dashed #007bff !important;
+    border-radius: 8px;
+}
+
+body.dark-mode .drag-ghost {
+    background-color: #2d3748;
+    border-color: #4dabf7 !important;
+}
+
+/* Ensure proper spacing with drag handle */
+#songList .list-group-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border: none !important;
+    border-bottom: 1px solid #e9ecef !important;
+    transition: all 0.3s ease;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Adjust column widths to accommodate drag handle */
+#songList .song-number {
+    width: 35px;
+    text-align: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+    order: 1; /* First column */
+}
+
+#songList .song-name {
+    flex: 2;
+    text-align: left;
+    font-weight: 500;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    order: 2; /* Second column */
+}
+
+#songList .author-column {
+    flex: 1.5;
+    text-align: left;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    order: 3; /* Third column */
+}
+
+#songList .song-action {
+    width: 70px;
+    text-align: center;
+    flex-shrink: 0;
+    order: 5; /* Last column - delete button */
+}
+
+/* Hide number when dragging */
+#songList .list-group-item.dragging .song-number {
+    opacity: 0;
+}
+
+/* Drag preview styling */
+.drag-preview {
+    position: fixed;
+    pointer-events: none;
+    z-index: 10000;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 8px 12px;
+    max-width: 300px;
+    opacity: 0.9;
+    transform: translate(-50%, -50%);
+}
+
+body.dark-mode .drag-preview {
+    background: #333;
+    border-color: #555;
+    color: white;
+}
+
 /* Keyframe Animation */
 @keyframes fadeIn {
     from {
@@ -452,8 +598,40 @@ select {
 
 .playlist-headers span {
     font-size: 14px;
-    color: #495057; /* Normal color for headers */
+    color: #495057;
     transition: color 0.8s ease-in-out;
+}
+/* Header order matches the item order */
+.playlist-headers .number-header {
+    width: 35px;
+    text-align: center;
+    order: 1;
+}
+
+.playlist-headers .song-header {
+    flex: 2;
+    text-align: left;
+    order: 2;
+}
+
+.playlist-headers .author-header {
+    flex: 1.5;
+    text-align: left;
+    order: 3;
+}
+
+.playlist-headers .action-header {
+    width: 70px;
+    text-align: center;
+    order: 5;
+}
+
+/* Add a spacer for the drag handle column */
+.playlist-headers::after {
+    content: "";
+    width: 40px; /* Width of drag handle + spacing */
+    order: 4;
+    flex-shrink: 0;
 }
 
 /* Song list items - 4-column layout */

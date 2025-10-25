@@ -88,16 +88,18 @@
 
                         <!-- Search Bar for Playlist -->
                         <div class="input-group mb-3">
-                            <input type="text" id="searchPlaylistInput" class="form-control" placeholder="Search your playlist...">
-                            <button class="btn btn-outline-secondary" type="button" id="clearPlaylistSearchBtn"><i class='bx bx-x'></i></button>
+                            <input type="text" id="searchPlaylistInput" class="form-control rounded-end" placeholder="Search your playlist...">
+                            <button class="btn btn-outline-secondary d-none" type="button" id="clearPlaylistSearchBtn" title="Clear search">
+                                <i class='bx bx-x'></i>
+                            </button>
                         </div>
 
                         <!-- Song List Headers -->
                         <div class="playlist-headers d-flex justify-content-between px-3 fw-bold border-bottom pb-2">
                             <span class="number-header" style="width: 50px; text-align: center;">No.</span>
-                            <span class="song-header" style="flex: 2; text-align: left;">Song Name</span>
-                            <span class="author-header" style="flex: 1.5; text-align: left;">Author Name</span>
-                            <span class="action-header" style="width: 70px; text-align: center;">Action</span>
+                            <span class="song-header" style="flex: 2; text-align: center;">Song Name</span>
+                            <span class="author-header" style="flex: 1.5; text-align: center;">Author Name</span>
+                            <span class="action-header" style="width: 120px; text-align: center;">Action</span>
                         </div>
 
                         <ul id="songList" class="list-group overflow-auto" style="max-height: 520px;">

@@ -108,13 +108,20 @@ function renderPlaylist(songsToRender) {
         listItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
         listItem.setAttribute('data-video', song.videoId);
         listItem.setAttribute('data-img', song.albumArt);
+        listItem.setAttribute('draggable', 'true');
+        listItem.setAttribute('data-index', index);
 
         // ✅ Preserve selection - check if this is the actual selected song
         if (song.videoId === currentlySelectedVideoId) {
             listItem.classList.add('selected');
         }
 
-        // ... rest of your existing code for creating list items ...
+        // Column 0: Drag Handle
+        const dragHandleSpan = document.createElement('span');
+        dragHandleSpan.classList.add('drag-handle');
+        dragHandleSpan.innerHTML = '<i class="bx bx-menu"></i>';
+        dragHandleSpan.setAttribute('title', translations[currentLang].dragToReorder);
+
         // Column 1: Number - Simple 1. 2. 3. format
         const songNumberSpan = document.createElement('span');
         songNumberSpan.classList.add('song-number');
@@ -145,21 +152,25 @@ function renderPlaylist(songsToRender) {
         removeButton.classList.add('btn', 'btn-danger', 'btn-sm', 'remove-song-btn');
         removeButton.innerHTML = ICON_TRASH;
         removeButton.setAttribute('data-video', song.videoId);
-        removeButton.setAttribute('title', 'Remove Song');
+        removeButton.setAttribute('title', translations[currentLang].removeSongTitle);
 
-        // Assemble the structure - 4 separate columns
-        listItem.appendChild(songNumberSpan);
-        listItem.appendChild(songNameSpan);
-        listItem.appendChild(authorColumnSpan);
+        // Assemble the structure - 5 columns now (including drag handle)
+        listItem.appendChild(songNumberSpan);      // Order: 1
+        listItem.appendChild(songNameSpan);        // Order: 2  
+        listItem.appendChild(authorColumnSpan);    // Order: 3
+        listItem.appendChild(dragHandleSpan);      // Order: 4
         actionDiv.appendChild(removeButton);
         listItem.appendChild(actionDiv);
 
         songListElement.appendChild(listItem);
 
-        // Add click listener to play song (click anywhere on the row)
+        // Add drag and drop event listeners
+        initDragAndDrop(listItem);
+
+        // Add click listener to play song (click anywhere on the row except drag handle and remove button)
         listItem.addEventListener('click', function (event) {
-            // Don't trigger if remove button was clicked
-            if (event.target.closest('.remove-song-btn')) {
+            // Don't trigger if drag handle or remove button was clicked
+            if (event.target.closest('.drag-handle') || event.target.closest('.remove-song-btn')) {
                 return;
             }
             
@@ -225,6 +236,228 @@ function renderPlaylist(songsToRender) {
             }
         }
     }
+    // In the drag handle creation section, ensure it uses current translation:
+    dragHandleSpan.setAttribute('title', translations[currentLang].dragToReorder);
+}
+
+// Drag and Drop functionality
+function initDragAndDrop(item) {
+    let isDragging = false;
+    let dragStartY = 0;
+    let currentDragItem = null;
+    let dragPreview = null;
+
+    const dragHandle = item.querySelector('.drag-handle');
+    
+    // Mouse down event on drag handle
+    dragHandle.addEventListener('mousedown', startDrag);
+    dragHandle.addEventListener('touchstart', startDrag, { passive: false });
+
+    function startDrag(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (e.type === 'touchstart') {
+            e = e.touches[0];
+        }
+        
+        isDragging = true;
+        currentDragItem = item;
+        dragStartY = e.clientY - item.getBoundingClientRect().top;
+        
+        // Create drag preview
+        createDragPreview(item, e.clientX, e.clientY);
+        
+        // Add dragging class
+        item.classList.add('dragging');
+        
+        // Add event listeners for dragging
+        document.addEventListener('mousemove', onDrag);
+        document.addEventListener('touchmove', onDrag, { passive: false });
+        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('touchend', stopDrag);
+        
+        // Prevent text selection during drag
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'grabbing';
+    }
+
+    function onDrag(e) {
+        if (!isDragging) return;
+        
+        e.preventDefault();
+        
+        let clientY;
+        if (e.type === 'touchmove') {
+            clientY = e.touches[0].clientY;
+        } else {
+            clientY = e.clientY;
+        }
+        
+        // Update drag preview position
+        if (dragPreview) {
+            dragPreview.style.left = e.clientX + 'px';
+            dragPreview.style.top = (clientY - 10) + 'px';
+        }
+        
+        // Handle drag over other items
+        const songList = document.getElementById('songList');
+        const items = Array.from(songList.querySelectorAll('.list-group-item:not(.dragging):not(.empty-playlist)'));
+        
+        // Clear previous drag-over classes
+        items.forEach(el => {
+            el.classList.remove('drag-over-top', 'drag-over-bottom');
+        });
+        
+        // Find the closest drop target
+        const closestItem = findClosestItem(items, clientY);
+        
+        if (closestItem) {
+            const rect = closestItem.getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+            
+            if (clientY < midpoint) {
+                closestItem.classList.add('drag-over-top');
+            } else {
+                closestItem.classList.add('drag-over-bottom');
+            }
+        }
+    }
+
+    function stopDrag(e) {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        
+        let clientY;
+        if (e.type === 'touchend') {
+            clientY = e.changedTouches[0].clientY;
+        } else {
+            clientY = e.clientY;
+        }
+        
+        // Remove dragging class
+        item.classList.remove('dragging');
+        
+        // Remove drag preview
+        removeDragPreview();
+        
+        // Clear all drag-over classes
+        document.querySelectorAll('#songList .list-group-item').forEach(el => {
+            el.classList.remove('drag-over-top', 'drag-over-bottom');
+        });
+        
+        // Handle the drop
+        handleDrop(clientY);
+        
+        // Remove event listeners
+        document.removeEventListener('mousemove', onDrag);
+        document.removeEventListener('touchmove', onDrag);
+        document.removeEventListener('mouseup', stopDrag);
+        document.removeEventListener('touchend', stopDrag);
+        
+        // Restore cursor and selection
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+    }
+
+    function findClosestItem(items, clientY) {
+        return items.reduce((closest, item) => {
+            const rect = item.getBoundingClientRect();
+            const offset = Math.abs(clientY - (rect.top + rect.height / 2));
+            
+            if (offset < closest.offset) {
+                return { offset, element: item };
+            }
+            return closest;
+        }, { offset: Number.POSITIVE_INFINITY, element: null }).element;
+    }
+
+    function handleDrop(clientY) {
+        const songList = document.getElementById('songList');
+        const items = Array.from(songList.querySelectorAll('.list-group-item:not(.empty-playlist)'));
+        const draggingIndex = items.indexOf(currentDragItem);
+        
+        // Find drop target
+        const targetItem = findClosestItem(items.filter(item => item !== currentDragItem), clientY);
+        
+        if (targetItem) {
+            const targetIndex = items.indexOf(targetItem);
+            const rect = targetItem.getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+            
+            let newIndex;
+            if (clientY < midpoint) {
+                // Insert above target
+                newIndex = targetIndex;
+            } else {
+                // Insert below target
+                newIndex = targetIndex + 1;
+            }
+            
+            // Adjust for the fact that we're removing the dragging item first
+            if (newIndex > draggingIndex) {
+                newIndex--;
+            }
+            
+            // Only reorder if position actually changed
+            if (newIndex !== draggingIndex) {
+                // Reorder the playlist array
+                const movedSong = playlist.splice(draggingIndex, 1)[0];
+                playlist.splice(newIndex, 0, movedSong);
+                
+                // Save the reordered playlist
+                savePlaylist();
+                
+                // Re-render the playlist to update numbers and maintain selection
+                const currentlySelectedVideoId = actualSelectedVideoId;
+                renderPlaylist(playlist);
+                
+                // Restore selection after re-render
+                if (currentlySelectedVideoId) {
+                    const selectedItem = document.querySelector(`#songList li[data-video="${currentlySelectedVideoId}"]`);
+                    if (selectedItem) {
+                        selectedItem.classList.add('selected');
+                        actualSelectedVideoId = currentlySelectedVideoId;
+                    }
+                }
+            }
+        }
+    }
+
+    function createDragPreview(sourceItem, x, y) {
+        dragPreview = document.createElement('div');
+        dragPreview.className = 'drag-preview';
+        
+        // Clone the content (simplified version)
+        const songName = sourceItem.querySelector('.song-name').textContent;
+        const authorName = sourceItem.querySelector('.author-column').textContent;
+        
+        dragPreview.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="bx bx-menu" style="color: #6c757d;"></i>
+                <span style="font-weight: 500;">${songName}</span>
+                <span style="color: #6c757d; font-size: 0.9em;">${authorName}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(dragPreview);
+        dragPreview.style.left = x + 'px';
+        dragPreview.style.top = (y - 10) + 'px';
+    }
+
+    function removeDragPreview() {
+        if (dragPreview) {
+            document.body.removeChild(dragPreview);
+            dragPreview = null;
+        }
+    }
+
+    // Prevent default drag behavior
+    item.addEventListener('dragstart', (e) => {
+        e.preventDefault();
+        return false;
+    });
 }
 
 // Remove song functionality
@@ -269,6 +502,19 @@ function removeSong(videoIdToRemove) {
 // Playlist Search functionality (for filtering the current playlist)
 document.getElementById('searchPlaylistInput').addEventListener('input', function () {
     const searchTerm = this.value.toLowerCase();
+    const clearBtn = document.getElementById('clearPlaylistSearchBtn');
+    const t = translations[currentLang];
+    
+    // Show/hide clear button based on whether there's text
+    if (searchTerm.trim().length > 0) {
+        clearBtn.classList.remove('d-none');
+        clearBtn.setAttribute('title', t.clearSearch || 'Clear search');
+        this.classList.remove('rounded-end');
+    } else {
+        clearBtn.classList.add('d-none');
+        this.classList.add('rounded-end');
+    }
+    
     const filteredSongs = playlist.filter(song =>
         song.songName.toLowerCase().includes(searchTerm) ||
         song.authorName.toLowerCase().includes(searchTerm)
@@ -277,8 +523,16 @@ document.getElementById('searchPlaylistInput').addEventListener('input', functio
 });
 
 document.getElementById('clearPlaylistSearchBtn').addEventListener('click', function () {
-    document.getElementById('searchPlaylistInput').value = '';
+    const searchInput = document.getElementById('searchPlaylistInput');
+    const clearBtn = document.getElementById('clearPlaylistSearchBtn');
+    
+    searchInput.value = '';
+    clearBtn.classList.add('d-none'); // Hide the clear button
+    searchInput.classList.add('rounded-end');
     renderPlaylist(playlist);
+    
+    // Focus back on the search input after clearing
+    searchInput.focus();
 });
 
 // YouTube Search Functionality
@@ -2031,8 +2285,11 @@ const translations = {
     raw: "Raw Data",
     playlistTitle: "My Playlist",
     searchPlaylist: "Search your playlist...",
+    clearSearch: "Clear search",
+    searchPlaylistPlaceholder: "Search your playlist...",
     songName: "Song Name",
     authorName: "Author Name",
+    dragToReorder: "Drag to reorder",
     numberHeader: "No.",
     actionHeader: "Action",
     songUnavailable: "This song is unavailable. Skipping in",
@@ -2104,8 +2361,11 @@ const translations = {
     raw: "原始数据",
     playlistTitle: "我的播放列表",
     searchPlaylist: "搜索你的播放列表...",
+    clearSearch: "清除搜索",
+    searchPlaylistPlaceholder: "搜索你的播放列表...",
     songName: "歌曲名称",
     authorName: "作者名称",
+    dragToReorder: "拖拽重新排序",
     numberHeader: "序号",
     actionHeader: "操作",
     songUnavailable: "此歌曲不可用。将在",
@@ -2315,7 +2575,7 @@ function applyLanguage(lang) {
     document.querySelector("#searchLoading p") && (document.querySelector("#searchLoading p").textContent = t.searching);
 
     if (document.getElementById("searchResultsTitle"))
-  document.getElementById("searchResultsTitle").textContent = t.searchResultsTitle;
+    document.getElementById("searchResultsTitle").textContent = t.searchResultsTitle;
 
     // Update search error messages if they're currently visible
     const searchError = document.getElementById("searchError");
@@ -2402,6 +2662,20 @@ function applyLanguage(lang) {
     document.querySelector('.song-header') && (document.querySelector('.song-header').textContent = t.songName);
     document.querySelector('.author-header') && (document.querySelector('.author-header').textContent = t.authorName);
     document.querySelector('.action-header') && (document.querySelector('.action-header').textContent = t.actionHeader);
+
+    document.querySelectorAll('.drag-handle').forEach(handle => {
+        handle.setAttribute('title', t.dragToReorder);
+    });
+
+    const searchPlaylistInput = document.getElementById('searchPlaylistInput');
+    if (searchPlaylistInput) {
+        searchPlaylistInput.setAttribute('placeholder', t.searchPlaylistPlaceholder);
+    }
+    
+    const clearBtn = document.getElementById('clearPlaylistSearchBtn');
+    if (clearBtn && !clearBtn.classList.contains('d-none')) {
+        clearBtn.setAttribute('title', t.clearSearch);
+    }
 }
 
 // 🌐 Language switch event
