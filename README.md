@@ -68,6 +68,7 @@ If you don't want to set up the YouTube API, you can still:
 - Use the existing default playlist
 - Manually add songs by editing the `playlist` array in `script.js`
 - Search and filter your existing playlist
+- Import and Export Playlist & Data
 
 ## 🎵 How to Use
 

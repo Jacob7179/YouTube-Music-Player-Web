@@ -236,8 +236,6 @@ function renderPlaylist(songsToRender) {
             }
         }
     }
-    // In the drag handle creation section, ensure it uses current translation:
-    dragHandleSpan.setAttribute('title', translations[currentLang].dragToReorder);
 }
 
 // Drag and Drop functionality
