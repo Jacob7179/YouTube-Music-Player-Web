@@ -771,7 +771,7 @@ function addSongFromSearch(event) {
     // Check if song already exists
     const songExists = playlist.some(song => song.videoId === videoId);
     if (songExists) {
-        alert('This song is already in your playlist!');
+        alert(translations[currentLang].songAlreadyExists);
         return;
     }
 
@@ -779,7 +779,7 @@ function addSongFromSearch(event) {
     playlist.push(newSong);
     savePlaylist();
     renderPlaylist(playlist);
-    alert(`${songTitle} by ${authorName} added to your playlist!`);
+    alert(`${songTitle} by ${authorName}${translations[currentLang].songAdded}`);
 
     // ✅ If playlist was empty before, autoplay the new song
     if (playlist.length === 1) {
@@ -1666,7 +1666,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 file.name.endsWith('.txt')) {
                 importPlaylist(file);
             } else {
-                alert('Please select a JSON file or TXT file containing JSON data.');
+                alert(translations[currentLang].importFileTypeError);
             }
             this.value = '';
         }
@@ -1679,8 +1679,8 @@ document.addEventListener("DOMContentLoaded", function() {
             for (const key in searchCache) {
                 delete searchCache[key];
             }
-            alert('Search cache cleared! New searches will fetch fresh results.');
-            console.log("Search cache cleared! New searches will fetch fresh results.");
+            alert(translations[currentLang].cacheCleared);
+            console.log(translations[currentLang].cacheCleared);
             closeSettingsMenu();
         }
     });
@@ -1782,7 +1782,7 @@ function exportPlaylist() {
 
     } catch (error) {
         console.error("Error exporting playlist:", error);
-        alert("Error exporting playlist. Please try again.");
+        alert(translations[currentLang].exportError);
     }
 }
 
@@ -1968,12 +1968,12 @@ function importPlaylist(file) {
             }
         } catch (error) {
             console.error("Error importing playlist:", error);
-            alert("Error importing playlist: " + error.message);
+            alert(translations[currentLang].importError + error.message);
         }
     };
     
     reader.onerror = function() {
-        alert("Error reading file. Please try again.");
+        alert(translations[currentLang].fileReadError);
     };
     
     reader.readAsText(file);
@@ -2263,7 +2263,7 @@ document.getElementById("refreshLyricsBtn").addEventListener("click", () => {
   if (title) loadLyricsFor(title, artist);
 });
 document.getElementById("openRawBtn").addEventListener("click", () => {
-  if (!lyricsData) return alert("No lyrics loaded.");
+  if (!lyricsData) return alert(translations[currentLang].noLyricsLoaded);
   const blob = new Blob([JSON.stringify(lyricsData, null, 2)], { type: "application/json" });
   window.open(URL.createObjectURL(blob), "_blank");
 });
@@ -2345,6 +2345,14 @@ const translations = {
     attributionEnhanced: "Enhanced version by",
     attributionRepo: "Original Repository",
     languageLabel: "Language",
+    songAlreadyExists: "This song is already in your playlist!",
+    songAdded: " added to your playlist!",
+    importFileTypeError: "Please select a JSON file or TXT file containing JSON data.",
+    cacheCleared: "Search cache cleared! New searches will fetch fresh results.",
+    exportError: "Error exporting playlist. Please try again.",
+    importError: "Error importing playlist: ",
+    fileReadError: "Error reading file. Please try again.",
+    noLyricsLoaded: "No lyrics loaded.",
   },
   zh: {
     playerTitle: "YouTube 音乐播放器",
@@ -2421,6 +2429,14 @@ const translations = {
     attributionEnhanced: "增强版本维护者",
     attributionRepo: "原始仓库",
     languageLabel: "语言",
+    songAlreadyExists: "此歌曲已在播放列表中！",
+    songAdded: " 已添加到播放列表！",
+    importFileTypeError: "请选择包含 JSON 数据的 JSON 文件或 TXT 文件。",
+    cacheCleared: "搜索缓存已清除！新的搜索将获取最新结果。",
+    exportError: "导出播放列表时出错，请重试。",
+    importError: "导入播放列表时出错：",
+    fileReadError: "读取文件时出错，请重试。",
+    noLyricsLoaded: "未载入歌词。",
   }
 };
 
