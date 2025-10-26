@@ -643,12 +643,12 @@ async function searchYouTube() {
                             <h6 class="mb-1">${title}</h6>
                             <p class="mb-0 text-muted"><small>${channelTitle}</small></p>
                         </div>
-                        <button class="btn btn-success btn-sm add-from-search-btn" title="Add to Playlist"
+                        <button class="btn btn-success btn-sm add-from-search-btn" title="${translations[currentLang].addToPlaylist}"
                                 data-video-id="${videoId}" 
                                 data-song-title="${title.replace(/"/g, '&quot;')}" 
                                 data-author-name="${channelTitle.replace(/"/g, '&quot;')}" 
                                 data-album-art="${thumbnailUrl}">
-                            ${ICON_PLUS} Add
+                            ${translations[currentLang].add}
                         </button>
                     `;
                     searchResultsList.appendChild(resultItem);
@@ -697,7 +697,8 @@ function getCachedResults(term) {
 function displaySearchResults(data) {
     const searchResultsList = document.getElementById('searchResultsList');
     const searchResultsContainer = document.getElementById('searchResults');
-    
+    const t = translations[currentLang];
+
     searchResultsContainer.classList.remove('d-none');
 
     if (data.items && data.items.length > 0) {
@@ -721,7 +722,7 @@ function displaySearchResults(data) {
                             data-song-title="${title.replace(/"/g, '&quot;')}" 
                             data-author-name="${channelTitle.replace(/"/g, '&quot;')}" 
                             data-album-art="${thumbnailUrl}">
-                        ${ICON_PLUS} Add
+                        ${ICON_PLUS} ${translations[currentLang].add}
                     </button>
                 `;
                 searchResultsList.appendChild(resultItem);
@@ -730,6 +731,7 @@ function displaySearchResults(data) {
         
         document.querySelectorAll('.add-from-search-btn').forEach(button => {
             button.addEventListener('click', addSongFromSearch);
+            button.setAttribute('title', t.addToPlaylist);
         });
 
         if (document.body.classList.contains('dark-mode')) {
@@ -2364,6 +2366,8 @@ const translations = {
     disabled: "disabled",
     chinese: "Chinese",
     english: "English",
+    addToPlaylist: "Add to Playlist",
+    add: "Add",
   },
   zh: {
     playerTitle: "YouTube 音乐播放器",
@@ -2459,6 +2463,8 @@ const translations = {
     disabled: "关闭",
     chinese: "中文",
     english: "英文",
+    addToPlaylist: "添加到播放列表",
+    add: "添加",
   }
 };
 
@@ -2716,6 +2722,16 @@ function applyLanguage(lang) {
     if (clearBtn && !clearBtn.classList.contains('d-none')) {
         clearBtn.setAttribute('title', t.clearSearch);
     }
+
+    document.querySelectorAll(".add-from-search-btn").forEach(btn => {
+        btn.setAttribute("title", t.addToPlaylist);
+        btn.innerHTML = `<i class='bx bx-plus'></i> ${t.add}`;
+    });
+
+    document.querySelectorAll(".add-song-btn").forEach(btn => {
+        btn.setAttribute("title", t.addToPlaylist);
+        btn.innerHTML = `<i class='bx bx-plus'></i> ${t.add}`;
+    });
 }
 
 // 🌐 Language switch event
