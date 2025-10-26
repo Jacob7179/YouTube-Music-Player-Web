@@ -1227,7 +1227,7 @@ document.getElementById("prevBtn").addEventListener("click", playPreviousSong);
 document.getElementById("nextBtn").addEventListener("click", playNextSong);
 
 function playPreviousSong() {
-    let songItems = document.querySelectorAll("#songList li");
+    let songItems = document.querySelectorAll("#songList li:not(.empty-playlist)");
     if (songItems.length === 0) return; // No songs to play
 
     let currentSongElement = document.querySelector("#songList li.selected");
@@ -1244,6 +1244,8 @@ function playPreviousSong() {
     let prevVideoId = prevSongElement.getAttribute("data-video");
     let prevAlbumArtUrl = prevSongElement.getAttribute("data-img");
     const prevSongObject = playlist.find(s => s.videoId === prevVideoId);
+
+    actualSelectedVideoId = prevVideoId;
 
     loadNewVideo(prevVideoId, prevAlbumArtUrl, prevSongObject);
     scrollToSelectedSong();
@@ -1272,32 +1274,6 @@ function playNextSong() {
     actualSelectedVideoId = nextVideoId;
 
     loadNewVideo(nextVideoId, nextAlbumArtUrl, nextSongObject);
-    scrollToSelectedSong();
-}
-
-function playPreviousSong() {
-    let songItems = document.querySelectorAll("#songList li:not(.empty-playlist)");
-    if (songItems.length === 0) return; // No songs to play
-
-    let currentSongElement = document.querySelector("#songList li.selected");
-    let currentIndex = Array.from(songItems).indexOf(currentSongElement);
-
-    let prevIndex = (currentIndex - 1 + songItems.length) % songItems.length;
-
-    let prevSongElement = songItems[prevIndex];
-    if (currentSongElement) {
-        currentSongElement.classList.remove("selected");
-    }
-    prevSongElement.classList.add("selected");
-
-    let prevVideoId = prevSongElement.getAttribute("data-video");
-    let prevAlbumArtUrl = prevSongElement.getAttribute("data-img");
-    const prevSongObject = playlist.find(s => s.videoId === prevVideoId);
-
-    // ✅ Update the actual selected video ID
-    actualSelectedVideoId = prevVideoId;
-
-    loadNewVideo(prevVideoId, prevAlbumArtUrl, prevSongObject);
     scrollToSelectedSong();
 }
 
