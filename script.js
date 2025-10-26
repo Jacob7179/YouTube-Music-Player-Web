@@ -464,38 +464,57 @@ function initDragAndDrop(item) {
 
 // Remove song functionality
 function removeSong(videoIdToRemove) {
-    const currentPlayingVideoId = player ? player.getVideoData().video_id : null;
+    // 🧩 Safely get currently playing video ID (avoid crash if player not ready)
+    let currentPlayingVideoId = null;
+    try {
+        if (player && typeof player.getVideoData === "function") {
+            const data = player.getVideoData();
+            if (data && data.video_id) currentPlayingVideoId = data.video_id;
+        }
+    } catch (e) {
+        console.warn("⚠️ player.getVideoData() not ready yet:", e);
+    }
+
     const wasPlayingCurrent = currentPlayingVideoId === videoIdToRemove && playing;
 
+    // 🧹 Remove song from playlist
     playlist = playlist.filter(song => song.videoId !== videoIdToRemove);
     savePlaylist();
     renderPlaylist(playlist);
 
-    // ✅ If the removed song was the actual selected one, clear the selection
+    // ✅ Clear selection if the removed song was selected
     if (actualSelectedVideoId === videoIdToRemove) {
         actualSelectedVideoId = null;
     }
 
-    // If the removed song was the currently playing one
+    // 🎵 If the removed song was currently playing
     if (wasPlayingCurrent) {
         if (playlist.length > 0) {
-            // Play the next song in the updated playlist
+            // ▶️ Play the next song in the updated playlist
             playNextSong();
         } else {
-            // If playlist is empty, stop playback and reset UI
-            player.stopVideo();
+            // 🛑 No songs left → stop playback and reset UI safely
+            if (player && typeof player.stopVideo === "function") {
+                player.stopVideo();
+            } else {
+                console.warn("⚠️ player.stopVideo() not available yet — skipping stop.");
+            }
+
             playing = false;
-            document.getElementById('playPauseBtn').innerHTML = ICON_PLAY;
-            document.getElementById('albumArt').src = 'https://via.placeholder.com/300';
-            document.getElementById('nowPlaying .song-title').innerText = 'No Song';
-            document.getElementById('nowPlaying .author-name').innerText = '';
-            document.getElementById('progress').style.width = '0%';
-            document.getElementById('currentTime').innerText = '0:00';
-            document.getElementById('totalTime').innerText = '0:00';
-            document.getElementById('background').style.backgroundImage = 'none';
-            clearInterval(progressInterval);
-            
-            // ✅ Clear the actual selected video ID when playlist is empty
+            document.getElementById("playPauseBtn").innerHTML = ICON_PLAY;
+            document.getElementById("albumArt").src = "https://via.placeholder.com/300";
+            document.querySelector("#nowPlaying .song-title").innerText = "No Song";
+            document.querySelector("#nowPlaying .author-name").innerText = "";
+            document.getElementById("progress").style.width = "0%";
+            document.getElementById("currentTime").innerText = "0:00";
+            document.getElementById("totalTime").innerText = "0:00";
+            document.getElementById("background").style.backgroundImage = "none";
+
+            if (typeof progressInterval !== "undefined" && progressInterval) {
+                clearInterval(progressInterval);
+            }
+
+            // ✅ Clear selection when playlist is empty
             actualSelectedVideoId = null;
         }
     }
@@ -675,6 +694,118 @@ async function searchYouTube() {
         searchError.classList.remove('d-none');
     }
 }
+
+// 🎵 Handle add_song URL param — Always fetch title + author, and alert user
+async function handleAddSongFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const songLink = params.get("add_song");
+    if (!songLink) return;
+
+    // Extract YouTube video ID
+    const match = songLink.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (!match) {
+        alert("⚠ Invalid YouTube link provided.");
+        return;
+    }
+    const videoId = match[1];
+
+    // Avoid duplicates
+    if (playlist.some(s => s.videoId === videoId)) {
+        alert("⚠ This song is already in your playlist!");
+        console.log("Song already exists in playlist");
+
+        // 🧹 Clear URL even if duplicate
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete("add_song");
+        window.history.replaceState({}, "", newUrl);
+        return;
+    }
+
+    let title = "Unknown Title";
+    let author = "Unknown Artist";
+    let albumArt = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+    // --- Try YouTube Data API ---
+    if (typeof YOUTUBE_API_KEY !== "undefined" && YOUTUBE_API_KEY && YOUTUBE_API_KEY !== "YOUR_YOUTUBE_API_KEY") {
+        try {
+            const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
+            const proxiedUrl = `${CORS_PROXY_URL}${encodeURIComponent(apiUrl)}`;
+            const res = await fetch(proxiedUrl);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.items && data.items.length > 0) {
+                    const snippet = data.items[0].snippet;
+                    title = snippet.title || title;
+                    author = snippet.channelTitle || author;
+                    albumArt = snippet.thumbnails?.high?.url || albumArt;
+                }
+            } else {
+                console.warn("YouTube API failed:", res.status, res.statusText);
+            }
+        } catch (err) {
+            console.warn("YouTube API fetch failed:", err);
+        }
+    }
+
+    // --- Fallback: YouTube oEmbed ---
+    if (title === "Unknown Title" || author === "Unknown Artist") {
+        try {
+            const oEmbedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+            const res = await fetch(oEmbedUrl);
+            if (res.ok) {
+                const meta = await res.json();
+                title = meta.title || title;
+                author = meta.author_name || author;
+            }
+        } catch (err) {
+            console.warn("oEmbed fetch failed:", err);
+        }
+    }
+
+    // Clean song name
+    title = title
+        .replace(/\s*-\s*Topic$/i, "")
+        .replace(new RegExp(`^${author}\\s*-\\s*`, "i"), "")
+        .trim();
+
+    // Add to playlist
+    const newSong = { videoId, songName: title, authorName: author, albumArt };
+    playlist.push(newSong);
+    savePlaylist();
+    renderPlaylist(playlist);
+
+    // ✅ Always alert user (even if player not ready yet)
+    alert(`✅ Added "${title}" by ${author} to your playlist!`);
+
+    // 🧹 Immediately clear URL
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete("add_song");
+    window.history.replaceState({}, "", newUrl);
+
+    // --- Wait for player safely ---
+    try {
+        await playerReady; // waits until onYouTubeIframeAPIReady + player.onReady
+    } catch (e) {
+        console.warn("Player not ready yet:", e);
+    }
+
+    // --- Load into player only when ready ---
+    if (player && typeof player.loadVideoById === "function") {
+        try {
+            player.loadVideoById(videoId);
+            playing = true;
+            document.getElementById("playPauseBtn").innerHTML = ICON_PAUSE;
+        } catch (err) {
+            console.warn("Could not load video:", err);
+        }
+    } else {
+        console.warn("Player not ready or not valid.");
+    }
+
+    console.log(`✅ Added: ${title} — ${author}`);
+}
+
+window.addEventListener("DOMContentLoaded", handleAddSongFromURL);
 
 // Add these helper functions for caching after the searchYouTube function
 function cacheSearchResults(term, results) {

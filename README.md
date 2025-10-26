@@ -69,6 +69,7 @@ If you don't want to set up the YouTube API, you can still:
 - Manually add songs by editing the `playlist` array in `script.js`
 - Search and filter your existing playlist
 - Import and Export Playlist & Data
+- Add a song using a YouTube video link: https://jacob7179.github.io/YouTube-Music-Player-Web/?add_song=`YOUTUBE_VIDEO_LINK`
 
 ## 🎵 How to Use
 
