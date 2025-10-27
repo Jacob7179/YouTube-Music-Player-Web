@@ -701,17 +701,22 @@ async function handleAddSongFromURL() {
     const songLink = params.get("add_song");
     if (!songLink) return;
 
+    const t = translations[currentLang];
+
     // Extract YouTube video ID
     const match = songLink.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     if (!match) {
-        alert("⚠ Invalid YouTube link provided.");
+        alert(t.invalidLink);
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete("add_song");
+        window.history.replaceState({}, "", newUrl);
         return;
     }
     const videoId = match[1];
 
     // Avoid duplicates
     if (playlist.some(s => s.videoId === videoId)) {
-        alert("⚠ This song is already in your playlist!");
+        alert(t.duplicateSong);
         console.log("Song already exists in playlist");
 
         // 🧹 Clear URL even if duplicate
@@ -774,13 +779,7 @@ async function handleAddSongFromURL() {
     savePlaylist();
     renderPlaylist(playlist);
 
-    // ✅ Always alert user (even if player not ready yet)
-    alert(`✅ Added "${title}" by ${author} to your playlist!`);
-
-    // 🧹 Immediately clear URL
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.delete("add_song");
-    window.history.replaceState({}, "", newUrl);
+    alert(t.addedSong(title, author));
 
     // --- Wait for player safely ---
     try {
@@ -803,6 +802,11 @@ async function handleAddSongFromURL() {
     }
 
     console.log(`✅ Added: ${title} — ${author}`);
+
+    // 🧹 Immediately clear URL
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete("add_song");
+    window.history.replaceState({}, "", newUrl);
 }
 
 window.addEventListener("DOMContentLoaded", handleAddSongFromURL);
@@ -2578,6 +2582,9 @@ const translations = {
     english: "English",
     addToPlaylist: "Add to Playlist",
     add: "Add",
+    invalidLink: "⚠ Invalid YouTube link provided.",
+    duplicateSong: "⚠ This song is already in your playlist!",
+    addedSong: (title, author) => `✅ Added "${title}" by ${author} to your playlist!`
   },
   zh: {
     playerTitle: "YouTube 音乐播放器",
@@ -2675,6 +2682,9 @@ const translations = {
     english: "英文",
     addToPlaylist: "添加到播放列表",
     add: "添加",
+    invalidLink: "⚠ 提供的 YouTube 链接无效。",
+    duplicateSong: "⚠ 此歌曲已在播放列表中！",
+    addedSong: (title, author) => `✅ 已成功将《${title}》 - ${author} 添加到播放列表！`
   }
 };
 
