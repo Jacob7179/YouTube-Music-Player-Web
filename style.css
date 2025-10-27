@@ -1391,6 +1391,10 @@ body.dark-mode .settings-close-btn {
     transition: all 0.4s ease;
 }
 
+.floating-top button {
+    border: none;
+}
+
 .floating-top.visible {
     opacity: 1;
     visibility: visible;
