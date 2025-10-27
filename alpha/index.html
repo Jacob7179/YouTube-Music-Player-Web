@@ -96,11 +96,14 @@
             max-height: 350px;
             overflow-y: auto;
             background: #fafafa;
+            transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out;
         }
+        
         body.dark-mode #lyricsPanel {
             background: #1a1a1a;
             border-color: #333;
         }
+
         #lyricsHeader {
             display: flex;
             align-items: center;
@@ -108,16 +111,22 @@
             gap: 8px;
             margin-bottom: 8px;
         }
+
         #lyricsText {
             white-space: pre-wrap;
             font-size: 15px;
             line-height: 1.5;
+            color: inherit;
+            transition: color 0.5s ease-in-out;
         }
+
         .lrc-line {
             padding: 6px 4px;
-            transition: background 0.2s ease;
+            transition: background 0.2s ease, color 0.5s ease-in-out;
             border-radius: 4px;
+            color: inherit;
         }
+
         .lrc-line.highlight {
             background: rgba(0,123,255,0.12);
             font-weight: 600;
@@ -125,6 +134,10 @@
 
         #songList li:hover {
             background: rgba(0,0,0,0.03);
+        }
+
+        body.dark-mode #songList li:hover {
+            background: rgba(255,255,255,0.05);
         }
 
         /* Mobile tweaks */
@@ -136,29 +149,6 @@
                 width: 220px;
                 height: 220px;
             }
-        }
-
-        #lyricsPanel {
-            max-width: 560px;
-            margin: 20px auto;
-            border-top: 1px solid #ccc;
-            padding-top: 10px;
-            text-align: left;
-        }
-        #lyricsHeader {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        #lyricsText {
-            max-height: 300px;
-            overflow-y: auto;
-            line-height: 1.6;
-            font-size: 14px;
-        }
-        .lyric-line {
-            transition: all 0.3s ease;
         }
     </style>
 </head>
