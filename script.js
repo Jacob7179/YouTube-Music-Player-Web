@@ -781,26 +781,6 @@ async function handleAddSongFromURL() {
 
     alert(t.addedSong(title, author));
 
-    // --- Wait for player safely ---
-    try {
-        await playerReady; // waits until onYouTubeIframeAPIReady + player.onReady
-    } catch (e) {
-        console.warn("Player not ready yet:", e);
-    }
-
-    // --- Load into player only when ready ---
-    if (player && typeof player.loadVideoById === "function") {
-        try {
-            player.loadVideoById(videoId);
-            playing = true;
-            document.getElementById("playPauseBtn").innerHTML = ICON_PAUSE;
-        } catch (err) {
-            console.warn("Could not load video:", err);
-        }
-    } else {
-        console.warn("Player not ready or not valid.");
-    }
-
     console.log(`✅ Added: ${title} — ${author}`);
 
     // 🧹 Immediately clear URL
