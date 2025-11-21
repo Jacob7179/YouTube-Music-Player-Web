@@ -2,18 +2,45 @@ html, body {
     margin-top: 20px;
     height: auto;
     overflow-y: auto;
-    font-family: Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* Smooth Fade-In Effect */
+/* Smooth Fade-In Effect and iPhone-like background */
 body {
     opacity: 0;
-    animation: fadeIn 1s ease-in-out forwards;
-    /* Default Light Mode */
-    background-color: white;
-    color: black;
+    animation: fadeIn 0.9s ease-in-out forwards;
+    background: linear-gradient(180deg, #f7f8fb 0%, #eef2f7 100%);
+    color: #0b1220;
     cursor: default !important;
-    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+    transition: background-color 0.6s ease-in-out, color 0.6s ease-in-out;
+}
+
+/* iPhone-style card base */
+.card {
+    background: rgba(255,255,255,0.8);
+    border-radius: 18px;
+    box-shadow: 0 8px 30px rgba(16,24,40,0.08);
+    backdrop-filter: blur(6px);
+}
+
+/* Subtle app-like top user badge */
+#userArea #userBadge {
+    background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.4));
+    color: #0b1220;
+    border: 1px solid rgba(10,20,30,0.06);
+}
+
+/* Suggestion card */
+#suggestionCard {
+    border-radius: 14px;
+    padding: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: linear-gradient(180deg, #ffffff, #fafbff);
+    box-shadow: 0 6px 20px rgba(12,30,60,0.06);
 }
 
 /* Only change cursor when actually dragging */

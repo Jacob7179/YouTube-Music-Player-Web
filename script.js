@@ -24,6 +24,55 @@ const CORS_PROXY_URL = 'https://corsproxy.io/?';
 
 let playlist = []; // Array to store playlist data
 
+// --- Authentication & per-user storage helpers ---
+function getUsers() {
+    return JSON.parse(localStorage.getItem('ympw_users') || '{}');
+}
+
+function saveUsers(users) {
+    localStorage.setItem('ympw_users', JSON.stringify(users));
+}
+
+function getCurrentUser() {
+    return JSON.parse(localStorage.getItem('ympw_currentUser') || 'null');
+}
+
+function setCurrentUser(username) {
+    if (username) {
+        localStorage.setItem('ympw_currentUser', JSON.stringify(username));
+    } else {
+        localStorage.removeItem('ympw_currentUser');
+    }
+    updateUserUI();
+}
+
+function registerUser(username, password) {
+    if (!username || !password) return { ok: false, message: 'Informe usuário e senha' };
+    const users = getUsers();
+    if (users[username]) return { ok: false, message: 'Usuário já existe' };
+    users[username] = { password: btoa(password) }; // simple client-side encoding
+    saveUsers(users);
+    return { ok: true };
+}
+
+function loginUser(username, password) {
+    const users = getUsers();
+    if (!users[username]) return { ok: false, message: 'Usuário não encontrado' };
+    if (users[username].password !== btoa(password)) return { ok: false, message: 'Senha incorreta' };
+    setCurrentUser(username);
+    return { ok: true };
+}
+
+function logoutUser() {
+    setCurrentUser(null);
+}
+
+function getPlaylistKey() {
+    const user = getCurrentUser();
+    if (user) return `youtubeMusicPlaylist__${user}`;
+    return 'youtubeMusicPlaylist';
+}
+
 // Define icon HTML as constants to prevent syntax issues
 const ICON_TRASH = '<i class=\'bx bx-trash\'></i>';
 const ICON_PLUS = '<i class=\'bx bx-plus\'></i>';
@@ -36,7 +85,8 @@ const ICON_REPEAT = '<i class=\'bx bx-repeat\' ></i>';
 
 // Load playlist from local storage or use a default if none exists
 function loadPlaylist() {
-    const storedPlaylist = localStorage.getItem('youtubeMusicPlaylist');
+    const key = getPlaylistKey();
+    const storedPlaylist = localStorage.getItem(key);
     if (storedPlaylist) {
         playlist = JSON.parse(storedPlaylist);
     } else {
@@ -57,7 +107,8 @@ function loadPlaylist() {
 }
 
 function savePlaylist() {
-    localStorage.setItem('youtubeMusicPlaylist', JSON.stringify(playlist));
+    const key = getPlaylistKey();
+    localStorage.setItem(key, JSON.stringify(playlist));
 }
 
 // Helper function to scroll playlist without focusing the window
@@ -1678,6 +1729,8 @@ function handlePlayerStateChange(event) {
         } else {
             // ✅ Show bx-revision when the song ends and Auto-Play is OFF
             playPauseBtn.innerHTML = ICON_REVISION; // Use constant
+            // Show a suggested next song visually
+            try { if (typeof window.showSuggestionFor === 'function') window.showSuggestionFor(selectedVideoId); } catch(e){}
         }
         
         // Update media session
@@ -2899,6 +2952,148 @@ function applyLanguage(lang) {
 
     document.getElementById("attributionRepo") && 
     (document.getElementById("attributionRepo").textContent = t.attributionRepo);
+
+    // Initialize auth & user UI
+    updateUserUI();
+});
+
+// --- UI: update user display and bind buttons ---
+function updateUserUI() {
+    const current = getCurrentUser();
+    const userNameDisplay = document.getElementById('userNameDisplay');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    if (!userNameDisplay || !loginBtn || !logoutBtn) return;
+
+    if (current) {
+        userNameDisplay.textContent = current;
+        loginBtn.classList.add('d-none');
+        logoutBtn.classList.remove('d-none');
+    } else {
+        userNameDisplay.textContent = 'Convidado';
+        loginBtn.classList.remove('d-none');
+        logoutBtn.classList.add('d-none');
+    }
+
+    // Reload playlist for the user context
+    loadPlaylist();
+}
+
+// Bind login / logout / create song
+document.addEventListener('DOMContentLoaded', () => {
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const createSongBtn = document.getElementById('createSongBtn');
+
+    if (loginBtn) {
+        loginBtn.addEventListener('click', () => {
+            const username = prompt('Usuário:');
+            if (!username) return;
+            const password = prompt('Senha:');
+            if (!password) return;
+            // If user doesn't exist, offer to register
+            const users = getUsers();
+            if (!users[username]) {
+                if (!confirm('Usuário não encontrado. Criar novo usuário?')) return;
+                const r = registerUser(username, password);
+                if (!r.ok) { alert(r.message); return; }
+                alert('Usuário criado. Você foi logado.');
+            }
+            const res = loginUser(username, password);
+            if (!res.ok) { alert(res.message); return; }
+            updateUserUI();
+        });
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            logoutUser();
+            updateUserUI();
+        });
+    }
+
+    if (createSongBtn) {
+        createSongBtn.addEventListener('click', () => {
+            const name = document.getElementById('newSongName').value.trim();
+            const author = document.getElementById('newSongAuthor').value.trim() || 'Unknown';
+            const videoId = document.getElementById('newSongVideoId').value.trim();
+            const art = document.getElementById('newSongArt').value.trim() || `https://via.placeholder.com/300`;
+            if (!name) { alert('Informe o nome da música'); return; }
+            const vid = videoId || ('local-' + Date.now());
+            // Prevent duplicates by videoId when provided
+            if (playlist.some(s => s.videoId === vid)) {
+                alert('Música já existe na playlist');
+                return;
+            }
+            const newSong = { videoId: vid, songName: name, authorName: author, albumArt: art };
+            playlist.push(newSong);
+            savePlaylist();
+            renderPlaylist(playlist);
+            alert('Música criada e salva para o usuário atual.');
+            // clear inputs
+            document.getElementById('newSongName').value = '';
+            document.getElementById('newSongAuthor').value = '';
+            document.getElementById('newSongVideoId').value = '';
+            document.getElementById('newSongArt').value = '';
+        });
+    }
+
+    // Suggestion: show suggested next when playback is paused or ended
+    function getSuggestedNext(currentVideoId) {
+        if (!playlist || playlist.length === 0) return null;
+        // Prefer same author (not the same song), else next in list
+        const current = playlist.find(s => s.videoId === currentVideoId);
+        if (!current) return playlist[0];
+        const sameAuthor = playlist.find(s => s.authorName === current.authorName && s.videoId !== currentVideoId);
+        if (sameAuthor) return sameAuthor;
+        // next by index
+        const idx = playlist.findIndex(s => s.videoId === currentVideoId);
+        const next = playlist[(idx + 1) % playlist.length];
+        return next;
+    }
+
+    function showSuggestionFor(currentVideoId) {
+        const suggestion = getSuggestedNext(currentVideoId);
+        const suggestionCard = document.getElementById('suggestionCard');
+        if (!suggestionCard) return;
+        if (!suggestion) { suggestionCard.classList.add('d-none'); return; }
+        suggestionCard.innerHTML = `
+            <div style="display:flex; gap:10px; align-items:center;">
+                <img src="${suggestion.albumArt}" alt="art" style="width:56px; height:56px; object-fit:cover; border-radius:10px;">
+                <div style="min-width:0;">
+                    <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;">${suggestion.songName}</div>
+                    <div style="font-size:12px; color:#666">${suggestion.authorName}</div>
+                </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button id="playSuggestionBtn" class="btn btn-primary btn-sm">Tocar</button>
+                <button id="addSuggestionBtn" class="btn btn-outline-primary btn-sm">Adicionar</button>
+            </div>
+        `;
+        suggestionCard.classList.remove('d-none');
+
+        document.getElementById('playSuggestionBtn').onclick = () => {
+            const s = suggestion;
+            actualSelectedVideoId = s.videoId;
+            loadNewVideo(s.videoId, s.albumArt, s);
+            // highlight
+            document.querySelectorAll('#songList li').forEach(li => li.classList.remove('selected'));
+            const el = document.querySelector(`#songList li[data-video="${s.videoId}"]`);
+            if (el) el.classList.add('selected');
+        };
+        document.getElementById('addSuggestionBtn').onclick = () => {
+            playlist.push(suggestion);
+            savePlaylist();
+            renderPlaylist(playlist);
+            alert('Adicionado à playlist');
+        };
+    }
+
+    // When player ends or is paused, show suggestion (also listen for end inside handlePlayerStateChange)
+    // Expose a global helper so existing end handlers can call showSuggestionFor(selectedVideoId)
+    window.showSuggestionFor = showSuggestionFor;
+});
 
     // 🌐 Language Switch Section
     if (document.getElementById("languageLabel"))
