@@ -34,6 +34,74 @@ const ICON_PREVIOUS = '<i class=\'bx bx-skip-previous\' ></i>';
 const ICON_NEXT = '<i class=\'bx bx-skip-next\' ></i>';
 const ICON_REPEAT = '<i class=\'bx bx-repeat\' ></i>';
 
+// Add toggle functionality for song list/lyrics
+document.addEventListener('DOMContentLoaded', function() {
+    const showSongListBtn = document.getElementById('showSongListBtn');
+    const showLyricsBtn = document.getElementById('showLyricsBtn');
+    const songListContainer = document.getElementById('songListContainer');
+    const lyricsContainer = document.getElementById('lyricsContainer');
+    const playlistSearchContainer = document.getElementById('playlistSearchContainer');
+
+    // Initialize based on saved preference
+    const showLyrics = localStorage.getItem('showLyrics') === 'true';
+    
+    if (showLyrics) {
+        showLyricsView();
+    } else {
+        showSongListView();
+    }
+
+    // Song List button click
+    showSongListBtn.addEventListener('click', function() {
+        if (!songListContainer.classList.contains('d-none')) return;
+        showSongListView();
+        localStorage.setItem('showLyrics', 'false');
+    });
+
+    // Lyrics button click
+    showLyricsBtn.addEventListener('click', function() {
+        if (!lyricsContainer.classList.contains('d-none')) return;
+        showLyricsView();
+        localStorage.setItem('showLyrics', 'true');
+    });
+
+    function showSongListView() {
+        // Show song list
+        songListContainer.classList.remove('d-none');
+        playlistSearchContainer.classList.remove('d-none');
+        
+        // Hide lyrics
+        lyricsContainer.classList.add('d-none');
+        
+        // Update button states
+        showSongListBtn.classList.add('active');
+        showSongListBtn.classList.remove('btn-outline-primary');
+        showSongListBtn.classList.add('btn-primary');
+        
+        showLyricsBtn.classList.remove('active');
+        showLyricsBtn.classList.remove('btn-primary');
+        showLyricsBtn.classList.add('btn-outline-primary');
+    }
+
+    function showLyricsView() {
+        // Show lyrics
+        lyricsContainer.classList.remove('d-none');
+        
+        // Hide song list
+        songListContainer.classList.add('d-none');
+        playlistSearchContainer.classList.add('d-none');
+        
+        // Update button states
+        showLyricsBtn.classList.add('active');
+        showLyricsBtn.classList.remove('btn-outline-primary');
+        showLyricsBtn.classList.add('btn-primary');
+        
+        showSongListBtn.classList.remove('active');
+        showSongListBtn.classList.remove('btn-primary');
+        showSongListBtn.classList.add('btn-outline-primary');
+    }
+});
+
 // Load playlist from local storage or use a default if none exists
 function loadPlaylist() {
     const storedPlaylist = localStorage.getItem('youtubeMusicPlaylist');
@@ -1923,36 +1991,6 @@ document.addEventListener("DOMContentLoaded", function() {
 const lyricsPanel = document.getElementById("lyricsPanel");
 const lyricsToggle = document.getElementById("lyricsToggle");
 
-// Initialize from saved state
-document.addEventListener("DOMContentLoaded", () => {
-  const savedState = localStorage.getItem("showLyrics");
-  if (savedState === null) {
-    // Default: OFF (lyrics hidden)
-    lyricsPanel.style.display = "none";
-    lyricsToggle.checked = false;
-    localStorage.setItem("showLyrics", false);
-  } else if (savedState === "true") {
-    lyricsPanel.style.display = "block";
-    lyricsToggle.checked = true;
-  } else {
-    lyricsPanel.style.display = "none";
-    lyricsToggle.checked = false;
-  }
-});
-
-// When user toggles switch
-lyricsToggle.addEventListener("change", () => {
-  const isVisible = lyricsToggle.checked;
-  lyricsPanel.style.display = isVisible ? "block" : "none";
-  localStorage.setItem("showLyrics", isVisible);
-});
-
-lyricsToggle.addEventListener("change", () => {
-  const isVisible = lyricsToggle.checked;
-  lyricsPanel.classList.toggle("hidden", !isVisible);
-  localStorage.setItem("showLyrics", isVisible);
-});
-
 // Export playlist function
 function exportPlaylist() {
     try {
@@ -2044,25 +2082,49 @@ function importPlaylist(file) {
                 }
 
                 if (importedData.showLyrics !== undefined) {
-                    const lyricsPanel = document.getElementById("lyricsPanel");
-                    const lyricsToggle = document.getElementById("lyricsToggle");
                     const showLyrics = importedData.showLyrics;
-
-                    localStorage.setItem("showLyrics", showLyrics);
+                    localStorage.setItem('showLyrics', showLyrics);
                     
-                    // Update toggle switch
-                    if (lyricsToggle) {
-                        lyricsToggle.checked = showLyrics;
-                    }
+                    // Update button states and show/hide lyrics container
+                    const showSongListBtn = document.getElementById('showSongListBtn');
+                    const showLyricsBtn = document.getElementById('showLyricsBtn');
+                    const songListContainer = document.getElementById('songListContainer');
+                    const lyricsContainer = document.getElementById('lyricsContainer');
+                    const playlistSearchContainer = document.getElementById('playlistSearchContainer');
                     
-                    // Update panel visibility
-                    if (lyricsPanel) {
-                        if (showLyrics) {
-                            lyricsPanel.style.display = "block";
-                            lyricsPanel.classList.remove("hidden");
-                        } else {
-                            lyricsPanel.style.display = "none";
-                            lyricsPanel.classList.add("hidden");
+                    if (showLyrics) {
+                        // Show lyrics view
+                        lyricsContainer.classList.remove('d-none');
+                        songListContainer.classList.add('d-none');
+                        playlistSearchContainer.classList.add('d-none');
+                        
+                        // Update button states
+                        if (showLyricsBtn) {
+                            showLyricsBtn.classList.add('active');
+                            showLyricsBtn.classList.remove('btn-outline-primary');
+                            showLyricsBtn.classList.add('btn-primary');
+                        }
+                        if (showSongListBtn) {
+                            showSongListBtn.classList.remove('active');
+                            showSongListBtn.classList.remove('btn-primary');
+                            showSongListBtn.classList.add('btn-outline-primary');
+                        }
+                    } else {
+                        // Show song list view
+                        songListContainer.classList.remove('d-none');
+                        playlistSearchContainer.classList.remove('d-none');
+                        lyricsContainer.classList.add('d-none');
+                        
+                        // Update button states
+                        if (showSongListBtn) {
+                            showSongListBtn.classList.add('active');
+                            showSongListBtn.classList.remove('btn-outline-primary');
+                            showSongListBtn.classList.add('btn-primary');
+                        }
+                        if (showLyricsBtn) {
+                            showLyricsBtn.classList.remove('active');
+                            showLyricsBtn.classList.remove('btn-primary');
+                            showLyricsBtn.classList.add('btn-outline-primary');
                         }
                     }
                 }
@@ -2493,7 +2555,7 @@ const translations = {
     autoSyncOff: "Auto-Sync: OFF",
     refresh: "Refresh",
     raw: "Raw Data",
-    playlistTitle: "My Playlist",
+    showPlaylist: "My Playlist",
     searchPlaylist: "Search your playlist...",
     clearSearch: "Clear search",
     searchPlaylistPlaceholder: "Search your playlist...",
@@ -2525,7 +2587,7 @@ const translations = {
     importPlaylist: "Import Playlist & Data",
     clearCache: "Clear Search Cache",
     albumArtSpin: "Album Art Spin",
-    showLyrics: "Show Lyrics Panel",
+    showLyrics: "Lyrics",
     darkMode: "Dark Mode",
     toggleLyricsTooltip: "Toggle to show or hide lyrics",
     videoPlayer: "Video Player",
@@ -2591,7 +2653,7 @@ const translations = {
     autoSyncOff: "自动同步：关闭",
     refresh: "刷新",
     raw: "原始数据",
-    playlistTitle: "我的播放列表",
+    showPlaylist: "我的播放列表",
     searchPlaylist: "搜索你的播放列表...",
     clearSearch: "清除搜索",
     searchPlaylistPlaceholder: "搜索你的播放列表...",
@@ -2623,7 +2685,7 @@ const translations = {
     importPlaylist: "导入播放列表和数据",
     clearCache: "清除搜索缓存",
     albumArtSpin: "唱片旋转",
-    showLyrics: "显示歌词面板",
+    showLyrics: "歌词",
     darkMode: "深色模式",
     toggleLyricsTooltip: "切换以显示或隐藏歌词",
     videoPlayer: "视频播放器",
@@ -2727,7 +2789,31 @@ function applyLanguage(lang) {
     (document.querySelector("h5.card-title i.bxs-music").nextSibling.nodeValue = ` ${t.playerTitle}`);
     document.querySelector("#lyricsTitle")?.lastChild?.nodeValue && 
     (document.querySelector("#lyricsTitle").lastChild.nodeValue = ` ${t.lyrics}`);
-    
+
+    // Update playlist/lyrics toggle buttons
+    const showSongListBtn = document.getElementById("showSongListBtn");
+    const showLyricsBtn = document.getElementById("showLyricsBtn");
+
+    if (showSongListBtn) {
+        const textSpan = showSongListBtn.querySelector('.btn-text');
+        if (textSpan) {
+            textSpan.textContent = t.showPlaylist;
+        } else {
+            // Fallback if no span element
+            showSongListBtn.innerHTML = `<i class='bx bxs-playlist'></i> ${t.showPlaylist}`;
+        }
+    }
+
+    if (showLyricsBtn) {
+        const textSpan = showLyricsBtn.querySelector('.btn-text');
+        if (textSpan) {
+            textSpan.textContent = t.showLyrics;
+        } else {
+            // Fallback if no span element
+            showLyricsBtn.innerHTML = `<i class='bi bi-music-note-list'></i> ${t.showLyrics}`;
+        }
+    }
+
     // ✅ Keep current meaning when switching language
     const meta = document.getElementById("lyricsMeta");
     const textEl = document.getElementById("lyricsText");
@@ -2765,8 +2851,6 @@ function applyLanguage(lang) {
     document.querySelector("#repeatBtn")?.nextElementSibling && 
     (document.querySelector("#repeatBtn").nextElementSibling.textContent = t.repeat);
 
-    document.querySelector(".bxs-playlist")?.parentElement && 
-    (document.querySelector(".bxs-playlist").parentElement.lastChild.textContent = ` ${t.playlistTitle}`);
     document.querySelector("#searchPlaylistInput")?.setAttribute("placeholder", t.searchPlaylist);
     document.querySelector(".fw-bold.border-bottom span:first-child")?.textContent && 
     (document.querySelector(".fw-bold.border-bottom span:first-child").textContent = t.songName);
@@ -2775,11 +2859,6 @@ function applyLanguage(lang) {
 
     document.querySelector(".bxs-videos")?.parentElement && 
     (document.querySelector(".bxs-videos").parentElement.lastChild.textContent = ` ${t.videoPlayer}`);
-    const playerToggleBtn = document.getElementById("togglePlayerBtn");
-    if (playerToggleBtn) {
-    const isHidden = document.getElementById("playerContainer")?.classList.contains("d-none");
-    playerToggleBtn.textContent = isHidden ? t.showPlayer : t.hidePlayer;
-    }
 
     document.querySelector("#goTopBtn")?.setAttribute("title", t.goTop);
 
@@ -2941,6 +3020,17 @@ function applyLanguage(lang) {
         btn.setAttribute("title", t.addToPlaylist);
         btn.innerHTML = `<i class='bx bx-plus'></i> ${t.add}`;
     });
+
+    // Update the toggle player button text
+    const togglePlayerBtn = document.getElementById("togglePlayerBtn");
+    const playerContainer = document.getElementById("playerContainer");
+    if (togglePlayerBtn && playerContainer) {
+        if (playerContainer.classList.contains("d-none")) {
+            togglePlayerBtn.innerText = t.showPlayer;
+        } else {
+            togglePlayerBtn.innerText = t.hidePlayer;
+        }
+    }
 }
 
 // 🌐 Language switch event

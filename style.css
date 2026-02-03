@@ -1780,3 +1780,205 @@ body.dark-mode .settings-menu .card {
 body.dark-mode .btn-close {
     filter: invert(1);
 }
+
+/* Combined Container Toggle Styles */
+#showSongListBtn.active,
+#showLyricsBtn.active {
+    background-color: #007bff !important;
+    color: white !important;
+    border-color: #007bff !important;
+}
+
+#showSongListBtn:not(.active),
+#showLyricsBtn:not(.active) {
+    background-color: transparent !important;
+    color: #007bff !important;
+    border-color: #007bff !important;
+}
+
+/* Dark mode support for toggle buttons */
+body.dark-mode #showSongListBtn:not(.active),
+body.dark-mode #showLyricsBtn:not(.active) {
+    color: #ffffff !important;
+    border-color: #ffffff !important;
+}
+
+/* Lyrics Container Styles */
+#lyricsContainer {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+#lyricsText {
+    flex-grow: 1;
+    overflow-y: auto;
+    font-size: 15px;
+    line-height: 1.7;
+    padding: 10px;
+    border-radius: 6px;
+    background-color: #fafafa;
+    color: #222;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+}
+
+/* Dark mode for lyrics container */
+body.dark-mode #lyricsText {
+    background-color: #222;
+    color: #e6e6e6;
+}
+
+#lyricsHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 0 5px;
+}
+
+/* Lyrics controls button styling */
+.lyrics-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.lyrics-controls button {
+    background: black;
+    color: white;
+    border: 2px solid black;
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.8s ease-in-out;
+    opacity: 1;
+}
+
+.lyrics-controls button:hover {
+    opacity: 0.7;
+}
+
+body.dark-mode .lyrics-controls button {
+    background: white !important;
+    color: black !important;
+    border: 2px solid white !important;
+}
+
+.lyrics-controls button:active {
+    transform: scale(0.9);
+}
+
+/* Add to the existing toggle button styles */
+#showSongListBtn .btn-text,
+#showLyricsBtn .btn-text {
+    transition: color 0.8s ease-in-out;
+}
+
+/* Ensure button text adapts to dark mode */
+body.dark-mode #showSongListBtn:not(.active) .btn-text,
+body.dark-mode #showLyricsBtn:not(.active) .btn-text {
+    color: #ffffff !important;
+}
+
+body.dark-mode #showSongListBtn.active .btn-text,
+body.dark-mode #showLyricsBtn.active .btn-text {
+    color: white !important;
+}
+
+/* Lyrics Text Container - Default (Desktop) */
+#lyricsText {
+    flex-grow: 1;
+    overflow-y: auto;
+    font-size: 15px;
+    line-height: 1.7;
+    padding: 10px;
+    border-radius: 6px;
+    background-color: #fafafa;
+    color: #222;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+    
+    /* Default max-height for desktop */
+    max-height: 530px;
+}
+
+@media (max-width: 995px) {
+    #lyricsText {
+        max-height: 530px;
+    }
+
+    .lyrics-controls {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .lyrics-controls button {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+}
+
+@media (min-width: 991px) {
+    .card2 {
+        max-height: 680px;
+        min-height: 680px;
+    }
+
+    #songList {
+        max-height: 490px;
+    }
+}
+
+/* Mobile size (768px and below) */
+@media (max-width: 991px) {
+    #lyricsText {
+        min-height: 510px; /* Smaller for mobile */
+        font-size: 14px; /* Optional: smaller font for mobile */
+        padding: 8px; /* Optional: less padding for mobile */
+    }
+    
+    /* Optional: Adjust lyrics controls for mobile */
+    .lyrics-controls {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .lyrics-controls button {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    .card2 {
+        max-height: 670px;
+    }
+
+    #songList {
+        max-height: 450px;
+    }
+}
+
+/* Very small mobile devices (480px and below) */
+@media (max-width: 480px) {
+    #lyricsText {
+        max-height: 400px; /* Even smaller for very small screens */
+        font-size: 13px;
+        padding: 6px;
+    }
+    
+    #lyricsHeader {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .lyrics-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+/* Dark mode for lyrics text */
+body.dark-mode #lyricsText {
+    background-color: #222;
+    color: #e6e6e6;
+}
