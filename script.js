@@ -1742,22 +1742,35 @@ document.getElementById("togglePlayerBtn").addEventListener("click", function ()
 
 document.addEventListener("DOMContentLoaded", function () {
     // Check if dark mode is enabled in local storage before page renders
-    if (localStorage.getItem("darkMode") === "enabled") {
+    const isDarkMode = localStorage.getItem("darkMode") === "enabled";
+    const darkModeToggle = document.getElementById("darkModeToggle");
+    
+    if (isDarkMode) {
         document.body.classList.add("dark-mode");
-        document.getElementById("darkModeToggle").innerHTML = "Disable";
+        if (darkModeToggle) darkModeToggle.checked = true;
         applyDarkModeToElements(true);
+    } else {
+        if (darkModeToggle) darkModeToggle.checked = false;
     }
 
     // Ensure body opacity animation starts only after dark mode is set
     document.body.style.opacity = "1";
 });
 
-document.getElementById("darkModeToggle").addEventListener("click", function () {
-    if (darkModeToggleInProgress) return; // Prevent spam clicking
+document.getElementById("darkModeToggle").addEventListener("change", function () {
+    if (darkModeToggleInProgress) {
+        // Revert the checkbox if toggle is in progress
+        this.checked = !this.checked;
+        return;
+    }
+    
     darkModeToggleInProgress = true;
 
     requestAnimationFrame(() => {
         const isDarkMode = document.body.classList.toggle("dark-mode");
+        
+        // Update the checkbox state to match the actual dark mode state
+        this.checked = isDarkMode;
 
         // Save the preference in local storage
         localStorage.setItem("darkMode", isDarkMode ? "enabled" : "disabled");
@@ -1774,10 +1787,6 @@ document.getElementById("darkModeToggle").addEventListener("click", function () 
                     elem.style.opacity = "1";
                 }, 50);
             });
-
-        // Change button text
-        const t = translations[currentLang];
-        this.innerHTML = isDarkMode ? t.darkModeDisable : t.darkModeEnable;
 
         // Prevent rapid toggling
         setTimeout(() => {
@@ -1797,6 +1806,11 @@ function applyDarkModeToElements(enable) {
             elem.style.transition = "color 0.8s ease-in-out";
             elem.style.color = enable ? "white" : "black";
         });
+
+    const darkModeToggle = document.getElementById("darkModeToggle");
+    if (darkModeToggle) {
+        darkModeToggle.checked = enable;
+    }
 }
 
 // Prevent text selection
@@ -2022,12 +2036,10 @@ function importPlaylist(file) {
                 if (importDarkMode) {
                     document.body.classList.add("dark-mode");
                     localStorage.setItem("darkMode", "enabled");
-                    document.getElementById("darkModeToggle").innerHTML = "Disable";
                     applyDarkModeToElements(true);
                 } else {
                     document.body.classList.remove("dark-mode");
                     localStorage.setItem("darkMode", "disabled");
-                    document.getElementById("darkModeToggle").innerHTML = "Enable";
                     applyDarkModeToElements(false);
                 }
 
@@ -2515,8 +2527,6 @@ const translations = {
     albumArtSpin: "Album Art Spin",
     showLyrics: "Show Lyrics Panel",
     darkMode: "Dark Mode",
-    darkModeEnable: "Enable",
-    darkModeDisable: "Disable",
     toggleLyricsTooltip: "Toggle to show or hide lyrics",
     videoPlayer: "Video Player",
     showPlayer: "Show Player",
@@ -2615,8 +2625,6 @@ const translations = {
     albumArtSpin: "唱片旋转",
     showLyrics: "显示歌词面板",
     darkMode: "深色模式",
-    darkModeEnable: "启用",
-    darkModeDisable: "关闭",
     toggleLyricsTooltip: "切换以显示或隐藏歌词",
     videoPlayer: "视频播放器",
     showPlayer: "显示播放器",
@@ -2806,6 +2814,7 @@ function applyLanguage(lang) {
     document.querySelector("#settingsClearCacheBtn") && (document.querySelector("#settingsClearCacheBtn").innerHTML = `<i class='bx bx-trash'></i> ${t.clearCache}`);
     document.querySelector("label[for='albumArtSpinToggle']") && (document.querySelector("label[for='albumArtSpinToggle']").textContent = t.albumArtSpin);
     document.querySelector("label[for='lyricsToggle']") && (document.querySelector("label[for='lyricsToggle']").textContent = t.showLyrics);
+    document.querySelector("label[for='darkModeToggle']") && (document.querySelector("label[for='darkModeToggle']").textContent = t.darkMode);
     const darkModeBtn = document.getElementById("darkModeToggle");
     if (darkModeBtn) {
     const isDarkMode = document.body.classList.contains("dark-mode");

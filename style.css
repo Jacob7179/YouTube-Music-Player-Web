@@ -232,18 +232,6 @@ body.dark-mode {
     color: white;
 }
 
-/* Dark Mode Toggle Button */
-#darkModeToggle {
-    background-color: black;
-    color: white;
-    padding: 10px 15px;
-    font-size: 16px;
-    font-weight: bold;
-    border: none;
-    border-radius: 8px;
-    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, transform 0.1s ease-in-out;
-}
-
 /* Dark Mode - Toggle to White */
 body.dark-mode #darkModeToggle {
     background-color: white;
@@ -910,6 +898,11 @@ body:not(.dark-mode) #songList .list-group-item.selected .author-column {
 /* 🎵 Move Circle when ON */
 .switch input:checked + .slider::before {
     transform: translateX(24px);
+}
+
+.form-switch .form-check-input:checked {
+    background-color: #007bff !important;
+    border-color: #007bff !important;
 }
 
 /* 🎵 Repeat Button Styling */
@@ -1591,4 +1584,199 @@ body.dark-mode .lrc-line.highlight {
 /* Smooth transitions for lyrics text content */
 #lyricsText * {
   transition: color 0.8s ease-in-out, background-color 0.8s ease-in-out;
+}
+
+/* Fix: Settings Menu Dark Mode Transitions - Synchronized (0.8s) */
+.settings-menu {
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out, opacity 0.3s ease-in-out, transform 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+.settings-header {
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
+}
+
+.settings-header h6 {
+    transition: color 0.8s ease-in-out;
+}
+
+.settings-body {
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+}
+
+/* Settings form labels and text */
+.form-check-label,
+#languageLabel {
+    transition: color 0.8s ease-in-out;
+}
+
+.btn-group .btn {
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
+}
+
+/* Settings icons transition */
+.settings-header i {
+    transition: color 0.8s ease-in-out;
+}
+
+/* Dark mode specific styles for settings */
+body.dark-mode .settings-menu {
+    background: #222;
+    border: 1px solid #444;
+}
+
+body.dark-mode .settings-header {
+    border-bottom: 1px solid #444;
+}
+
+body.dark-mode .settings-header h6 {
+    color: white;
+}
+
+body.dark-mode .settings-header i {
+    color: white;
+}
+
+body.dark-mode .form-check-label,
+body.dark-mode #languageLabel {
+    color: white !important;
+}
+
+body.dark-mode .btn-group .btn-outline-primary:hover {
+    color: white;
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+body.dark-mode .btn-group .btn-outline-primary.active {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+/* Settings close button dark mode - SYNCHRONIZED */
+body.dark-mode .settings-close-btn {
+    filter: invert(1);
+    transition: filter 0.8s ease-in-out;
+}
+
+/* Smooth transition for all text content in settings - SYNCHRONIZED */
+.settings-menu *:not(input):not(button):not(.form-check-input) {
+    transition: color 0.8s ease-in-out, background-color 0.8s ease-in-out, border-color 0.8s ease-in-out;
+}
+
+/* Dark Mode for Cards in settings menu */
+.settings-menu .card {
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
+}
+
+body.dark-mode .settings-menu .card {
+    background-color: #333;
+    color: white;
+}
+
+/* Text color transitions for all text elements */
+.settings-menu span,
+.settings-menu label,
+.settings-menu h6,
+.settings-menu p {
+    transition: color 0.8s ease-in-out;
+}
+
+/* Specific for form check text */
+.form-check-label {
+    transition: color 0.8s ease-in-out !important;
+}
+
+/* Specific for language label */
+#languageLabel {
+    transition: color 0.8s ease-in-out !important;
+}
+
+/* Light mode text colors (ensure proper contrast) */
+body:not(.dark-mode) .form-check-label,
+body:not(.dark-mode) #languageLabel,
+body:not(.dark-mode) .settings-header h6 {
+    color: #212529 !important;
+}
+
+/* Ensure all settings menu items transition at 0.8s */
+.settings-menu .form-check,
+.settings-menu .form-switch,
+.settings-menu .mb-2,
+.settings-menu .btn-group {
+    transition: all 0.8s ease-in-out;
+}
+
+/* Smooth transition for the settings menu background when opening/closing */
+.settings-menu.show {
+    transition: all 0.3s ease-out, background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out !important;
+}
+
+/* ================================
+   SETTINGS MENU BORDER – NO SNAP
+   ================================ */
+
+/* Base (LIGHT MODE) — border exists */
+.settings-menu {
+    border: 1px solid transparent; /* IMPORTANT */
+    transition:
+        background-color 0.8s ease-in-out,
+        color 0.8s ease-in-out,
+        border-color 0.8s ease-in-out,
+        opacity 0.3s ease-in-out,
+        transform 0.3s ease-in-out,
+        visibility 0.3s ease-in-out;
+}
+
+/* DARK MODE — ONLY change border-color */
+body.dark-mode .settings-menu {
+    background-color: #222;
+    border-color: #444;
+}
+
+/* ================================
+   SETTINGS HEADER BORDER – NO SNAP
+   ================================ */
+
+/* Base state */
+.settings-header {
+    border-bottom: 1px solid transparent;
+    transition:
+        background-color 0.8s ease-in-out,
+        color 0.8s ease-in-out,
+        border-color 0.8s ease-in-out;
+}
+
+/* Dark mode */
+body.dark-mode .settings-header {
+    border-bottom-color: #444;
+}
+
+/* ================================
+   SETTINGS CARDS BORDER – NO SNAP
+   ================================ */
+
+.settings-menu .card {
+    border: 1px solid transparent;
+    transition:
+        background-color 0.8s ease-in-out,
+        color 0.8s ease-in-out,
+        border-color 0.8s ease-in-out;
+}
+
+body.dark-mode .settings-menu .card {
+    background-color: #333;
+    color: white;
+    border-color: #444;
+}
+
+.btn-close {
+    filter: none;
+    opacity: 1;
+    transition: filter 0.8s ease-in-out, opacity 0.8s ease-in-out;
+}
+
+/* Dark mode */
+body.dark-mode .btn-close {
+    filter: invert(1);
 }
