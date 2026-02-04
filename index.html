@@ -216,26 +216,34 @@
             </div>
         </div>
 
-        <div class="d-flex justify-content-center align-items-start flex-wrap" style="margin-top: 20px; gap: 20px; padding-bottom: 20px;">
-            <div class="w-100 text-center border-bottom mb-3">
-                <h4 id="experimentalTitle" class="fw-bold"><i class='bx bxs-flask' ></i> Experimental Project</h4>
-            </div>
-            
-            <div class="w-100 text-center mt-3">
-                <p id="experimentalWarning" class="text-danger fw-bold">⚠ Warning: This project may be unstable and unsafe. Use at your own risk.</p>
-            </div>
-
-            <div class="card shadow-lg" style="width: 16rem;">
-                <div class="card-body text-center">
-                    <h5 id="readExcelTitle" class="card-title fw-bold"><i class='bx bxs-file'></i> Read Excel Files Methods</h5>
-                    <button id="viewBetaBtn" onclick="window.location.href='/YouTube-Music-Player-Web/beta/'" class="btn btn-primary w-100" title="View Beta Test Project">View Beta Test Project</button>
+        <!-- Floating Experimental Button -->
+        <div class="floating-experimental">
+            <button id="experimentalBtn" class="btn btn-warning rounded-circle experimental-btn" title="Experimental Features">
+                <div style="font-size: 28px;"><i class='bx bxs-flask'></i></div>
+            </button>
+            <div id="experimentalWindow" class="experimental-window">
+                <div class="experimental-header">
+                    <h6> <span id="experimentalWindowTitle">Experimental Project</span></h6>
+                    <button class="btn-close experimental-close-btn"></button>
                 </div>
-            </div>
-            
-            <div class="card shadow-lg" style="width: 16rem;">
-                <div class="card-body text-center">
-                    <h5 id="readApiKeyTitle" class="card-title fw-bold"><i class='bx bxs-key'></i> Read API Keys Methods</h5>
-                    <button id="viewAlphaBtn" onclick="window.location.href='/YouTube-Music-Player-Web/alpha/'" class="btn btn-secondary w-100" title="View Alpha Test Project">View Alpha Test Project</button>
+                <div class="experimental-body">
+                    <div class="w-100 text-center mt-2 mb-3">
+                        <p id="experimentalWindowWarning" class="text-danger fw-bold small">⚠ Warning: This project may be unstable and unsafe. Use at your own risk.</p>
+                    </div>
+                    
+                    <div class="card shadow-lg mb-3">
+                        <div class="card-body text-center">
+                            <h5 id="readExcelTitle" class="card-title fw-bold"><i class='bx bxs-file'></i> Read Excel Files Methods</h5>
+                            <button id="viewBetaBtn" onclick="window.location.href='/YouTube-Music-Player-Web/beta/'" class="btn btn-primary w-100" title="View Beta Test Project">View Beta Test Project</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card shadow-lg">
+                        <div class="card-body text-center">
+                            <h5 id="readApiKeyTitle" class="card-title fw-bold"><i class='bx bxs-key'></i> Read API Keys Methods</h5>
+                            <button id="viewAlphaBtn" onclick="window.location.href='/YouTube-Music-Player-Web/alpha/'" class="btn btn-secondary w-100" title="View Alpha Test Project">View Alpha Test Project</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

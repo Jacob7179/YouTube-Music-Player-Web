@@ -1376,7 +1376,7 @@ body.dark-mode .settings-close-btn {
 /* Scroll to Top Button */
 .floating-top {
     position: fixed;
-    bottom: 100px; /* Position above the settings button */
+    bottom: 160px; /* Position above the settings button */
     z-index: 999; /* Just below settings button */
     opacity: 0;
     visibility: hidden;
@@ -1981,4 +1981,175 @@ body.dark-mode #showLyricsBtn.active .btn-text {
 body.dark-mode #lyricsText {
     background-color: #222;
     color: #e6e6e6;
+}
+
+/* Floating Experimental Button */
+.floating-experimental {
+    position: fixed;
+    bottom: 90px; /* Position above the settings button */
+    right: 20px;
+    z-index: 1000;
+}
+
+.experimental-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+    transition: transform 0.3s ease-out, box-shadow 0.3s ease-out, background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+    border: none;
+    color: #000;
+}
+
+.experimental-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 15px rgba(255, 193, 7, 0.4);
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+.floating-experimental.active .experimental-btn {
+    transform: scale(1.1);
+    box-shadow: 0 6px 15px rgba(255, 193, 7, 0.4);
+    transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+}
+
+.experimental-btn:not(:hover):not(.floating-experimental.active .experimental-btn) {
+    transition: transform 0.4s ease-in, box-shadow 0.4s ease-in;
+}
+
+.experimental-btn i {
+    display: inline-block;
+    transition: transform 0.4s ease-in-out;
+}
+
+.experimental-btn:hover i {
+    transform: rotate(180deg);
+    transition: transform 0.3s ease-out;
+}
+
+.floating-experimental.active .experimental-btn i {
+    transform: rotate(180deg);
+    transition: transform 0.3s ease-out;
+}
+
+.experimental-btn:not(:hover):not(.floating-experimental.active .experimental-btn) i {
+    transform: rotate(0deg);
+    transition: transform 0.5s ease-in;
+}
+
+/* Experimental Window */
+.experimental-window {
+    position: absolute;
+    bottom: 70px;
+    right: 0;
+    background: white;
+    border-radius: 10px;
+    padding: 0;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    width: 300px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s ease-in-out, background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
+    border: 1px solid transparent;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.experimental-window.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition: all 0.3s ease-out, background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
+}
+
+.experimental-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid transparent;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
+}
+
+.experimental-header h6 {
+    margin: 0;
+    font-weight: 600;
+    transition: color 0.8s ease-in-out;
+}
+
+.experimental-close-btn {
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    transition: filter 0.8s ease-in-out, opacity 0.8s ease-in-out;
+}
+
+.experimental-body {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+}
+
+.experimental-body .card {
+    margin-bottom: 10px;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
+    border: 1px solid transparent;
+}
+
+.experimental-body .card-body {
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+}
+
+.experimental-body .card-title {
+    transition: color 0.8s ease-in-out;
+}
+
+/* Dark mode support for experimental window */
+body.dark-mode .experimental-window {
+    background: #222;
+    border-color: #444;
+}
+
+body.dark-mode .experimental-header {
+    border-bottom-color: #444;
+}
+
+body.dark-mode .experimental-header h6 {
+    color: white;
+}
+
+body.dark-mode .experimental-close-btn {
+    filter: invert(1);
+}
+
+body.dark-mode .experimental-body {
+    background-color: #222;
+    color: #fff;
+}
+
+body.dark-mode .experimental-body .card {
+    background-color: #333;
+    color: white;
+    border-color: #444;
+}
+
+body.dark-mode .experimental-body .card-title {
+    color: white;
+}
+
+body.dark-mode .experimental-body .text-danger {
+    color: #ff6b6b !important;
+}
+
+/* Ensure text colors transition smoothly */
+.experimental-window *:not(input):not(button):not(.form-check-input) {
+    transition: color 0.8s ease-in-out, background-color 0.8s ease-in-out, border-color 0.8s ease-in-out;
 }

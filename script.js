@@ -110,13 +110,14 @@ function loadPlaylist() {
     } else {
         // Default playlist if local storage is empty
         playlist = [
-            { videoId: 'wX_y95OrHLQ', songName: '打打だいず (D-D-Dice) Official - Starlight Traveler', authorName: '打打だいず (D-D-Dice) Official', albumArt: 'https://i.ytimg.com/vi/wX_y95OrHLQ/hqdefault.jpg' },
+            { videoId: '7OHstJwaKoU', songName: '何千キロの君へ', authorName: 'SHIN - Topic', albumArt: 'https://i.ytimg.com/vi/7OHstJwaKoU/hqdefault.jpg' },
+            { videoId: 'dh00du4hOGM', songName: '清夏', authorName: 'SHIN - Topic', albumArt: 'https://i.ytimg.com/vi/dh00du4hOGM/hqdefault.jpg' },
+            { videoId: 'eJpkUecGyMI', songName: '恋花', authorName: 'SHIN - Topic', albumArt: 'https://i.ytimg.com/vi/eJpkUecGyMI/hqdefault.jpg' },
+            { videoId: 'dzniwGFO79g', songName: 'ハルカスミ', authorName: 'SHIN - Topic', albumArt: 'https://i.ytimg.com/vi/dzniwGFO79g/hqdefault.jpg' },
             { videoId: 'TQ8WlA2GXbk', songName: 'Official髭男dism - Pretender［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/TQ8WlA2GXbk/hqdefault.jpg' },
             { videoId: 'DuMqFknYHBs', songName: 'Official髭男dism - イエスタデイ［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/DuMqFknYHBs/hqdefault.jpg' },
-            { videoId: 'keOnleW2eak', songName: 'Official髭男dism - らしさ [Official Video]', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/keOnleW2eak/hqdefault.jpg' },
-            { videoId: 'jTTuA0msOyg', songName: 'Present', authorName: 'SEKAI NO OWARI - Topic', albumArt: 'https://i.ytimg.com/vi/jTTuA0msOyg/hqdefault.jpg' },
-            { videoId: 'gZFGA41Slh0', songName: 'Illumination', authorName: 'SEKAI NO OWARI - Topic', albumArt: 'https://i.ytimg.com/vi/gZFGA41Slh0/hqdefault.jpg' },
-            { videoId: 'QlyW9kYHTDo', songName: 'Time Machine', authorName: 'SEKAI NO OWARI - Topic', albumArt: 'https://i.ytimg.com/vi/QlyW9kYHTDo/hqdefault.jpg' },
+            { videoId: 'aRtoPwe4ado', songName: 'Sanitizer', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/aRtoPwe4ado/hqdefault.jpg' },
+            { videoId: 'l2nqfPAMrSo', songName: 'Chessboard', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/l2nqfPAMrSo/hqdefault.jpg' },
             { videoId: 'hJqYc62NCKo', songName: 'TheFatRat & Laura Brehm - We\'ll Meet Again', authorName: 'TheFatRat', albumArt: 'https://i.ytimg.com/vi/hJqYc62NCKo/hqdefault.jpg' },
             { videoId: 'dpT-TeRYFvY', songName: 'All For Love', authorName: 'Tungevaag & Raaban - Topic', albumArt: 'https://i.ytimg.com/vi/dpT-TeRYFvY/hqdefault.jpg' },
         ];
@@ -2601,8 +2602,8 @@ const translations = {
     maintainerTitle: "Fork Maintainer",
     maintainerDesc: "Maintainer of <a href='https://github.com/Farwalker3/YouTube-Music-Player-Web' target='_blank'>this forked version</a> with enhanced features.",
     maintainerBtn: "Fork Maintainer",
-    experimentalTitle: "Experimental Project",
-    experimentalWarning: "⚠ Warning: This project may be unstable and unsafe. Use at your own risk.",
+    experimentalWindowTitle: "Experimental Project",
+    experimentalWindowWarning: "⚠ Warning: This project may be unstable and unsafe. Use at your own risk.",
     readExcelTitle: "Read Excel Files Methods",
     readApiKeyTitle: "Read API Keys Methods",
     viewBetaBtn: "View Beta Test Project",
@@ -2699,8 +2700,8 @@ const translations = {
     maintainerTitle: "分支维护者",
     maintainerDesc: "此 <a href='https://github.com/Farwalker3/YouTube-Music-Player-Web' target='_blank'>分支</a> 的维护者，具有增强功能。",
     maintainerBtn: "分支维护者",
-    experimentalTitle: "实验性项目",
-    experimentalWarning: "⚠ 警告：此项目可能不稳定且存在风险，请自行承担使用风险。",
+    experimentalWindowTitle: "实验性项目",
+    experimentalWindowWarning: "⚠ 警告：此项目可能不稳定且存在风险，请自行承担使用风险。",
     readExcelTitle: "读取 Excel 文件方法",
     readApiKeyTitle: "读取 API 密钥方法",
     viewBetaBtn: "查看 Beta 测试项目",
@@ -2957,11 +2958,11 @@ function applyLanguage(lang) {
     document.getElementById("maintainerRepoBtn").innerHTML = `<i class='bx bx-link-external'></i> ${t.visitRepo}`;
 
     // 🧪 Experimental Project Section
-    document.getElementById("experimentalTitle") && 
-    (document.getElementById("experimentalTitle").innerHTML = `<i class='bx bxs-flask'></i> ${t.experimentalTitle}`);
+    document.getElementById("experimentalWindowTitle") && 
+    (document.getElementById("experimentalWindowTitle").innerHTML = `<i class='bx bxs-flask'></i> ${t.experimentalWindowTitle}`);
 
-    document.getElementById("experimentalWarning") && 
-    (document.getElementById("experimentalWarning").textContent = t.experimentalWarning);
+    document.getElementById("experimentalWindowWarning") && 
+    (document.getElementById("experimentalWindowWarning").textContent = t.experimentalWindowWarning);
 
     document.getElementById("readExcelTitle") && 
     (document.getElementById("readExcelTitle").innerHTML = `<i class='bx bxs-file'></i> ${t.readExcelTitle}`);
@@ -3048,3 +3049,52 @@ document.getElementById("lang-zh")?.addEventListener("click", () => {
 
 // Apply saved language on page load
 document.addEventListener("DOMContentLoaded", () => applyLanguage(currentLang));
+
+// Experimental window functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const experimentalBtn = document.getElementById('experimentalBtn');
+    const experimentalWindow = document.getElementById('experimentalWindow');
+    const floatingExperimental = document.querySelector('.floating-experimental');
+    const experimentalCloseBtn = document.querySelector('.experimental-close-btn');
+    
+    // Toggle experimental window with animation
+    experimentalBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isOpening = !experimentalWindow.classList.contains('show');
+        
+        if (isOpening) {
+            floatingExperimental.classList.add('active');
+            experimentalWindow.classList.add('show');
+        } else {
+            closeExperimentalWindow();
+        }
+    });
+    
+    // Close window when close button is clicked
+    experimentalCloseBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        closeExperimentalWindow();
+    });
+    
+    // Close window when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest(".floating-experimental") && experimentalWindow.classList.contains('show')) {
+            closeExperimentalWindow();
+        }
+    });
+    
+    // Also close with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape" && experimentalWindow.classList.contains('show')) {
+            closeExperimentalWindow();
+        }
+    });
+    
+    // Function to close experimental window with smooth animation
+    function closeExperimentalWindow() {
+        experimentalWindow.classList.remove('show');
+        setTimeout(() => {
+            floatingExperimental.classList.remove('active');
+        }, 300);
+    }
+});
