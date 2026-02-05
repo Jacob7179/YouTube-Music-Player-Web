@@ -118,6 +118,7 @@ function loadPlaylist() {
             { videoId: 'DuMqFknYHBs', songName: 'Official髭男dism - イエスタデイ［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/DuMqFknYHBs/hqdefault.jpg' },
             { videoId: 'aRtoPwe4ado', songName: 'Sanitizer', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/aRtoPwe4ado/hqdefault.jpg' },
             { videoId: 'l2nqfPAMrSo', songName: 'Chessboard', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/l2nqfPAMrSo/hqdefault.jpg' },
+            { videoId: 'SICzNfWhgn8', songName: 'みどりの雨避け', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/SICzNfWhgn8/hqdefault.jpg' },
             { videoId: 'hJqYc62NCKo', songName: 'TheFatRat & Laura Brehm - We\'ll Meet Again', authorName: 'TheFatRat', albumArt: 'https://i.ytimg.com/vi/hJqYc62NCKo/hqdefault.jpg' },
             { videoId: 'dpT-TeRYFvY', songName: 'All For Love', authorName: 'Tungevaag & Raaban - Topic', albumArt: 'https://i.ytimg.com/vi/dpT-TeRYFvY/hqdefault.jpg' },
         ];
@@ -767,13 +768,19 @@ async function searchYouTube() {
 // 🎵 Handle add_song URL param — Always fetch title + author, and alert user
 async function handleAddSongFromURL() {
     const params = new URLSearchParams(window.location.search);
-    const songLink = params.get("add_song");
+    let songLink = params.get("add_song");
     if (!songLink) return;
 
     const t = translations[currentLang];
 
+    // Remove &si=xxxx parameter if it exists
+    songLink = songLink.replace(/&si=[^&]*/i, '');
+    
+    // Also handle case where si might be the only parameter
+    songLink = songLink.replace(/[?&]si=[^&]*$/i, '');
+
     // Extract YouTube video ID
-    const match = songLink.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    const match = songLink.match(/(?:v=|youtu\.be\/|\/embed\/|\/v\/|watch\?v=)([a-zA-Z0-9_-]{11})/);
     if (!match) {
         alert(t.invalidLink);
         const newUrl = new URL(window.location.href);
@@ -2637,7 +2644,31 @@ const translations = {
     add: "Add",
     invalidLink: "⚠ Invalid YouTube link provided.",
     duplicateSong: "⚠ This song is already in your playlist!",
-    addedSong: (title, author) => `✅ Added "${title}" by ${author} to your playlist!`
+    addedSong: (title, author) => `✅ Added "${title}" by ${author} to your playlist!`,
+    aboutTitle: "About YouTube Music Player",
+    aboutDescription: "A feature-rich web-based music player that uses YouTube as its music source. Play, manage, and organize your favorite music in a clean, intuitive interface.",
+    featuresTitle: "Features",
+    feature1: "YouTube music playback",
+    feature2: "Playlist management with drag & drop",
+    feature3: "Lyrics display with auto-sync",
+    feature4: "Dark/Light mode",
+    feature5: "Export/Import playlists",
+    feature6: "Volume control & progress bar",
+    feature7: "Multi-language support (English/中文)",
+    feature8: "Auto-play & repeat modes",
+    originalProjectTitle: "Original Project",
+    originalCreator: "Original creator",
+    contributorsTitle: "Contributors",
+    forkMaintainer: "Fork maintainer",
+    linksTitle: "Links",
+    originalRepository: "Original Repository",
+    versionInfoTitle: "Version Information",
+    version: "Version: 1.3",
+    lastUpdated: "Last Updated: February 2026",
+    languages: "Languages: English & 中文",
+    experimentalFeatures: "Experimental Features",
+    settingsAboutTitle: "About this Project",
+    settingsAbout: "About",
   },
   zh: {
     playerTitle: "YouTube 音乐播放器",
@@ -2735,7 +2766,31 @@ const translations = {
     add: "添加",
     invalidLink: "⚠ 提供的 YouTube 链接无效。",
     duplicateSong: "⚠ 此歌曲已在播放列表中！",
-    addedSong: (title, author) => `✅ 已成功将《${title}》 - ${author} 添加到播放列表！`
+    addedSong: (title, author) => `✅ 已成功将《${title}》 - ${author} 添加到播放列表！`,
+    aboutTitle: "关于 YouTube 音乐播放器",
+    aboutDescription: "一个功能丰富的基于网页的音乐播放器，使用 YouTube 作为音乐源。通过简洁直观的界面播放、管理和组织您喜爱的音乐。",
+    featuresTitle: "功能特色",
+    feature1: "YouTube 音乐播放",
+    feature2: "支持拖拽的播放列表管理",
+    feature3: "带自动同步的歌词显示",
+    feature4: "深色/浅色模式",
+    feature5: "导入/导出播放列表",
+    feature6: "音量控制与进度条",
+    feature7: "多语言支持 (英文/中文)",
+    feature8: "自动播放和重复模式",
+    originalProjectTitle: "原始项目",
+    originalCreator: "原始创作者",
+    contributorsTitle: "贡献者",
+    forkMaintainer: "分支维护者",
+    linksTitle: "链接",
+    originalRepository: "原始仓库",
+    versionInfoTitle: "版本信息",
+    version: "版本: 1.3",
+    lastUpdated: "最后更新: 2026年2月",
+    languages: "支持语言: 英文 & 中文",
+    experimentalFeatures: "实验性功能",
+    settingsAboutTitle: "关于此项目",
+    settingsAbout: "关于",
   }
 };
 
@@ -3032,6 +3087,22 @@ function applyLanguage(lang) {
             togglePlayerBtn.innerText = t.hidePlayer;
         }
     }
+
+    // 🎨 About window translations
+    document.querySelectorAll('[data-translate]').forEach(el => {
+        const key = el.getAttribute('data-translate');
+        if (t[key]) {
+            el.textContent = t[key];
+        }
+    });
+    
+    // Update title attributes
+    document.querySelectorAll('[data-translate-title]').forEach(el => {
+        const key = el.getAttribute('data-translate-title');
+        if (t[key]) {
+            el.setAttribute('title', t[key]);
+        }
+    });
 }
 
 // 🌐 Language switch event
@@ -3096,5 +3167,62 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             floatingExperimental.classList.remove('active');
         }, 300);
+    }
+});
+
+// About window functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const settingsAboutBtn = document.getElementById('settingsAboutBtn');
+    const aboutWindow = document.getElementById('aboutWindow');
+    const aboutCloseBtn = document.querySelector('.about-close-btn');
+    
+    // Create overlay backdrop
+    const aboutOverlay = document.createElement('div');
+    aboutOverlay.className = 'about-overlay';
+    document.body.appendChild(aboutOverlay);
+    
+    // Open About window
+    settingsAboutBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        openAboutWindow();
+        closeSettingsMenu(); // Close settings menu when opening about
+    });
+    
+    // Close About window with close button
+    aboutCloseBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        closeAboutWindow();
+    });
+    
+    // Close About window when clicking overlay
+    aboutOverlay.addEventListener('click', function(e) {
+        e.stopPropagation();
+        closeAboutWindow();
+    });
+    
+    // Close About window with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape" && aboutWindow.classList.contains('show')) {
+            closeAboutWindow();
+        }
+    });
+    
+    // Prevent closing when clicking inside about window
+    aboutWindow.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+    
+    // Function to open About window
+    function openAboutWindow() {
+        aboutWindow.classList.add('show');
+        aboutOverlay.classList.add('show');
+        document.body.style.overflow = 'hidden'; // Prevent scrolling
+    }
+    
+    // Function to close About window
+    function closeAboutWindow() {
+        aboutWindow.classList.remove('show');
+        aboutOverlay.classList.remove('show');
+        document.body.style.overflow = ''; // Restore scrolling
     }
 });

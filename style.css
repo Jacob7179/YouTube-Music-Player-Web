@@ -2153,3 +2153,252 @@ body.dark-mode .experimental-body .text-danger {
 .experimental-window *:not(input):not(button):not(.form-check-input) {
     transition: color 0.8s ease-in-out, background-color 0.8s ease-in-out, border-color 0.8s ease-in-out;
 }
+
+/* About Window Styles */
+.about-window {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    background: white;
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    opacity: 0;
+    visibility: hidden;
+    z-index: 10000;
+    transition: all 0.3s ease-in-out, background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
+    border: 1px solid transparent;
+    overflow: hidden;
+}
+
+.about-window.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+    transition: all 0.3s ease-out, background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
+}
+
+.about-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid transparent;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    transition: background-color 0.8s ease-in-out, border-color 0.8s ease-in-out;
+}
+
+.about-header h6 {
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.about-close-btn {
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    color: white;
+    opacity: 0.8;
+}
+
+.about-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    opacity: 1;
+}
+
+.about-body {
+    padding: 0;
+    max-height: calc(80vh - 60px);
+    overflow-y: auto;
+    transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
+}
+
+.about-content {
+    padding: 20px;
+}
+
+.about-section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    transition: border-color 0.8s ease-in-out;
+}
+
+.about-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.about-section h6 {
+    margin-bottom: 10px;
+    color: #007bff;
+    font-weight: 600;
+    transition: color 0.8s ease-in-out;
+}
+
+.about-section p {
+    margin-bottom: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+    transition: color 0.8s ease-in-out;
+}
+
+.about-section ul {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 14px;
+    transition: color 0.8s ease-in-out;
+}
+
+.about-section ul li {
+    margin-bottom: 5px;
+    transition: color 0.8s ease-in-out;
+}
+
+.about-section small {
+    color: #666;
+    transition: color 0.8s ease-in-out;
+}
+
+.creator-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    background: rgba(0, 123, 255, 0.05);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: all 0.8s ease-in-out;
+}
+
+.creator-img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.creator-info {
+    flex-grow: 1;
+}
+
+.creator-info strong {
+    display: block;
+    font-size: 14px;
+    transition: color 0.8s ease-in-out;
+}
+
+.creator-info small {
+    font-size: 12px;
+    color: #666;
+    transition: color 0.8s ease-in-overflow;
+}
+
+.link-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Dark mode support for About window */
+body.dark-mode .about-window {
+    background: #222;
+    border-color: #444;
+}
+
+body.dark-mode .about-header {
+    background: linear-gradient(135deg, #333, #222);
+    border-bottom-color: #444;
+}
+
+body.dark-mode .about-section {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .about-section h6 {
+    color: #4dabf7;
+}
+
+body.dark-mode .about-section p,
+body.dark-mode .about-section ul li {
+    color: #e0e0e0;
+}
+
+body.dark-mode .about-section small {
+    color: #aaa;
+}
+
+body.dark-mode .creator-card {
+    background: rgba(77, 171, 247, 0.1);
+}
+
+body.dark-mode .creator-info strong {
+    color: #ffffff;
+}
+
+body.dark-mode .creator-info small {
+    color: #bbb;
+}
+
+body.dark-mode .about-close-btn {
+    color: white;
+}
+
+/* Overlay backdrop */
+.about-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    opacity: 0;
+    visibility: hidden;
+    z-index: 9999;
+    transition: all 0.3s ease;
+}
+
+.about-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Add to style.css if you want to keep the info color but with white text */
+.btn-info {
+    background-color: #007bff !important;
+    border-color: #007bff !important;
+    color: white !important;
+}
+
+.btn-info:hover {
+    background-color: #0056b3 !important;
+    border-color: #0056b3 !important;
+    color: white !important;
+}
+
+/* For dark mode support */
+body.dark-mode .btn-info {
+    background-color: #007bff !important;
+    border-color: #007bff !important;
+}
+
+body.dark-mode .btn-info:hover {
+    background-color: #0056b3 !important;
+    border-color: #0056b3 !important;
+}
