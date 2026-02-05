@@ -23,7 +23,10 @@
     
                         <div class="album-art-container">
                             <img id="albumArt" src="https://via.placeholder.com/300" alt="Album Art" class="img-fluid shadow" draggable="false">
-                        </div>                        
+                        </div>
+                        <div id="videoPlayerInAlbumArt" class="album-art-container">
+                            <div id="player"></div>
+                        </div>
     
                         <h4 id="nowPlaying" class="text-center mt-3">
                             <span class="song-title">Loading...</span> <br>
@@ -205,7 +208,7 @@
                 </div>
             </div>
 
-            <div class="card shadow-lg" style="width: 18rem; min-height: 110px;">
+            <div class="card shadow-lg d-none" style="width: 18rem; min-height: 110px;">
                 <div class="card-body text-center">
                     <h5 class="card-title fw-bold"><i class='bx bxs-videos'></i> Video Player</h5>
                     <button id="togglePlayerBtn" class="btn btn-primary">Show Player</button>
@@ -271,9 +274,13 @@
                         <input class="form-check-input darkModeToggle" type="checkbox" id="darkModeToggle">
                         <label class="form-check-label" for="darkModeToggle">Dark Mode</label>
                     </div>
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="albumArtSpinToggle">
-                        <label class="form-check-label" for="albumArtSpinToggle">Album Art Spin</label>
+                    <div class="album-art-display-toggle mb-3">
+                        <span class="fw-bold mb-1 d-block">Album Art Display:</span>
+                        <div class="btn-group w-100" role="group" id="albumArtDisplayToggle">
+                            <button type="button" class="btn btn-sm btn-outline-primary active" data-mode="spin">Spin</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-mode="none">None</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-mode="video">Video</button>
+                        </div>
                     </div>
                     <div class="d-flex flex-column align-items-start w-100" role="group" aria-label="Language toggle">
                         <span id="languageLabel" class="fw-bold mb-1">Language:</span>

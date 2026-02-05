@@ -7,8 +7,9 @@ let errorTimeout;
 let selectedVideoId;
 let countdownInterval;
 let darkModeToggleInProgress = false;
-let albumArtSpinEnabled = JSON.parse(localStorage.getItem("albumArtSpin")) ?? true;
 let actualSelectedVideoId = null;
+let albumArtDisplayMode = localStorage.getItem("albumArtDisplayMode") || "spin";
+let albumArtSpinEnabled = albumArtDisplayMode === "spin";
 
 // YOUTUBE_API_KEY is now loaded from config.js 
 
@@ -1098,30 +1099,47 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
     let albumArt = document.getElementById("albumArt");
     albumArt.style.transition = "opacity 0.5s ease-in-out";
     albumArt.style.opacity = "0";
-
-    setTimeout(() => {
-        albumArt.classList.remove("rotate");
-        albumArt.style.transform = "rotate(0deg)";
-
-        if (albumArtUrl && isValidImageUrl(albumArtUrl)) {
-            albumArt.setAttribute("src", albumArtUrl);
-        } else {
-            console.error("Invalid or unsafe albumArtUrl:", albumArtUrl);
-            albumArt.setAttribute("src", "https://via.placeholder.com/300"); // Fallback
-        }
-
-        albumArt.onload = () => {
-            setTimeout(() => {
-                albumArt.style.opacity = "1";
-                if (playing && albumArtSpinEnabled) {
-                    albumArt.classList.remove("rotate-paused");
-                    albumArt.classList.add("rotate");
-                } else {
-                    albumArt.classList.remove("rotate", "rotate-paused");
-                }
-            }, 500);
+    
+    // Preload album art regardless of current mode
+    if (albumArtUrl && isValidImageUrl(albumArtUrl)) {
+        const imgPreload = new Image();
+        imgPreload.src = albumArtUrl;
+        imgPreload.onload = () => {
+            console.log("Album art preloaded for next song:", albumArtUrl);
         };
-    }, 500);
+    }
+    
+    // Only fade album art if we're in spin or none mode
+    if (albumArtDisplayMode !== "video") {
+        setTimeout(() => {
+            albumArt.classList.remove("rotate");
+            albumArt.style.transform = "rotate(0deg)";
+            
+            if (albumArtUrl && isValidImageUrl(albumArtUrl)) {
+                albumArt.setAttribute("src", albumArtUrl);
+            } else {
+                console.error("Invalid or unsafe albumArtUrl:", albumArtUrl);
+                albumArt.setAttribute("src", "https://via.placeholder.com/300");
+            }
+            
+            albumArt.onload = () => {
+                setTimeout(() => {
+                    albumArt.style.opacity = "1";
+                    if (playing && albumArtDisplayMode === "spin") {
+                        albumArt.classList.remove("rotate-paused");
+                        albumArt.classList.add("rotate");
+                    } else {
+                        albumArt.classList.remove("rotate", "rotate-paused");
+                    }
+                }, 500);
+            };
+        }, 500);
+    } else {
+        // In video mode, ensure video player is initialized
+        setTimeout(() => {
+            initializeVideoPlayerInAlbumArt(videoId);
+        }, 100);
+    }
 
     updateBackgroundImage(albumArtUrl);
 
@@ -1168,7 +1186,7 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
         document.getElementById("playerContainer").innerHTML = `<div id="player"></div>`;
         // Ensure the API is ready before creating a player
         if (window.YT && window.YT.Player) {
-             player = new YT.Player('player', {
+            player = new YT.Player('player', {
                 videoId: videoId,
                 playerVars: {
                     autoplay: 1,
@@ -1186,6 +1204,11 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
                         
                         // Setup media session after player is ready
                         setupMediaSession();
+                        
+                        // Initialize video player in album art position if in video mode
+                        if (albumArtDisplayMode === "video") {
+                            initializeVideoPlayerInAlbumArt(videoId);
+                        }
                     },
                     'onStateChange': handlePlayerStateChange, 
                     'onError': handleVideoError
@@ -1202,6 +1225,11 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
         
         // Setup media session
         setupMediaSession();
+        
+        // Initialize video player in album art position if in video mode
+        if (albumArtDisplayMode === "video") {
+            initializeVideoPlayerInAlbumArt(videoId);
+        }
     }
 
     // Update selectedVideoId
@@ -1218,19 +1246,28 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
         });
     }
 
-    // Update selectedVideoId
-    selectedVideoId = videoId;
-
     // ✅ Reset progress bar and timer
     document.getElementById("progress").style.width = "0%";
     document.getElementById("currentTime").innerText = "0:00";
     document.getElementById("totalTime").innerText = "0:00";
 
     playing = true;
-    document.getElementById("playPauseBtn").innerHTML = ICON_PAUSE; // Use constant
+    document.getElementById("playPauseBtn").innerHTML = ICON_PAUSE;
 
     // ✅ Start tracking progress
     updateProgressBar();
+}
+
+// Add this function to update video player when mode changes
+function updateVideoPlayerOnModeChange() {
+    const currentVideoId = player ? player.getVideoData().video_id : selectedVideoId;
+    
+    if (albumArtDisplayMode === "video" && currentVideoId) {
+        // Delay slightly to ensure DOM is updated
+        setTimeout(() => {
+            initializeVideoPlayerInAlbumArt(currentVideoId);
+        }, 50);
+    }
 }
 
 function updateBackgroundImage(imageUrl) {
@@ -1356,29 +1393,222 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 document.addEventListener("DOMContentLoaded", function () {
-    const albumArtSpinToggle = document.getElementById("albumArtSpinToggle");
-    if (albumArtSpinToggle) {
-        albumArtSpinToggle.checked = albumArtSpinEnabled;
-        applyAlbumArtSpinSetting();
+    // Initialize album art display mode toggle
+    const albumArtDisplayToggle = document.getElementById("albumArtDisplayToggle");
+    if (albumArtDisplayToggle) {
+        // Set the active button based on saved mode
+        const activeButton = albumArtDisplayToggle.querySelector(`[data-mode="${albumArtDisplayMode}"]`);
+        if (activeButton) {
+            albumArtDisplayToggle.querySelectorAll('.btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            activeButton.classList.add('active');
+        }
         
-        albumArtSpinToggle.addEventListener("change", function () {
-            albumArtSpinEnabled = this.checked;
-            localStorage.setItem("albumArtSpin", JSON.stringify(albumArtSpinEnabled));
-            applyAlbumArtSpinSetting();
+        // Add event listeners to toggle buttons
+        albumArtDisplayToggle.querySelectorAll('.btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const mode = this.getAttribute('data-mode');
+                
+                // Update active button
+                albumArtDisplayToggle.querySelectorAll('.btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // Update mode and apply
+                albumArtDisplayMode = mode;
+                applyAlbumArtDisplayMode();
+                
+                // Update video player if needed
+                updateVideoPlayerOnModeChange();
+            });
         });
+        
+        // Apply initial mode
+        applyAlbumArtDisplayMode();
+        
+        // Initialize video player if in video mode
+        if (albumArtDisplayMode === "video" && selectedVideoId) {
+            setTimeout(() => {
+                initializeVideoPlayerInAlbumArt(selectedVideoId);
+            }, 500);
+        }
     }
 });
 
-function applyAlbumArtSpinSetting() {
+function applyAlbumArtDisplayMode() {
     const albumArt = document.getElementById("albumArt");
-    if (!albumArt) return;
-
-    if (!albumArtSpinEnabled) {
-        albumArt.classList.remove("rotate", "rotate-paused");
-    } else if (playing) {
-        albumArt.classList.remove("rotate-paused");
-        albumArt.classList.add("rotate");
+    const videoPlayerContainer = document.getElementById("videoPlayerInAlbumArt");
+    const playerContainer = document.getElementById("playerContainer");
+    const togglePlayerBtn = document.getElementById("togglePlayerBtn");
+    const mainPlayerContainer = document.querySelector('.card-body.text-center');
+    
+    if (!albumArt || !videoPlayerContainer) return;
+    
+    // Get current video ID and album art
+    const currentVideoId = player ? player.getVideoData().video_id : selectedVideoId;
+    const currentSong = playlist.find(song => song.videoId === currentVideoId);
+    const currentAlbumArtUrl = currentSong ? currentSong.albumArt : albumArt.src;
+    
+    // Remove all mode classes first
+    document.body.classList.remove('album-art-spin-mode', 'album-art-none-mode', 'album-art-video-mode');
+    
+    // Preload album art image regardless of mode
+    if (currentAlbumArtUrl) {
+        const imgPreload = new Image();
+        imgPreload.src = currentAlbumArtUrl;
+        imgPreload.onload = () => {
+            console.log("Album art preloaded:", currentAlbumArtUrl);
+        };
     }
+    
+    // Apply the selected mode
+    switch(albumArtDisplayMode) {
+        case "spin":
+            document.body.classList.add('album-art-spin-mode');
+            albumArtSpinEnabled = true;
+            
+            // Show album art (already preloaded)
+            albumArt.style.display = "block";
+            videoPlayerContainer.style.display = "none";
+            
+            // Ensure album art has the correct src
+            if (currentSong && albumArt.src !== currentAlbumArtUrl) {
+                albumArt.src = currentAlbumArtUrl;
+            }
+            
+            // Apply spin if playing
+            if (playing) {
+                albumArt.classList.remove("rotate-paused");
+                albumArt.classList.add("rotate");
+            } else {
+                albumArt.classList.remove("rotate", "rotate-paused");
+            }
+            
+            // Show the separate video player toggle button
+            if (togglePlayerBtn) {
+                togglePlayerBtn.style.display = "inline-block";
+                // Update button text based on current state
+                const t = translations[currentLang];
+                togglePlayerBtn.innerText = playerContainer.classList.contains("d-none") ? t.showPlayer : t.hidePlayer;
+            }
+            break;
+            
+        case "none":
+            document.body.classList.add('album-art-none-mode');
+            albumArtSpinEnabled = false;
+            
+            // Show album art (already preloaded)
+            albumArt.style.display = "block";
+            videoPlayerContainer.style.display = "none";
+            
+            // Ensure album art has the correct src
+            if (currentSong && albumArt.src !== currentAlbumArtUrl) {
+                albumArt.src = currentAlbumArtUrl;
+            }
+            
+            albumArt.classList.remove("rotate", "rotate-paused");
+            
+            // Show the separate video player toggle button
+            if (togglePlayerBtn) {
+                togglePlayerBtn.style.display = "inline-block";
+                const t = translations[currentLang];
+                togglePlayerBtn.innerText = playerContainer.classList.contains("d-none") ? t.showPlayer : t.hidePlayer;
+            }
+            break;
+            
+        case "video":
+            document.body.classList.add('album-art-video-mode');
+            albumArtSpinEnabled = false;
+            
+            // Hide album art, show video player
+            albumArt.style.display = "none";
+            videoPlayerContainer.style.display = "block";
+            albumArt.classList.remove("rotate", "rotate-paused");
+            
+            // Hide the separate video player toggle button
+            if (togglePlayerBtn) {
+                togglePlayerBtn.style.display = "none";
+            }
+            
+            // Ensure the video player is visible in album art position
+            if (playerContainer) {
+                playerContainer.classList.remove("d-none");
+            }
+            
+            // Initialize video player in the album art position if needed
+            initializeVideoPlayerInAlbumArt(currentVideoId);
+            break;
+    }
+    
+    // Save the setting
+    localStorage.setItem("albumArtDisplayMode", albumArtDisplayMode);
+    localStorage.setItem("albumArtSpin", JSON.stringify(albumArtSpinEnabled));
+}
+
+// New function to initialize video player in album art position
+function initializeVideoPlayerInAlbumArt(videoId) {
+    const videoContainer = document.getElementById("videoPlayerInAlbumArt");
+    if (!videoContainer || !videoId) return;
+    
+    // Check if YouTube API is ready
+    if (typeof YT !== 'undefined' && YT.Player) {
+        // If player already exists in the video container, update it
+        const existingPlayer = videoContainer.querySelector('#player');
+        if (existingPlayer && existingPlayer.id && window[existingPlayer.id]) {
+            // Player already exists, just update the video
+            const videoPlayer = window[existingPlayer.id];
+            if (videoPlayer.loadVideoById) {
+                videoPlayer.loadVideoById(videoId);
+                videoPlayer.setVolume(currentVolume);
+            }
+        } else {
+            // Create new player in the album art position
+            createVideoPlayerInAlbumArt(videoId);
+        }
+    } else {
+        // Wait for YouTube API to load
+        setTimeout(() => initializeVideoPlayerInAlbumArt(videoId), 100);
+    }
+}
+
+// Function to create video player in album art position
+function createVideoPlayerInAlbumArt(videoId) {
+    const videoContainer = document.getElementById("videoPlayerInAlbumArt");
+    if (!videoContainer) return;
+    
+    // Clear existing content
+    videoContainer.innerHTML = '<div id="playerInAlbumArt"></div>';
+    
+    // Create new player
+    const playerId = 'playerInAlbumArt';
+    const videoPlayer = new YT.Player(playerId, {
+        videoId: videoId,
+        playerVars: {
+            autoplay: playing ? 1 : 0,
+            controls: 0,
+            modestbranding: 1,
+            showinfo: 0,
+            rel: 0,
+            playsinline: 1 // Important for mobile
+        },
+        events: {
+            'onReady': function(event) {
+                event.target.setVolume(currentVolume);
+                event.target.playVideo();
+            },
+            'onStateChange': function(event) {
+                // Handle video state changes if needed
+                if (event.data === YT.PlayerState.PLAYING && albumArtDisplayMode === "video") {
+                    // Video is playing in album art mode
+                }
+            }
+        }
+    });
+    
+    // Store reference to this player
+    window[playerId] = videoPlayer;
 }
 
 window.onload = function () {
@@ -1438,17 +1668,19 @@ function setupMediaSession() {
 }
 
 document.getElementById("playPauseBtn").addEventListener("click", function () {
-    if (songUnavailable) return; // Prevent play if song is unavailable
-
+    if (songUnavailable) return;
+    
     let albumArt = document.getElementById("albumArt");
-
+    
     if (player) {
         if (playing) {
             player.pauseVideo();
-            this.innerHTML = ICON_PLAY; // Use constant
+            this.innerHTML = ICON_PLAY;
             playing = false;
             clearInterval(progressInterval);
-            if (albumArtSpinEnabled) {
+            
+            // Handle album art spin in spin mode
+            if (albumArtDisplayMode === "spin" && albumArtSpinEnabled) {
                 albumArt.classList.add("rotate-paused");
             }
             
@@ -1458,15 +1690,14 @@ document.getElementById("playPauseBtn").addEventListener("click", function () {
             }
         } else {
             player.playVideo();
-            this.innerHTML = ICON_PAUSE; // Use constant
+            this.innerHTML = ICON_PAUSE;
             playing = true;
             updateProgressBar();
-            if (albumArtSpinEnabled) {
+            
+            // Handle album art spin in spin mode
+            if (albumArtDisplayMode === "spin" && albumArtSpinEnabled) {
                 albumArt.classList.remove("rotate-paused");
                 albumArt.classList.add("rotate");
-            } else {
-                // If disabled → remove all spin classes
-                albumArt.classList.remove("rotate", "rotate-paused");
             }
             
             // Update media session
@@ -1474,7 +1705,7 @@ document.getElementById("playPauseBtn").addEventListener("click", function () {
                 navigator.mediaSession.playbackState = 'playing';
             }
             
-            // ✅ If bx-revision is showing, reset it to Play/Pause
+            // If bx-revision is showing, reset it to Play/Pause
             if (this.innerHTML.includes("bx-revision")) {
                 this.innerHTML = ICON_PAUSE;
             }
@@ -1740,6 +1971,24 @@ function handlePlayerStateChange(event) {
     let playPauseBtn = document.getElementById("playPauseBtn");
     let autoPlay = document.getElementById("autoPlayToggle").checked;
 
+    // Apply album art spin based on current mode
+    if (albumArtDisplayMode === "spin") {
+        if (event.data === 1) { // PLAYING
+            if (albumArtSpinEnabled) {
+                albumArt.classList.remove("rotate-paused");
+                albumArt.classList.add("rotate");
+            }
+        } else if (event.data === 2) { // PAUSED
+            if (albumArtSpinEnabled) {
+                albumArt.classList.add("rotate-paused");
+            }
+        } else if (event.data === 0) { // ENDED
+            if (albumArtSpinEnabled) {
+                albumArt.classList.add("rotate-paused");
+            }
+        }
+    }
+
     if (event.data === 0) { // ✅ 0 means video ended
         playing = false;
         if (albumArtSpinEnabled) {
@@ -1804,15 +2053,18 @@ function handlePlayerStateChange(event) {
 }
 
 document.getElementById("togglePlayerBtn").addEventListener("click", function () {
-    let playerContainer = document.getElementById("playerContainer");
-    const t = translations[currentLang];
-
-    if (playerContainer.classList.contains("d-none")) {
-        playerContainer.classList.remove("d-none"); // Show player
-        this.innerText = t.hidePlayer;
-    } else {
-        playerContainer.classList.add("d-none"); // Hide player
-        this.innerText = t.showPlayer;
+    // Only work in spin or none modes
+    if (albumArtDisplayMode === "spin" || albumArtDisplayMode === "none") {
+        let playerContainer = document.getElementById("playerContainer");
+        const t = translations[currentLang];
+        
+        if (playerContainer.classList.contains("d-none")) {
+            playerContainer.classList.remove("d-none");
+            this.innerText = t.hidePlayer;
+        } else {
+            playerContainer.classList.add("d-none");
+            this.innerText = t.showPlayer;
+        }
     }
 });
 
@@ -2005,12 +2257,12 @@ function exportPlaylist() {
         // Get current playlist and dark mode status
         const exportData = {
             playlist: playlist,
-            albumArtSpin: albumArtSpinEnabled,
+            albumArtDisplayMode: albumArtDisplayMode,
             darkMode: localStorage.getItem("darkMode") === "enabled",
             showLyrics: localStorage.getItem("showLyrics") === "true",
             language: currentLang,
             exportDate: new Date().toISOString(),
-            version: "1.3"
+            version: "1.4"
         };
         
         const playlistData = JSON.stringify(exportData, null, 2);
@@ -2157,12 +2409,26 @@ function importPlaylist(file) {
                     //loadNewVideo(firstSong.videoId, firstSong.albumArt, firstSong);
                 }
 
-                if (importedData.albumArtSpin !== undefined) {
-                    albumArtSpinEnabled = importedData.albumArtSpin;
-                    localStorage.setItem("albumArtSpin", JSON.stringify(albumArtSpinEnabled));
-                    const toggle = document.getElementById("albumArtSpinToggle");
-                    if (toggle) toggle.checked = albumArtSpinEnabled;
-                    applyAlbumArtSpinSetting();
+                if (importedData.albumArtDisplayMode) {
+                    albumArtDisplayMode = importedData.albumArtDisplayMode;
+                    localStorage.setItem("albumArtDisplayMode", albumArtDisplayMode);
+                    
+                    // Update toggle buttons
+                    const albumArtDisplayToggle = document.getElementById("albumArtDisplayToggle");
+                    if (albumArtDisplayToggle) {
+                        albumArtDisplayToggle.querySelectorAll('.btn').forEach(btn => {
+                            btn.classList.remove('active');
+                            if (btn.getAttribute('data-mode') === albumArtDisplayMode) {
+                                btn.classList.add('active');
+                            }
+                        });
+                    }
+                    applyAlbumArtDisplayMode();
+                } else if (importedData.albumArtSpin !== undefined) {
+                    // Backward compatibility with old exports
+                    albumArtDisplayMode = importedData.albumArtSpin ? "spin" : "none";
+                    localStorage.setItem("albumArtDisplayMode", albumArtDisplayMode);
+                    applyAlbumArtDisplayMode();
                 }
 
                 // ✅ Reset playing state
@@ -2669,6 +2935,10 @@ const translations = {
     experimentalFeatures: "Experimental Features",
     settingsAboutTitle: "About this Project",
     settingsAbout: "About",
+    albumArtDisplay: "Album Art Display:",
+    spin: "Spin",
+    none: "None",
+    video: "Video",
   },
   zh: {
     playerTitle: "YouTube 音乐播放器",
@@ -2791,6 +3061,10 @@ const translations = {
     experimentalFeatures: "实验性功能",
     settingsAboutTitle: "关于此项目",
     settingsAbout: "关于",
+    albumArtDisplay: "专辑封面显示:",
+    spin: "旋转",
+    none: "静止",
+    video: "视频",
   }
 };
 
@@ -3103,6 +3377,17 @@ function applyLanguage(lang) {
             el.setAttribute('title', t[key]);
         }
     });
+
+    document.querySelector('.album-art-display-toggle .fw-bold').textContent = translations[lang].albumArtDisplay || 'Album Art Display:';
+    
+    // Update the toggle button texts
+    const spinBtn = document.querySelector('#albumArtDisplayToggle [data-mode="spin"]');
+    const noneBtn = document.querySelector('#albumArtDisplayToggle [data-mode="none"]');
+    const videoBtn = document.querySelector('#albumArtDisplayToggle [data-mode="video"]');
+    
+    if (spinBtn) spinBtn.textContent = translations[lang].spin || 'Spin';
+    if (noneBtn) noneBtn.textContent = translations[lang].none || 'None';
+    if (videoBtn) videoBtn.textContent = translations[lang].video || 'Video';
 }
 
 // 🌐 Language switch event

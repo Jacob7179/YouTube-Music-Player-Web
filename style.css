@@ -2402,3 +2402,77 @@ body.dark-mode .btn-info:hover {
     background-color: #0056b3 !important;
     border-color: #0056b3 !important;
 }
+
+/* Add to style.css */
+
+/* Album Art Display Mode Toggle */
+.album-art-display-toggle {
+    margin-bottom: 15px;
+}
+
+.album-art-display-toggle .btn-group {
+    width: 100%;
+    margin-top: 5px;
+}
+
+.album-art-display-toggle .btn-group .btn {
+    font-size: 12px;
+    padding: 4px 8px;
+    flex: 1;
+}
+
+/* Video in album art position styles */
+#albumArt.video-mode {
+    display: none !important;
+}
+
+#videoPlayerInAlbumArt {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1/1;
+    max-width: 250px;
+    margin: 0 auto;
+    display: none;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+#videoPlayerInAlbumArt #player {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 250px;
+    border-radius: 10px;
+}
+
+/* Show video player when in video mode */
+.album-art-video-mode #videoPlayerInAlbumArt {
+    display: block;
+}
+
+/* Hide the separate video player card when video is in album art position */
+.album-art-video-mode #togglePlayerBtn,
+.album-art-video-mode #togglePlayerBtn + div {
+    display: none !important;
+}
+
+/* Show the separate video player when not in video mode */
+.album-art-spin-mode #togglePlayerBtn,
+.album-art-none-mode #togglePlayerBtn {
+    display: inline-block !important;
+}
+
+.album-art-spin-mode #playerContainer,
+.album-art-none-mode #playerContainer {
+    display: none !important;
+}
+
+.album-art-spin-mode #playerContainer.d-none,
+.album-art-none-mode #playerContainer.d-none {
+    display: none !important;
+}
+
+.album-art-spin-mode #playerContainer:not(.d-none),
+.album-art-none-mode #playerContainer:not(.d-none) {
+    display: flex !important;
+}
