@@ -59,6 +59,12 @@
       "songName": "TheFatRat & Laura Brehm - We'll Meet Again",
       "authorName": "TheFatRat",
       "albumArt": "https://i.ytimg.com/vi/hJqYc62NCKo/hqdefault.jpg"
+    },
+    {
+      "videoId": "dpT-TeRYFvY",
+      "songName": "All For Love",
+      "authorName": "Tungevaag & Raaban - Topic",
+      "albumArt": "https://i.ytimg.com/vi/dpT-TeRYFvY/hqdefault.jpg"
     }
   ],
   "albumArtDisplayMode": "video",

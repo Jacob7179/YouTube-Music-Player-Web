@@ -2929,9 +2929,9 @@ const translations = {
     linksTitle: "Links",
     originalRepository: "Original Repository",
     versionInfoTitle: "Version Information",
-    version: "Version: 1.3",
-    lastUpdated: "Last Updated: February 2026",
-    languages: "Languages: English & 中文",
+    version: "Version: ",
+    lastUpdated: "Last Updated: ",
+    languages: "Languages: ",
     experimentalFeatures: "Experimental Features",
     settingsAboutTitle: "About this Project",
     settingsAbout: "About",
@@ -3055,9 +3055,9 @@ const translations = {
     linksTitle: "链接",
     originalRepository: "原始仓库",
     versionInfoTitle: "版本信息",
-    version: "版本: 1.3",
-    lastUpdated: "最后更新: 2026年2月",
-    languages: "支持语言: 英文 & 中文",
+    version: "版本: ",
+    lastUpdated: "最后更新: ",
+    languages: "支持语言: ",
     experimentalFeatures: "实验性功能",
     settingsAboutTitle: "关于此项目",
     settingsAbout: "关于",
@@ -3388,6 +3388,14 @@ function applyLanguage(lang) {
     if (spinBtn) spinBtn.textContent = translations[lang].spin || 'Spin';
     if (noneBtn) noneBtn.textContent = translations[lang].none || 'None';
     if (videoBtn) videoBtn.textContent = translations[lang].video || 'Video';
+
+    const dateElement = document.getElementById('formattedDate');
+    if (dateElement) {
+        const originalDate = dateElement.getAttribute('data-original-date');
+        
+        // Format it based on the current language
+        dateElement.textContent = formatDateForLanguage(lang, originalDate);
+    }
 }
 
 // 🌐 Language switch event
@@ -3511,3 +3519,24 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.style.overflow = ''; // Restore scrolling
     }
 });
+
+function formatDateForLanguage(lang, dateString) {
+    const dateMatch = dateString.match(/(\d+)d (\d+)m (\d+)y/);
+    if (!dateMatch) return dateString;
+    
+    const days = parseInt(dateMatch[1]);
+    const months = parseInt(dateMatch[2]);
+    const year = parseInt(dateMatch[3]);
+    
+    if (lang === 'zh') {
+        // Chinese format: 年-月-日
+        return `${year}年 ${months}月 ${days}日`;
+    } else {
+        // English format: Month Day, Year
+        const monthNames = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+        return `${monthNames[months - 1]} ${days}, ${year}`;
+    }
+}
