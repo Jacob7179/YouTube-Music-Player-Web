@@ -1440,8 +1440,8 @@ document.addEventListener("DOMContentLoaded", function () {
 function applyAlbumArtDisplayMode() {
     const albumArt = document.getElementById("albumArt");
     const videoPlayerContainer = document.getElementById("videoPlayerInAlbumArt");
-    const playerContainer = document.getElementById("playerContainer");
-    const togglePlayerBtn = document.getElementById("togglePlayerBtn");
+    //const playerContainer = document.getElementById("playerContainer");
+    //const togglePlayerBtn = document.getElementById("togglePlayerBtn");
     const mainPlayerContainer = document.querySelector('.card-body.text-center');
     
     if (!albumArt || !videoPlayerContainer) return;
@@ -1485,14 +1485,7 @@ function applyAlbumArtDisplayMode() {
             } else {
                 albumArt.classList.remove("rotate", "rotate-paused");
             }
-            
-            // Show the separate video player toggle button
-            if (togglePlayerBtn) {
-                togglePlayerBtn.style.display = "inline-block";
-                // Update button text based on current state
-                const t = translations[currentLang];
-                togglePlayerBtn.innerText = playerContainer.classList.contains("d-none") ? t.showPlayer : t.hidePlayer;
-            }
+
             break;
             
         case "none":
@@ -1510,12 +1503,6 @@ function applyAlbumArtDisplayMode() {
             
             albumArt.classList.remove("rotate", "rotate-paused");
             
-            // Show the separate video player toggle button
-            if (togglePlayerBtn) {
-                togglePlayerBtn.style.display = "inline-block";
-                const t = translations[currentLang];
-                togglePlayerBtn.innerText = playerContainer.classList.contains("d-none") ? t.showPlayer : t.hidePlayer;
-            }
             break;
             
         case "video":
@@ -1526,17 +1513,7 @@ function applyAlbumArtDisplayMode() {
             albumArt.style.display = "none";
             videoPlayerContainer.style.display = "block";
             albumArt.classList.remove("rotate", "rotate-paused");
-            
-            // Hide the separate video player toggle button
-            if (togglePlayerBtn) {
-                togglePlayerBtn.style.display = "none";
-            }
-            
-            // Ensure the video player is visible in album art position
-            if (playerContainer) {
-                playerContainer.classList.remove("d-none");
-            }
-            
+
             // Initialize video player in the album art position if needed
             initializeVideoPlayerInAlbumArt(currentVideoId);
             break;
@@ -2051,22 +2028,6 @@ function handlePlayerStateChange(event) {
     // Call setupMediaSession when player state changes
     setupMediaSession();
 }
-
-document.getElementById("togglePlayerBtn").addEventListener("click", function () {
-    // Only work in spin or none modes
-    if (albumArtDisplayMode === "spin" || albumArtDisplayMode === "none") {
-        let playerContainer = document.getElementById("playerContainer");
-        const t = translations[currentLang];
-        
-        if (playerContainer.classList.contains("d-none")) {
-            playerContainer.classList.remove("d-none");
-            this.innerText = t.hidePlayer;
-        } else {
-            playerContainer.classList.add("d-none");
-            this.innerText = t.showPlayer;
-        }
-    }
-});
 
 document.addEventListener("DOMContentLoaded", function () {
     // Check if dark mode is enabled in local storage before page renders
@@ -2850,10 +2811,6 @@ const translations = {
     removeSongTitle: "Remove song",
     settingsTitle: "Settings",
     searchYouTubeTitle: "Search YouTube",
-    visitForkProfile: "Visit Fork Maintainer's Profile",
-    visitForkRepo: "Visit Forked Repository",
-    visitCreatorProfile: "Visit Original Creator's Profile",
-    visitCreatorRepo: "Visit Original Repository",
     exportTitle: "Export Playlist & Data",
     importTitle: "Import Playlist & Data",
     clearCacheTitle: "Clear Search Cache",
@@ -2864,9 +2821,6 @@ const translations = {
     showLyrics: "Lyrics",
     darkMode: "Dark Mode",
     toggleLyricsTooltip: "Toggle to show or hide lyrics",
-    videoPlayer: "Video Player",
-    showPlayer: "Show Player",
-    hidePlayer: "Hide Player",
     goTop: "Go to Top",
     creatorTitle: "Original Creator",
     creatorDesc: "Original creator of this YouTube Music Player project.",
@@ -2976,10 +2930,6 @@ const translations = {
     removeSongTitle: "移除歌曲",
     settingsTitle: "设置",
     searchYouTubeTitle: "搜索 YouTube",
-    visitForkProfile: "访问分支维护者的个人资料",
-    visitForkRepo: "访问分支仓库",
-    visitCreatorProfile: "访问原始创作者的个人资料",
-    visitCreatorRepo: "访问原始仓库",
     exportTitle: "导出播放列表和数据",
     importTitle: "导入播放列表和数据",
     clearCacheTitle: "清除搜索缓存",
@@ -2990,9 +2940,6 @@ const translations = {
     showLyrics: "歌词",
     darkMode: "深色模式",
     toggleLyricsTooltip: "切换以显示或隐藏歌词",
-    videoPlayer: "视频播放器",
-    showPlayer: "显示播放器",
-    hidePlayer: "隐藏播放器",
     goTop: "返回顶部",
     creatorTitle: "原始创作者",
     creatorDesc: "此 YouTube 音乐播放器项目的原始创作者。",
@@ -3203,12 +3150,6 @@ function applyLanguage(lang) {
     btn.setAttribute("title", t.removeSongTitle);
     });
 
-    // Fork / Creator profile links
-    document.querySelector("#maintainerBtn")?.setAttribute("title", t.visitForkProfile);
-    document.querySelector("#maintainerRepoBtn")?.setAttribute("title", t.visitForkRepo);
-    document.querySelector("#creatorBtn")?.setAttribute("title", t.visitCreatorProfile);
-    document.querySelector("#creatorRepoBtn")?.setAttribute("title", t.visitCreatorRepo);
-
     // Settings submenu buttons
     document.querySelector("#settingsExportBtn")?.setAttribute("title", t.exportTitle);
     document.querySelector("#settingsImportBtn")?.setAttribute("title", t.importTitle);
@@ -3275,17 +3216,6 @@ function applyLanguage(lang) {
     document.getElementById("youtubeSearchErrorText") &&
     (document.getElementById("youtubeSearchErrorText").textContent = t.youtubeSearchError);
 
-
-    // 🎨 Creator & Maintainer Cards
-    document.getElementById("creatorDesc").textContent = t.creatorDesc;
-    document.getElementById("creatorBtn").innerHTML = `<i class='bx bx-link-external'></i> ${t.creatorBtn}`;
-    document.getElementById("creatorRepoBtn").innerHTML = `<i class='bx bx-link-external'></i> ${t.visitRepo}`;
-
-    document.getElementById("maintainerDesc").innerHTML =
-    `${t.maintainerDesc.replace("this forked version", "<a href='https://github.com/Farwalker3/YouTube-Music-Player-Web' target='_blank'>this forked version</a>")}`;
-    document.getElementById("maintainerBtn").innerHTML = `<i class='bx bx-link-external'></i> ${t.maintainerBtn}`;
-    document.getElementById("maintainerRepoBtn").innerHTML = `<i class='bx bx-link-external'></i> ${t.visitRepo}`;
-
     // 🧪 Experimental Project Section
     document.getElementById("experimentalWindowTitle") && 
     (document.getElementById("experimentalWindowTitle").innerHTML = `<i class='bx bxs-flask'></i> ${t.experimentalWindowTitle}`);
@@ -3350,17 +3280,6 @@ function applyLanguage(lang) {
         btn.setAttribute("title", t.addToPlaylist);
         btn.innerHTML = `<i class='bx bx-plus'></i> ${t.add}`;
     });
-
-    // Update the toggle player button text
-    const togglePlayerBtn = document.getElementById("togglePlayerBtn");
-    const playerContainer = document.getElementById("playerContainer");
-    if (togglePlayerBtn && playerContainer) {
-        if (playerContainer.classList.contains("d-none")) {
-            togglePlayerBtn.innerText = t.showPlayer;
-        } else {
-            togglePlayerBtn.innerText = t.hidePlayer;
-        }
-    }
 
     // 🎨 About window translations
     document.querySelectorAll('[data-translate]').forEach(el => {
