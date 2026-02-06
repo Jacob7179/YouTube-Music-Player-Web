@@ -1899,7 +1899,7 @@ body.dark-mode #showLyricsBtn.active .btn-text {
     transition: background-color 0.8s ease-in-out, color 0.8s ease-in-out;
     
     /* Default max-height for desktop */
-    max-height: 530px;
+    max-height: 500px;
 }
 
 @media (max-width: 995px) {
@@ -1932,7 +1932,8 @@ body.dark-mode #showLyricsBtn.active .btn-text {
 /* Mobile size (768px and below) */
 @media (max-width: 991px) {
     #lyricsText {
-        min-height: 510px; /* Smaller for mobile */
+        max-height: 510px; /* Smaller for mobile */
+        min-height: 460px; /* Ensure minimum height */
         font-size: 14px; /* Optional: smaller font for mobile */
         padding: 8px; /* Optional: less padding for mobile */
     }
@@ -1974,6 +1975,14 @@ body.dark-mode #showLyricsBtn.active .btn-text {
     .lyrics-controls {
         width: 100%;
         justify-content: space-between;
+    }
+}
+
+@media (max-width: 481px) {
+    #lyricsText {
+        max-height: 360px; /* Even smaller for very small screens */
+        font-size: 13px;
+        padding: 6px;
     }
 }
 

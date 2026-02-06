@@ -89,7 +89,7 @@ If you don't want to set up the YouTube API, you can still:
 13. **Optimized Search**: Searched result will store in browser storage (No need to waste Quota for same results)
 14. **Import Playlist & Data**: Import playlist and data (Dark mode, Album Art spin settings & Lyrics settings) from JSON or TXT file
 15. **Export Playlist & Data**: Export playlist and data (Dark mode, Album Art spin settings & Lyrics settings) to TXT file
-16. **Album Art Spin Toggle**: Toggle Album Art Spin option to enable or disable album art spinning
+16. **Album Art Display**: Select Album Art Display option to switch Spin, None or Video mode.
 17. **Delete Search Cache**: Delete search cache from browser storage
 
 ## 🔧 GitHub Actions Workflow
