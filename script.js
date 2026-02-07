@@ -703,7 +703,14 @@ async function searchYouTube() {
         if (!response.ok) {
             const errorText = await response.text(); // Get raw text for more info
             console.error('YouTube API Error (via proxy):', response.status, response.statusText, errorText);
-            searchError.textContent = `YouTube API Error: ${response.status} ${response.statusText}. Check console for details.`;
+            
+            // Handle specific error codes with translations
+            if (response.status === 403) {
+                searchError.textContent = translations[currentLang].youtubeApi403Error || `YouTube API Error: 403 - Quota Exceeded.`;
+            } else {
+                searchError.textContent = `YouTube API Error: ${response.status} ${response.statusText}. Check console for details.`;
+            }
+            
             searchError.classList.remove('d-none');
             searchLoading.classList.add('d-none');
             return;
@@ -2893,6 +2900,7 @@ const translations = {
     spin: "Spin",
     none: "None",
     video: "Video",
+    youtubeApi403Error: "YouTube API Error: 403 - Quota Exceeded. The API key has reached its daily limit. Please try again tomorrow or use a different API key.",
   },
   zh: {
     playerTitle: "YouTube 音乐播放器",
@@ -3012,6 +3020,7 @@ const translations = {
     spin: "旋转",
     none: "静止",
     video: "视频",
+    youtubeApi403Error: "YouTube API 错误：403 - 配额已用尽。API 密钥已达到每日使用限制。请明天再试或使用其他 API 密钥。",
   }
 };
 
