@@ -706,9 +706,9 @@ async function searchYouTube() {
             
             // Handle specific error codes with translations
             if (response.status === 403) {
-                searchError.textContent = translations[currentLang].youtubeApi403Error || `YouTube API Error: 403 - Quota Exceeded.`;
+                searchError.innerHTML = `<i class='bx bx-error'></i> ${translations[currentLang].youtubeApi403Error}`;
             } else {
-                searchError.textContent = `YouTube API Error: ${response.status} ${response.statusText}. Check console for details.`;
+                searchError.innerHTML = `<i class='bx bx-error'></i> ${translations[currentLang].youtubeSearchError || `YouTube API Error: ${response.status} ${response.statusText}`}`;
             }
             
             searchError.classList.remove('d-none');
@@ -3256,12 +3256,20 @@ function applyLanguage(lang) {
     if (searchError && !searchError.classList.contains("d-none")) {
         const currentErrorText = searchError.textContent || searchError.innerText;
         
-        // Check if it's an API key error (contains "API Key" or similar)
-        if (currentErrorText.includes("API") || currentErrorText.includes("config.js") || currentErrorText.includes("YOUR_YOUTUBE_API_KEY")) {
+        // Check what type of error is currently displayed and preserve it
+        if (currentErrorText.includes("Quota Exceeded") || currentErrorText.includes("403") || currentErrorText.includes("daily limit")) {
+            // This is a quota exceeded error - use the specific translation
+            searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeApi403Error}`;
+        } else if (currentErrorText.includes("API Key is not configured") || currentErrorText.includes("config.js") || currentErrorText.includes("YOUR_YOUTUBE_API_KEY")) {
+            // This is an API key configuration error
             searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeApiKeyError}`;
         } else if (currentErrorText.includes("Unable to search") || currentErrorText.includes("internet connection")) {
-            // It's a general search error
+            // This is a general search error
             searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeSearchError}`;
+        } else {
+            // For any other error, preserve the original text but update the icon
+            const errorText = currentErrorText.replace(/^⚠\s*/, '').replace(/^<i class='bx bx-error'><\/i>\s*/, '');
+            searchError.innerHTML = `<i class='bx bx-error'></i> ${errorText}`;
         }
     }
     
