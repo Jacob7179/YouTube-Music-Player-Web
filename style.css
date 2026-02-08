@@ -1908,18 +1908,12 @@ body.dark-mode #showLyricsBtn.active .btn-text {
     }
 }
 
-@media (min-width: 991px) {
-    .card2 {
-        max-height: 680px;
-        min-height: 680px;
-    }
-
-    #songList {
-        max-height: 490px;
+@media (max-width: 1000px) {
+    #lyricsText {
+        height: 505px;
     }
 }
 
-/* Mobile size (768px and below) */
 @media (max-width: 991px) {
     #lyricsText {
         max-height: 510px; /* Smaller for mobile */
@@ -1945,6 +1939,17 @@ body.dark-mode #showLyricsBtn.active .btn-text {
 
     #songList {
         max-height: 450px;
+    }
+}
+
+@media (min-width: 800px) {
+    .card2 {
+        max-height: 680px;
+        min-height: 680px;
+    }
+
+    #songList {
+        max-height: 490px;
     }
 }
 
