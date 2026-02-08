@@ -3188,6 +3188,27 @@ function applyLanguage(lang) {
         textEl.textContent = t.lyricsNoLoad;
     }
 
+    if (translationEnabled && lyricsData && lyricsState.status !== "loading") {
+        const title = lyricsState.title;
+        const artist = lyricsState.artist;
+        if (title && artist) {
+            // Show loading message for translation
+            const meta = document.getElementById("lyricsMeta");
+            const textEl = document.getElementById("lyricsText");
+            const translateStatus = lang === 'zh' ? '正在翻译...' : 'Translating...';
+            
+            if (lyricsState.status === "synced") {
+                meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title} (${translateStatus})`;
+            } else if (lyricsState.status === "plain") {
+                meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title} (${translateStatus})`;
+            }
+            textEl.textContent = translateStatus;
+            
+            // Fetch lyrics with translation to new language
+            fetchLyricsWithTranslation(title, artist);
+        }
+    }
+
     document.querySelector("#toggleSyncBtn") && (document.querySelector("#toggleSyncBtn").textContent = t.autoSyncOn);
     document.querySelector("#refreshLyricsBtn") && (document.querySelector("#refreshLyricsBtn").textContent = t.refresh);
     document.querySelector("#openRawBtn") && (document.querySelector("#openRawBtn").textContent = t.raw);
@@ -3905,24 +3926,24 @@ async function fetchLyricsWithTranslation(title, artist) {
 
     const meta = document.getElementById("lyricsMeta");
     const textEl = document.getElementById("lyricsText");
-    const t = translations[currentLang];
+    const t = translations[currentLang]; // ✅ Use currentLang, not hardcoded
 
     lyricsState = { status: "loading", artist, title };
     meta.textContent = t.searching;
     textEl.textContent = t.searching;
 
     try {
-        // ✅ Try full name first
+        // Try full name first
         let json = await tryFetch(artist, title);
 
-        // ✅ If no lyrics found, try CJK-only artist
+        // If no lyrics found, try CJK-only artist
         if (!json.syncedLyrics && !json.plainLyrics) {
             const cjkOnlyArtist = artist.replace(/[\u0020A-Za-z]+/g, "").trim();
             if (cjkOnlyArtist && cjkOnlyArtist !== artist) {
                 console.log("Retrying with CJK only:", cjkOnlyArtist);
                 json = await tryFetch(cjkOnlyArtist, title);
                 if (json.syncedLyrics || json.plainLyrics) {
-                    artist = cjkOnlyArtist; // ✅ Update to working version
+                    artist = cjkOnlyArtist; // Update to working version
                 }
             }
         }
@@ -3931,7 +3952,7 @@ async function fetchLyricsWithTranslation(title, artist) {
         if (!lyrics) throw new Error("No lyrics");
 
         const isLrc = /^\s*\[\d{1,2}:\d{2}/m.test(lyrics);
-        const targetLang = currentLang === 'zh' ? 'zh' : 'en';
+        const targetLang = currentLang === 'zh' ? 'zh' : 'en'; // Use currentLang
         
         if (isLrc) {
             const parsed = parseLrc(lyrics);
