@@ -3594,7 +3594,46 @@ async function translateLyrics(text, sourceLang = 'auto', targetLang = currentLa
         return text;
     }
     
-    // Try multiple translation services as fallback
+    if (text.length > 500) {
+        console.log("Text too long, splitting by newlines and translating line by line");
+        const lines = text.split('\n');
+        const translatedLines = [];
+        
+        for (let line of lines) {
+            if (line.trim().length === 0) {
+                translatedLines.push(line);
+                continue;
+            }
+            
+            try {
+                const translatedLine = await translateSingleLine(line, sourceLang, targetLang);
+                translatedLines.push(translatedLine);
+            } catch (error) {
+                console.log(`Failed to translate line: "${line}", using original`);
+                translatedLines.push(line);
+            }
+            
+            // Small delay between lines to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        const result = translatedLines.join('\n');
+        
+        // Cache the result
+        translationCache[cacheKey] = {
+            translation: result,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('lyricsTranslationCache', JSON.stringify(translationCache));
+        
+        return result;
+    }
+    
+    // Try multiple translation services as fallback for shorter texts
+    return await translateSingleLine(text, sourceLang, targetLang, cacheKey);
+}
+
+async function translateSingleLine(text, sourceLang, targetLang, cacheKey = null) {
     const translationServices = [
         // Service 1: LibreTranslate (primary)
         async (text, source, target) => {
@@ -3710,12 +3749,14 @@ async function translateLyrics(text, sourceLang = 'auto', targetLang = currentLa
             
             // Validate that we got a translation
             if (translatedText && translatedText !== text) {
-                // Cache the translation
-                translationCache[cacheKey] = {
-                    translation: translatedText,
-                    timestamp: Date.now()
-                };
-                localStorage.setItem('lyricsTranslationCache', JSON.stringify(translationCache));
+                // Cache the translation if cacheKey is provided
+                if (cacheKey) {
+                    translationCache[cacheKey] = {
+                        translation: translatedText,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem('lyricsTranslationCache', JSON.stringify(translationCache));
+                }
                 
                 console.log(`Translation successful with service ${i + 1}`);
                 return translatedText;
@@ -3726,7 +3767,7 @@ async function translateLyrics(text, sourceLang = 'auto', targetLang = currentLa
         }
     }
     
-    // If all services fail, return original text with a note
+    // If all services fail, return original text
     console.warn('All translation services failed, returning original text');
     return text;
 }
@@ -3878,6 +3919,11 @@ function renderPlainLyricsWithTranslation(plainText, translation = '') {
     const lines = plainText.split(/\r?\n/).filter(l => l.trim().length > 0);
     const translatedLines = hasTranslation ? translation.split(/\r?\n/) : [];
     
+    // Ensure we have the same number of lines
+    while (translatedLines.length < lines.length) {
+        translatedLines.push('');
+    }
+    
     // Determine display order based on setting
     const firstLabel = showOriginalFirst ? 
         (targetLang === 'zh' ? '原文' : 'Original') : 
@@ -3890,12 +3936,13 @@ function renderPlainLyricsWithTranslation(plainText, translation = '') {
         .map((line, i) => {
             const firstText = showOriginalFirst ? line : (translatedLines[i] || '');
             const secondText = showOriginalFirst ? (translatedLines[i] || '') : line;
+            const hasTranslatedLine = translatedLines[i] && translatedLines[i].trim().length > 0;
             
             return `
                 <div class="plain-line">
                     <div class="lyrics-pair">
                         <div class="original-lyric" data-label="${firstLabel}">${firstText}</div>
-                        ${hasTranslation && translatedLines[i] ? `
+                        ${hasTranslatedLine ? `
                             <div class="translated-lyric" data-label="${secondLabel}">${secondText}</div>
                         ` : ''}
                     </div>
@@ -3971,7 +4018,7 @@ async function fetchLyricsWithTranslation(title, artist) {
                     console.log("Using cached translation");
                     translatedLyrics = translationCache[cacheKey].translation;
                 } else {
-                    // Fetch new translation
+                    // Fetch new translation line by line
                     const sourceLang = await detectLanguage(parsed.map(l => l.text).join(' '));
                     const translatedLines = await translateLyricsLines(parsed, targetLang);
                     translatedLyrics = translatedLines;
@@ -4012,24 +4059,44 @@ async function fetchLyricsWithTranslation(title, artist) {
                     console.log("Using cached plain translation");
                     translatedLyrics = translationCache[cacheKey].translation;
                 } else {
-                    // Fetch new translation
+                    // Fetch new translation - split by newlines and translate line by line
                     const sourceLang = await detectLanguage(lyrics);
-                    let translated;
+                    const lines = lyrics.split(/\r?\n/);
+                    const translatedLines = [];
                     
-                    if (sourceLang === 'ja' && targetLang === 'zh') {
-                        // Japanese to Chinese via English
-                        const englishTranslation = await translateLyrics(lyrics, sourceLang, 'en');
-                        translated = await translateLyrics(englishTranslation, 'en', targetLang);
-                    } else {
-                        // Direct translation
-                        translated = await translateLyrics(lyrics, sourceLang, targetLang);
+                    for (let line of lines) {
+                        if (line.trim().length === 0) {
+                            translatedLines.push(line);
+                            continue;
+                        }
+                        
+                        try {
+                            let translatedLine;
+                            
+                            if (sourceLang === 'ja' && targetLang === 'zh') {
+                                // Japanese to Chinese via English
+                                const englishLine = await translateSingleLine(line, sourceLang, 'en');
+                                translatedLine = await translateSingleLine(englishLine, 'en', targetLang);
+                            } else {
+                                // Direct translation
+                                translatedLine = await translateSingleLine(line, sourceLang, targetLang);
+                            }
+                            
+                            translatedLines.push(translatedLine);
+                        } catch (error) {
+                            console.log(`Failed to translate line: "${line}", using original`);
+                            translatedLines.push(line);
+                        }
+                        
+                        // Small delay between lines
+                        await new Promise(resolve => setTimeout(resolve, 100));
                     }
                     
-                    translatedLyrics = translated;
+                    translatedLyrics = translatedLines.join('\n');
                     
                     // Cache the translation
                     translationCache[cacheKey] = {
-                        translation: translated,
+                        translation: translatedLyrics,
                         timestamp: Date.now()
                     };
                     localStorage.setItem('lyricsTranslationCache', JSON.stringify(translationCache));
