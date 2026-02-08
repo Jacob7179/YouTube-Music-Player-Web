@@ -2229,8 +2229,10 @@ function exportPlaylist() {
             darkMode: localStorage.getItem("darkMode") === "enabled",
             showLyrics: localStorage.getItem("showLyrics") === "true",
             language: currentLang,
+            translationEnabled: translationEnabled,
+            showOriginalFirst: showOriginalFirst,
             exportDate: new Date().toISOString(),
-            version: "1.4"
+            version: "1.5"
         };
         
         const playlistData = JSON.stringify(exportData, null, 2);
@@ -2274,14 +2276,19 @@ function importPlaylist(file) {
             let importedPlaylist;
             let importDarkMode = false;
             let importLanguage = currentLang;
+            let importTranslationEnabled = translationEnabled;
+            let importShowOriginalFirst = showOriginalFirst;
             
             if (Array.isArray(importedData)) {
                 // Old format - just the playlist array
                 importedPlaylist = importedData;
             } else if (importedData.playlist && Array.isArray(importedData.playlist)) {
-                // New format - object with playlist and darkMode properties
+                // New format - object with playlist and settings properties
                 importedPlaylist = importedData.playlist;
                 importDarkMode = importedData.darkMode === true;
+                importLanguage = importedData.language || currentLang;
+                importTranslationEnabled = importedData.translationEnabled !== undefined ? importedData.translationEnabled : translationEnabled;
+                importShowOriginalFirst = importedData.showOriginalFirst !== undefined ? importedData.showOriginalFirst : showOriginalFirst;
             } else {
                 throw new Error("Invalid playlist format");
             }
@@ -2299,16 +2306,13 @@ function importPlaylist(file) {
                 renderPlaylist(playlist);
                 
                 // Apply dark mode if included in export
-                if (importDarkMode) {
-                    document.body.classList.add("dark-mode");
-                    localStorage.setItem("darkMode", "enabled");
-                    applyDarkModeToElements(true);
-                } else {
-                    document.body.classList.remove("dark-mode");
-                    localStorage.setItem("darkMode", "disabled");
-                    applyDarkModeToElements(false);
+                if (importDarkMode !== undefined) {
+                    document.body.classList.toggle("dark-mode", importDarkMode);
+                    localStorage.setItem("darkMode", importDarkMode ? "enabled" : "disabled");
+                    applyDarkModeToElements(importDarkMode);
                 }
-
+                
+                // Apply showLyrics setting if included in export
                 if (importedData.showLyrics !== undefined) {
                     const showLyrics = importedData.showLyrics;
                     localStorage.setItem('showLyrics', showLyrics);
@@ -2356,7 +2360,7 @@ function importPlaylist(file) {
                         }
                     }
                 }
-
+                
                 // Apply language settings if included in export
                 if (importedData.language && translations[importedData.language]) {
                     currentLang = importedData.language;
@@ -2371,12 +2375,7 @@ function importPlaylist(file) {
                     }
                 }
                 
-                // Play the first song if playlist was empty before
-                if (playlist.length > 0 && (!player || !playing)) {
-                    const firstSong = playlist[0];
-                    //loadNewVideo(firstSong.videoId, firstSong.albumArt, firstSong);
-                }
-
+                // Apply album art display mode if included in export
                 if (importedData.albumArtDisplayMode) {
                     albumArtDisplayMode = importedData.albumArtDisplayMode;
                     localStorage.setItem("albumArtDisplayMode", albumArtDisplayMode);
@@ -2398,7 +2397,25 @@ function importPlaylist(file) {
                     localStorage.setItem("albumArtDisplayMode", albumArtDisplayMode);
                     applyAlbumArtDisplayMode();
                 }
-
+                
+                // Apply translation settings if included in export
+                if (importedData.translationEnabled !== undefined) {
+                    translationEnabled = importedData.translationEnabled;
+                    localStorage.setItem("translationEnabled", JSON.stringify(translationEnabled));
+                    
+                    // Update the translation toggle UI
+                    const translationToggle = document.getElementById("translationToggle");
+                    if (translationToggle) {
+                        translationToggle.checked = translationEnabled;
+                    }
+                }
+                
+                // Apply translation order setting if included in export
+                if (importedData.showOriginalFirst !== undefined) {
+                    showOriginalFirst = importedData.showOriginalFirst;
+                    localStorage.setItem("showOriginalFirst", JSON.stringify(showOriginalFirst));
+                }
+                
                 // ✅ Reset playing state
                 playing = false;
                 if (player) {
@@ -2426,10 +2443,10 @@ function importPlaylist(file) {
                     const firstLi = document.querySelector("#songList li");
                     if (firstLi) firstLi.classList.add("selected");
 
-                    // ✅ Load video but don’t autoplay
+                    // ✅ Load video but don't autoplay
                     selectedVideoId = firstSong.videoId;
                     if (player && player.loadVideoById) {
-                        player.cueVideoById(firstSong.videoId); // cue = load but don’t play
+                        player.cueVideoById(firstSong.videoId); // cue = load but don't play
                     } else {
                         // If player not ready, create with autoplay off
                         player = new YT.Player('player', {
@@ -2458,24 +2475,37 @@ function importPlaylist(file) {
                     document.getElementById("currentTime").innerText = "0:00";
                     document.getElementById("totalTime").innerText = "0:00";
                 }
+                
                 // Show import success message with settings applied
                 let message = translations[currentLang].importSuccess.replace('${count}', importedPlaylist.length);
+                
                 if (importDarkMode !== undefined) {
                     const darkModeStatus = importDarkMode ? translations[currentLang].enabled : translations[currentLang].disabled;
                     message += ' ' + translations[currentLang].darkModeStatus.replace('${status}', darkModeStatus);
                 }
-                if (importedData.albumArtSpin !== undefined) {
-                    const spinStatus = importedData.albumArtSpin ? translations[currentLang].enabled : translations[currentLang].disabled;
+                
+                if (importedData.albumArtSpin !== undefined || importedData.albumArtDisplayMode) {
+                    const spinStatus = (importedData.albumArtDisplayMode === "spin") || (importedData.albumArtSpin === true) ? 
+                                      translations[currentLang].enabled : translations[currentLang].disabled;
                     message += ' ' + translations[currentLang].albumArtSpinStatus.replace('${status}', spinStatus);
                 }
+                
                 if (importedData.showLyrics !== undefined) {
                     const lyricsStatus = importedData.showLyrics ? translations[currentLang].enabled : translations[currentLang].disabled;
                     message += ' ' + translations[currentLang].lyricsPanelStatus.replace('${status}', lyricsStatus);
                 }
+                
                 if (importedData.language) {
                     const langName = importedData.language === 'zh' ? translations[currentLang].chinese : translations[currentLang].english;
                     message += ' ' + translations[currentLang].languageSet.replace('${language}', langName);
                 }
+                
+                if (importedData.translationEnabled !== undefined) {
+                    const translationStatus = importedData.translationEnabled ? 
+                                            translations[currentLang].enabled : translations[currentLang].disabled;
+                    message += ' ' + translations[currentLang].translationStatus.replace('${status}', translationStatus);
+                }
+                
                 alert(message);
             }
         } catch (error) {
@@ -2900,11 +2930,12 @@ const translations = {
     feature1: "YouTube music playback",
     feature2: "Playlist management with drag & drop",
     feature3: "Lyrics display with auto-sync",
-    feature4: "Dark/Light mode",
-    feature5: "Export/Import playlists",
-    feature6: "Volume control & progress bar",
-    feature7: "Multi-language support (English/中文)",
-    feature8: "Auto-play & repeat modes",
+    feature4: "Lyrics Translation",
+    feature5: "Dark/Light mode",
+    feature6: "Export/Import playlists",
+    feature7: "Volume control & progress bar",
+    feature8: "Multi-language support (English/中文)",
+    feature9: "Auto-play & repeat modes",
     originalProjectTitle: "Original Project",
     originalCreator: "Original creator",
     contributorsTitle: "Contributors",
@@ -2923,6 +2954,9 @@ const translations = {
     none: "None",
     video: "Video",
     youtubeApi403Error: "YouTube API Error: 403 - Quota Exceeded. The API key has reached its daily limit. Please try again tomorrow or use a different API key.",
+    translationStatus: "Lyrics translation was ${status}.",
+    enableLyricsTranslation: "Lyrics Translation",
+    showOriginalFirstLabel: "Show Original First",
   },
   zh: {
     playerTitle: "YouTube 音乐播放器",
@@ -3020,11 +3054,12 @@ const translations = {
     feature1: "YouTube 音乐播放",
     feature2: "支持拖拽的播放列表管理",
     feature3: "带自动同步的歌词显示",
-    feature4: "深色/浅色模式",
-    feature5: "导入/导出播放列表",
-    feature6: "音量控制与进度条",
-    feature7: "多语言支持 (英文/中文)",
-    feature8: "自动播放和重复模式",
+    feature4: "歌词翻译",
+    feature5: "深色/浅色模式",
+    feature6: "导入/导出播放列表",
+    feature7: "音量控制与进度条",
+    feature8: "多语言支持 (英文/中文)",
+    feature9: "自动播放和重复模式",
     originalProjectTitle: "原始项目",
     originalCreator: "原始创作者",
     contributorsTitle: "贡献者",
@@ -3043,6 +3078,9 @@ const translations = {
     none: "静止",
     video: "视频",
     youtubeApi403Error: "YouTube API 错误：403 - 配额已用尽。API 密钥已达到每日使用限制。请明天再试或使用其他 API 密钥。",
+    translationStatus: "歌词翻译已${status}。",
+    enableLyricsTranslation: "歌词翻译",
+    showOriginalFirstLabel: "原文优先显示",
   }
 };
 
@@ -3346,6 +3384,13 @@ function applyLanguage(lang) {
         // Format it based on the current language
         dateElement.textContent = formatDateForLanguage(lang, originalDate);
     }
+
+    document.querySelectorAll('[data-translate]').forEach(el => {
+        const key = el.getAttribute('data-translate');
+        if (t[key]) {
+            el.textContent = t[key];
+        }
+    });
 }
 
 // 🌐 Language switch event
@@ -3493,7 +3538,7 @@ function formatDateForLanguage(lang, dateString) {
 
 /* ================ LYRICS TRANSLATION SYSTEM ================ */
 let translatedLyrics = null;
-let translationEnabled = true;
+let translationEnabled = false;
 let showOriginalFirst = true; // true: original first, false: translated first
 
 // Cache for translations to minimize API calls
@@ -4051,3 +4096,22 @@ translationEnabled = JSON.parse(localStorage.getItem("translationEnabled") || "f
 if (document.getElementById("translationToggle")) {
     document.getElementById("translationToggle").checked = translationEnabled;
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+    const translationToggle = document.getElementById("translationToggle");
+    if (translationToggle) {
+        translationToggle.checked = translationEnabled;
+        
+        translationToggle.addEventListener("change", function() {
+            translationEnabled = this.checked;
+            localStorage.setItem("translationEnabled", JSON.stringify(translationEnabled));
+            
+            // Refresh lyrics if a song is currently loaded
+            const title = (document.querySelector("#nowPlaying .song-title")?.innerText || "").trim();
+            const artist = (document.querySelector("#nowPlaying .author-name")?.innerText || "").trim();
+            if (title && lyricsData) {
+                loadLyricsFor(title, artist);
+            }
+        });
+    }
+});

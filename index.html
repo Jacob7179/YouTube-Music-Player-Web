@@ -240,6 +240,12 @@
                         <input class="form-check-input darkModeToggle" type="checkbox" id="darkModeToggle">
                         <label class="form-check-label" for="darkModeToggle">Dark Mode</label>
                     </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="translationToggle">
+                        <label class="form-check-label" for="translationToggle" data-translate="enableLyricsTranslation">
+                            Lyrics Translation
+                        </label>
+                    </div>
                     <div class="album-art-display-toggle mb-3">
                         <span class="fw-bold mb-1 d-block">Album Art Display:</span>
                         <div class="btn-group w-100" role="group" id="albumArtDisplayToggle">
@@ -254,12 +260,6 @@
                             <button id="lang-en" class="btn btn-sm btn-outline-primary flex-fill active">English</button>
                             <button id="lang-zh" class="btn btn-sm btn-outline-primary flex-fill">中文</button>
                         </div>
-                    </div>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="translationToggle">
-                        <label class="form-check-label" for="translationToggle">
-                            Enable Lyrics Translation
-                        </label>
                     </div>
                     <button id="settingsAboutBtn" class="btn btn-primary btn-sm w-100 mb-2" data-translate-title="settingsAboutTitle" title="About this Project">
                         <i class='bx bx-info-circle'></i> <span data-translate="settingsAbout">About</span>
@@ -289,11 +289,12 @@
                             <li data-translate="feature1">YouTube music playback</li>
                             <li data-translate="feature2">Playlist management with drag & drop</li>
                             <li data-translate="feature3">Lyrics display with auto-sync</li>
-                            <li data-translate="feature4">Dark/Light mode</li>
-                            <li data-translate="feature5">Export/Import playlists</li>
-                            <li data-translate="feature6">Volume control & progress bar</li>
-                            <li data-translate="feature7">Multi-language support (English/中文)</li>
-                            <li data-translate="feature8">Auto-play & repeat modes</li>
+                            <li data-translate="feature4">Lyrics translation</li>
+                            <li data-translate="feature5">Dark/Light mode</li>
+                            <li data-translate="feature6">Export/Import playlists</li>
+                            <li data-translate="feature7">Volume control & progress bar</li>
+                            <li data-translate="feature8">Multi-language support (English/中文)</li>
+                            <li data-translate="feature9">Auto-play & repeat modes</li>
                         </ul>
                     </div>
                     
@@ -336,8 +337,8 @@
                     
                     <div class="about-section">
                         <h6><i class="bx bx-info-circle"></i> <span data-translate="versionInfoTitle">Version Information</span></h6>
-                        <small data-translate="version">Version: </small><small>1.4</small><br>
-                        <small data-translate="lastUpdated">Last Updated: </small><small id="formattedDate" data-original-date="7d 2m 2026y">7d 2m 2026y</small><br>
+                        <small data-translate="version">Version: </small><small>1.5</small><br>
+                        <small data-translate="lastUpdated">Last Updated: </small><small id="formattedDate" data-original-date="8d 2m 2026y">8d 2m 2026y</small><br>
                         <small data-translate="languages">Languages: </small><small>English & 中文</small>
                     </div>
                 </div>

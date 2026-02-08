@@ -1,0 +1,78 @@
+{
+  "playlist": [
+    {
+      "videoId": "7OHstJwaKoU",
+      "songName": "何千キロの君へ",
+      "authorName": "SHIN - Topic",
+      "albumArt": "https://i.ytimg.com/vi/7OHstJwaKoU/hqdefault.jpg"
+    },
+    {
+      "videoId": "dh00du4hOGM",
+      "songName": "清夏",
+      "authorName": "SHIN - Topic",
+      "albumArt": "https://i.ytimg.com/vi/dh00du4hOGM/hqdefault.jpg"
+    },
+    {
+      "videoId": "eJpkUecGyMI",
+      "songName": "恋花",
+      "authorName": "SHIN - Topic",
+      "albumArt": "https://i.ytimg.com/vi/eJpkUecGyMI/hqdefault.jpg"
+    },
+    {
+      "videoId": "dzniwGFO79g",
+      "songName": "ハルカスミ",
+      "authorName": "SHIN - Topic",
+      "albumArt": "https://i.ytimg.com/vi/dzniwGFO79g/hqdefault.jpg"
+    },
+    {
+      "videoId": "TQ8WlA2GXbk",
+      "songName": "Pretender［Official Video］",
+      "authorName": "Official髭男dism",
+      "albumArt": "https://i.ytimg.com/vi/TQ8WlA2GXbk/hqdefault.jpg"
+    },
+    {
+      "videoId": "DuMqFknYHBs",
+      "songName": "Official髭男dism - イエスタデイ［Official Video］",
+      "authorName": "Official髭男dism",
+      "albumArt": "https://i.ytimg.com/vi/DuMqFknYHBs/hqdefault.jpg"
+    },
+    {
+      "videoId": "aRtoPwe4ado",
+      "songName": "Sanitizer",
+      "authorName": "OFFICIAL HIGE DANDISM - Topic",
+      "albumArt": "https://i.ytimg.com/vi/aRtoPwe4ado/hqdefault.jpg"
+    },
+    {
+      "videoId": "l2nqfPAMrSo",
+      "songName": "Chessboard",
+      "authorName": "OFFICIAL HIGE DANDISM - Topic",
+      "albumArt": "https://i.ytimg.com/vi/l2nqfPAMrSo/hqdefault.jpg"
+    },
+    {
+      "videoId": "SICzNfWhgn8",
+      "songName": "みどりの雨避け",
+      "authorName": "OFFICIAL HIGE DANDISM - Topic",
+      "albumArt": "https://i.ytimg.com/vi/SICzNfWhgn8/hqdefault.jpg"
+    },
+    {
+      "videoId": "hJqYc62NCKo",
+      "songName": "TheFatRat & Laura Brehm - We'll Meet Again",
+      "authorName": "TheFatRat",
+      "albumArt": "https://i.ytimg.com/vi/hJqYc62NCKo/hqdefault.jpg"
+    },
+    {
+      "videoId": "dpT-TeRYFvY",
+      "songName": "All For Love",
+      "authorName": "Tungevaag & Raaban - Topic",
+      "albumArt": "https://i.ytimg.com/vi/dpT-TeRYFvY/hqdefault.jpg"
+    }
+  ],
+  "albumArtDisplayMode": "video",
+  "darkMode": true,
+  "showLyrics": true,
+  "language": "en",
+  "translationEnabled": true,
+  "showOriginalFirst": true,
+  "exportDate": "2026-02-08T04:07:32.216Z",
+  "version": "1.5"
+}
