@@ -2650,8 +2650,8 @@ let lyricsState = {
 };
 
 async function fetchLyrics(title, artist) {
-  const tryFetch = async (a, t) => {
-    const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(a)}&track_name=${encodeURIComponent(t)}`;
+  const tryFetch = async (artistName, trackName) => {
+    const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artistName)}&track_name=${encodeURIComponent(trackName)}`;
     console.log("Trying:", url);
 
     const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
@@ -3914,8 +3914,12 @@ async function loadLyricsFor(title, artist) {
 }
 
 async function fetchLyricsWithTranslation(title, artist) {
-    const tryFetch = async (a, t) => {
-        const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(a)}&track_name=${encodeURIComponent(t)}`;
+    // Define t at the beginning to avoid scope issues
+    const t = translations[currentLang];
+    const targetLang = currentLang === 'zh' ? 'zh' : 'en';
+    
+    const tryFetch = async (artistName, trackName) => {
+        const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artistName)}&track_name=${encodeURIComponent(trackName)}`;
         console.log("Trying:", url);
 
         const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
@@ -3926,7 +3930,6 @@ async function fetchLyricsWithTranslation(title, artist) {
 
     const meta = document.getElementById("lyricsMeta");
     const textEl = document.getElementById("lyricsText");
-    const t = translations[currentLang]; // ✅ Use currentLang, not hardcoded
 
     lyricsState = { status: "loading", artist, title };
     meta.textContent = t.searching;
@@ -3952,45 +3955,43 @@ async function fetchLyricsWithTranslation(title, artist) {
         if (!lyrics) throw new Error("No lyrics");
 
         const isLrc = /^\s*\[\d{1,2}:\d{2}/m.test(lyrics);
-        const targetLang = currentLang === 'zh' ? 'zh' : 'en'; // Use currentLang
         
         if (isLrc) {
             const parsed = parseLrc(lyrics);
             lyricsData = { isLrc: true, lrcLines: parsed };
-            
-            // Detect source language
-            const sourceLang = await detectLanguage(parsed.map(l => l.text).join(' '));
             
             // Translate if enabled
             if (translationEnabled) {
                 const translateStatus = currentLang === 'zh' ? '正在翻译...' : 'Translating...';
                 meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title} (${translateStatus})`;
                 
-                // Check if we need English as intermediate
-                let translatedLines;
-                if (sourceLang === 'ja' && targetLang === 'zh') {
-                    // Japanese to Chinese via English
-                    const englishLines = await translateLyricsLines(parsed, 'en');
-                    translatedLines = await Promise.all(
-                        englishLines.map(async (line, i) => {
-                            if (line === parsed[i].text) return line; // No translation
-                            return await translateLyrics(line, 'en', 'zh');
-                        })
-                    );
+                // Use cached translations if available
+                const cacheKey = `${title}-${artist}-${targetLang}`;
+                if (translationCache[cacheKey] && translationCache[cacheKey].translation) {
+                    console.log("Using cached translation");
+                    translatedLyrics = translationCache[cacheKey].translation;
                 } else {
-                    // Direct translation
-                    translatedLines = await translateLyricsLines(parsed, targetLang);
+                    // Fetch new translation
+                    const sourceLang = await detectLanguage(parsed.map(l => l.text).join(' '));
+                    const translatedLines = await translateLyricsLines(parsed, targetLang);
+                    translatedLyrics = translatedLines;
+                    
+                    // Cache the translation
+                    translationCache[cacheKey] = {
+                        translation: translatedLines,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem('lyricsTranslationCache', JSON.stringify(translationCache));
                 }
                 
-                translatedLyrics = translatedLines;
-                
                 // Check if translation actually happened
-                const hasTranslation = translatedLines.some((line, i) => line !== parsed[i].text);
+                const hasTranslation = translatedLyrics && 
+                    translatedLyrics.some((line, i) => line !== parsed[i].text);
                 const translationNote = hasTranslation ? 
                     (currentLang === 'zh' ? '(已翻译)' : '(Translated)') : 
                     (currentLang === 'zh' ? '(翻译不可用)' : '(Translation unavailable)');
                 
-                renderLrcLinesWithTranslation(parsed, translatedLines);
+                renderLrcLinesWithTranslation(parsed, translatedLyrics);
                 meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title} ${translationNote}`;
             } else {
                 renderLrcLines(parsed);
@@ -4005,28 +4006,42 @@ async function fetchLyricsWithTranslation(title, artist) {
                 const translateStatus = currentLang === 'zh' ? '正在翻译...' : 'Translating...';
                 meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title} (${translateStatus})`;
                 
-                const sourceLang = await detectLanguage(lyrics);
-                let translated;
-                
-                // Check if we need English as intermediate
-                if (sourceLang === 'ja' && targetLang === 'zh') {
-                    // Japanese to Chinese via English
-                    const englishTranslation = await translateLyrics(lyrics, sourceLang, 'en');
-                    translated = await translateLyrics(englishTranslation, 'en', targetLang);
+                // Use cached translations if available
+                const cacheKey = `${title}-${artist}-${targetLang}-plain`;
+                if (translationCache[cacheKey] && translationCache[cacheKey].translation) {
+                    console.log("Using cached plain translation");
+                    translatedLyrics = translationCache[cacheKey].translation;
                 } else {
-                    // Direct translation
-                    translated = await translateLyrics(lyrics, sourceLang, targetLang);
+                    // Fetch new translation
+                    const sourceLang = await detectLanguage(lyrics);
+                    let translated;
+                    
+                    if (sourceLang === 'ja' && targetLang === 'zh') {
+                        // Japanese to Chinese via English
+                        const englishTranslation = await translateLyrics(lyrics, sourceLang, 'en');
+                        translated = await translateLyrics(englishTranslation, 'en', targetLang);
+                    } else {
+                        // Direct translation
+                        translated = await translateLyrics(lyrics, sourceLang, targetLang);
+                    }
+                    
+                    translatedLyrics = translated;
+                    
+                    // Cache the translation
+                    translationCache[cacheKey] = {
+                        translation: translated,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem('lyricsTranslationCache', JSON.stringify(translationCache));
                 }
                 
-                translatedLyrics = translated;
-                
                 // Check if translation actually happened
-                const hasTranslation = translated !== lyrics;
+                const hasTranslation = translatedLyrics && translatedLyrics !== lyrics;
                 const translationNote = hasTranslation ? 
                     (currentLang === 'zh' ? '(已翻译)' : '(Translated)') : 
                     (currentLang === 'zh' ? '(翻译不可用)' : '(Translation unavailable)');
                 
-                renderPlainLyricsWithTranslation(lyrics, translated);
+                renderPlainLyricsWithTranslation(lyrics, translatedLyrics);
                 meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title} ${translationNote}`;
             } else {
                 const lines = lyrics.split(/\r?\n/).filter(l => l.trim().length > 0);
