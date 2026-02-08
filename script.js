@@ -3257,7 +3257,7 @@ function applyLanguage(lang) {
         const currentErrorText = searchError.textContent || searchError.innerText;
         
         // Check what type of error is currently displayed and preserve it
-        if (currentErrorText.includes("Quota Exceeded") || currentErrorText.includes("403") || currentErrorText.includes("daily limit")) {
+        if (currentErrorText.includes("403") || currentErrorText.includes("403") || currentErrorText.includes("daily limit")) {
             // This is a quota exceeded error - use the specific translation
             searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeApi403Error}`;
         } else if (currentErrorText.includes("API Key is not configured") || currentErrorText.includes("config.js") || currentErrorText.includes("YOUR_YOUTUBE_API_KEY")) {
