@@ -767,7 +767,7 @@ async function searchYouTube() {
             }
 
         } else {
-            searchResultsList.innerHTML = '<p class="text-center text-muted">No results found.</p>';
+            searchResultsList.innerHTML = `<p class="text-center text-muted">${translations[currentLang].noResultsFound}</p>`;
         }
 
     } catch (error) {
@@ -943,7 +943,7 @@ function displaySearchResults(data) {
         }
 
     } else {
-        searchResultsList.innerHTML = '<p class="text-center text-muted">No results found.</p>';
+        searchResultsList.innerHTML = `<p class="text-center text-muted">${t.noResultsFound}</p>`;
     }
 }
 
@@ -2639,13 +2639,13 @@ async function fetchLyrics(title, artist) {
           const parsed = parseLrc(lyrics);
           lyricsData = { isLrc: true, lrcLines: parsed };
           renderLrcLines(parsed);
-          meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title} (Cached)`;
+          meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title} ${t.cached}`;
           lyricsState.status = "synced";
         } else {
           lyricsData = { isLrc: false, plain: lyrics };
           const lines = lyrics.split(/\r?\n/).filter(l => l.trim().length > 0);
           textEl.innerHTML = lines.map(line => `<div class="plain-line">${line}</div>`).join("");
-          meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title} (Cached)`;
+          meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title} ${t.cached}`;
           lyricsState.status = "plain";
         }
         
@@ -3013,6 +3013,8 @@ const translations = {
     translationStatus: "Lyrics translation was ${status}.",
     enableLyricsTranslation: "Lyrics Translation",
     showOriginalFirstLabel: "Show Original First",
+    noResultsFound: "No results found.",
+    cached: "(Cached)",
   },
   zh: {
     playerTitle: "YouTube 音乐播放器",
@@ -3137,6 +3139,8 @@ const translations = {
     translationStatus: "歌词翻译已${status}。",
     enableLyricsTranslation: "歌词翻译",
     showOriginalFirstLabel: "原文优先显示",
+    noResultsFound: "未找到结果。",
+    cached: "(已缓存)",
   }
 };
 
@@ -4165,7 +4169,7 @@ async function fetchLyricsWithTranslation(title, artist) {
         lyricsData = { isLrc: true, lrcLines: parsed };
         
         // Always show normal lyrics first
-        const cacheNote = useCachedLyrics ? ' (Cached)' : '';
+        const cacheNote = useCachedLyrics ? ` ${t.cached}` : '';
         renderLrcLines(parsed);
         meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}${cacheNote}`;
         lyricsState.status = "synced";
@@ -4248,7 +4252,7 @@ async function fetchLyricsWithTranslation(title, artist) {
         lyricsData = { isLrc: false, plain: lyrics };
         
         // Always show normal lyrics first
-        const cacheNote = useCachedLyrics ? ' (Cached)' : '';
+        const cacheNote = useCachedLyrics ? ` ${t.cached}` : '';
         const lines = lyrics.split(/\r?\n/).filter(l => l.trim().length > 0);
         textEl.innerHTML = lines.map(line => `<div class="plain-line">${line}</div>`).join("");
         meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}${cacheNote}`;
