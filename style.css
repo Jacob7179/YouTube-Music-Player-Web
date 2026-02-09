@@ -2494,7 +2494,7 @@ body.dark-mode .btn-info:hover {
 .translated-lyric {
     padding: 4px 8px;
     border-radius: 4px;
-    transition: all 0.3s ease;
+    transition: all 0.8s ease-in-out; /* Changed from 0.3s to 0.8s to match other transitions */
 }
 
 .original-lyric::before,
@@ -2509,6 +2509,7 @@ body.dark-mode .btn-info:hover {
     border-radius: 2px;
     margin-right: 6px;
     vertical-align: middle;
+    transition: all 0.8s ease-in-out; /* Added transition for smooth dark mode changes */
 }
 
 body.dark-mode .original-lyric::before,
@@ -2522,23 +2523,26 @@ body.dark-mode .translated-lyric::before {
     font-style: italic;
     background: rgba(0, 123, 255, 0.05);
     border-left: 2px solid rgba(0, 123, 255, 0.3);
+    transition: all 0.8s ease-in-out;
+    border-left-color: rgba(0, 123, 255, 0.5);
 }
 
 body.dark-mode .translated-lyric {
     color: #bbb;
     background: rgba(0, 123, 255, 0.1);
-    border-left-color: rgba(0, 123, 255, 0.5);
 }
 
 .lrc-line.highlight .original-lyric {
     font-weight: bold;
     color: #007bff;
+    transition: all 0.8s ease-in-out;
 }
 
 .lrc-line.highlight .translated-lyric {
     font-weight: bold;
     color: #0056b3;
     background: rgba(0, 123, 255, 0.1);
+    transition: all 0.8s ease-in-out;
 }
 
 body.dark-mode .lrc-line.highlight .original-lyric {
@@ -2566,8 +2570,31 @@ body.dark-mode .lrc-line.highlight .translated-lyric {
     color: #666;
     font-style: italic;
     margin-left: 5px;
+    transition: color 0.8s ease-in-out;
 }
 
 body.dark-mode .translation-status {
     color: #aaa;
+}
+
+/* Also update the existing .lrc-line styles to ensure proper transitions */
+.lrc-line {
+    padding: 6px 8px;
+    border-radius: 4px;
+    transition: background 0.8s ease-in-out, color 0.8s ease-in-out; /* Already 0.8s, good */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.lrc-line.highlight {
+    background: rgba(0, 123, 255, 0.18);
+    color: #fff;
+    font-weight: bold;
+    transition: background 0.8s ease-in-out, color 0.8s ease-in-out; /* Already 0.8s, good */
+}
+
+/* Ensure the .lyrics-pair and its children inherit transitions */
+.lyrics-pair * {
+    transition: color 0.8s ease-in-out, background-color 0.8s ease-in-out, border-color 0.8s ease-in-out;
 }
