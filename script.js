@@ -20,8 +20,11 @@ let searchTimeout;
 
 // CORS Proxy URL - Used to bypass CORS restrictions for YouTube API calls
 // You can change this if you find a more reliable proxy.
+// Alternative CORS proxies (uncomment one):
 // Example: https://corsproxy.io/?
 const CORS_PROXY_URL = 'https://corsproxy.io/?';
+// const CORS_PROXY_URL = 'https://api.codetabs.com/v1/proxy?quest=';
+// const CORS_PROXY_URL = 'https://thingproxy.freeboard.io/fetch/';
 
 let playlist = []; // Array to store playlist data
 
@@ -2650,14 +2653,88 @@ let lyricsState = {
 };
 
 async function fetchLyrics(title, artist) {
-  const tryFetch = async (artistName, trackName) => {
-    const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artistName)}&track_name=${encodeURIComponent(trackName)}`;
-    console.log("Trying:", url);
+  // ✅ Create a cache key from artist and title
+  const cacheKey = `lyrics_${artist}_${title}`.replace(/[^a-zA-Z0-9_]/g, '_');
+  
+  // ✅ Check local storage first
+  const cachedLyrics = localStorage.getItem(cacheKey);
+  if (cachedLyrics) {
+    console.log("Using cached lyrics for:", artist, "-", title);
+    
+    try {
+      const json = JSON.parse(cachedLyrics);
+      const lyrics = json.syncedLyrics || json.plainLyrics;
+      
+      if (lyrics) {
+        const meta = document.getElementById("lyricsMeta");
+        const textEl = document.getElementById("lyricsText");
+        const t = translations[currentLang];
+        
+        lyricsState = { status: "cached", artist, title };
+        
+        const isLrc = /^\s*\[\d{1,2}:\d{2}/m.test(lyrics);
+        if (isLrc) {
+          const parsed = parseLrc(lyrics);
+          lyricsData = { isLrc: true, lrcLines: parsed };
+          renderLrcLines(parsed);
+          meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title} (Cached)`;
+          lyricsState.status = "synced";
+        } else {
+          lyricsData = { isLrc: false, plain: lyrics };
+          const lines = lyrics.split(/\r?\n/).filter(l => l.trim().length > 0);
+          textEl.innerHTML = lines.map(line => `<div class="plain-line">${line}</div>`).join("");
+          meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title} (Cached)`;
+          lyricsState.status = "plain";
+        }
+        
+        window.currentSongArtist = artist;
+        window.currentSongTitle = title;
+        return; // Exit early since we have cached lyrics
+      }
+    } catch (e) {
+      console.warn("Failed to parse cached lyrics, fetching fresh...", e);
+      // Continue to fetch fresh lyrics
+    }
+  }
 
-    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    const res = await fetch(proxy);
-    const data = await res.json();
-    return JSON.parse(data.contents || "{}");
+  // ✅ FIXED: Properly encode the URL components
+  const tryFetch = async (artistName, trackName) => {
+    // Properly encode the parameters separately
+    const encodedArtist = encodeURIComponent(artistName);
+    const encodedTrack = encodeURIComponent(trackName);
+    const url = `https://lrclib.net/api/get?artist_name=${encodedArtist}&track_name=${encodedTrack}`;
+    console.log("Fetching fresh lyrics from API:", url);
+
+    // Use the CORS proxy (same as YouTube API)
+    const proxiedUrl = `${CORS_PROXY_URL}${encodeURIComponent(url)}`;
+    console.log("Proxied URL:", proxiedUrl);
+
+    try {
+      const response = await fetch(proxiedUrl);
+      
+      if (!response.ok) {
+        console.error("Lyrics API error:", response.status, response.statusText);
+        throw new Error(`Lyrics API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // ✅ Cache the response in local storage
+      if (data.syncedLyrics || data.plainLyrics) {
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+        console.log("Lyrics cached for:", artistName, "-", trackName);
+        
+        // Set expiry timestamp (7 days from now)
+        const expiryKey = `${cacheKey}_expiry`;
+        const expiryTime = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days
+        localStorage.setItem(expiryKey, expiryTime.toString());
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch lyrics:", error);
+      throw error;
+    }
   };
 
   const meta = document.getElementById("lyricsMeta");
@@ -2685,7 +2762,15 @@ async function fetchLyrics(title, artist) {
     }
 
     const lyrics = json.syncedLyrics || json.plainLyrics;
-    if (!lyrics) throw new Error("No lyrics");
+    if (!lyrics) {
+      console.log("No lyrics found for:", artist, "-", title);
+      
+      // ✅ Cache the "no lyrics" result to avoid repeated API calls
+      const noLyricsData = { noLyrics: true, timestamp: Date.now() };
+      localStorage.setItem(cacheKey, JSON.stringify(noLyricsData));
+      
+      throw new Error("No lyrics");
+    }
 
     const isLrc = /^\s*\[\d{1,2}:\d{2}/m.test(lyrics);
     if (isLrc) {
@@ -2702,9 +2787,18 @@ async function fetchLyrics(title, artist) {
       lyricsState.status = "plain";
     }
   } catch (e) {
+    console.error("Lyrics fetch error:", e);
     lyricsData = null;
-    textEl.textContent = t.lyricsNotFound;
-    meta.textContent = t.lyricsError;
+    
+    // Display appropriate error message
+    if (e.message.includes("No lyrics")) {
+      textEl.textContent = t.lyricsNotFound;
+      meta.textContent = t.lyricsNotFound;
+    } else {
+      textEl.textContent = t.lyricsError;
+      meta.textContent = t.lyricsError;
+    }
+    
     lyricsState.status = "error";
   }
 
@@ -3961,41 +4055,100 @@ async function loadLyricsFor(title, artist) {
 }
 
 async function fetchLyricsWithTranslation(title, artist) {
-    // Define t at the beginning to avoid scope issues
-    const t = translations[currentLang];
-    const targetLang = currentLang === 'zh' ? 'zh' : 'en';
-    
-    const tryFetch = async (artistName, trackName) => {
-        const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artistName)}&track_name=${encodeURIComponent(trackName)}`;
-        console.log("Trying:", url);
+    // ✅ Create cache keys
+    const lyricsCacheKey = `lyrics_${artist}_${title}`.replace(/[^a-zA-Z0-9_]/g, '_');
+    const translationCacheKey = `translation_${artist}_${title}_${currentLang}`.replace(/[^a-zA-Z0-9_]/g, '_');
 
-        const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-        const res = await fetch(proxy);
-        const data = await res.json();
-        return JSON.parse(data.contents || "{}");
-    };
+    // ✅ Check for cached lyrics first
+    const cachedLyrics = localStorage.getItem(lyricsCacheKey);
+    let json = null;
+    let useCachedLyrics = false;
+
+    if (cachedLyrics) {
+        try {
+        json = JSON.parse(cachedLyrics);
+        
+        // Check if it's a valid lyrics response (not a "no lyrics" cache)
+        if (json.syncedLyrics || json.plainLyrics) {
+            console.log("Using cached lyrics for:", artist, "-", title);
+            useCachedLyrics = true;
+        } else if (json.noLyrics) {
+            // We've already determined no lyrics exist for this song
+            console.log("No lyrics cached for:", artist, "-", title);
+            throw new Error("No lyrics (cached)");
+        }
+        } catch (e) {
+        console.warn("Failed to parse cached lyrics:", e);
+        }
+    }
 
     const meta = document.getElementById("lyricsMeta");
     const textEl = document.getElementById("lyricsText");
+    const t = translations[currentLang];
+    const targetLang = currentLang === 'zh' ? 'zh' : 'en';
 
     lyricsState = { status: "loading", artist, title };
-    meta.textContent = t.searching;
-    textEl.textContent = t.searching;
+
+    // ✅ FIXED: Properly encode the URL components (only if we need to fetch)
+    const tryFetch = async (artistName, trackName) => {
+        // Properly encode the parameters separately
+        const encodedArtist = encodeURIComponent(artistName);
+        const encodedTrack = encodeURIComponent(trackName);
+        const url = `https://lrclib.net/api/get?artist_name=${encodedArtist}&track_name=${encodedTrack}`;
+        console.log("Fetching fresh lyrics from API:", url);
+
+        // Use the CORS proxy (same as YouTube API)
+        const proxiedUrl = `${CORS_PROXY_URL}${encodeURIComponent(url)}`;
+
+        try {
+        const response = await fetch(proxiedUrl);
+        
+        if (!response.ok) {
+            console.error("Lyrics API error:", response.status, response.statusText);
+            throw new Error(`Lyrics API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // ✅ Cache the response in local storage
+        if (data.syncedLyrics || data.plainLyrics) {
+            localStorage.setItem(lyricsCacheKey, JSON.stringify(data));
+            console.log("Lyrics cached for:", artistName, "-", trackName);
+        } else {
+            // Cache "no lyrics" result
+            const noLyricsData = { noLyrics: true, timestamp: Date.now() };
+            localStorage.setItem(lyricsCacheKey, JSON.stringify(noLyricsData));
+        }
+        
+        return data;
+        } catch (error) {
+        console.error("Failed to fetch lyrics:", error);
+        throw error;
+        }
+    };
+
+    if (!useCachedLyrics) {
+        meta.textContent = t.searching;
+        textEl.textContent = t.searching;
+    }
 
     try {
+        // ✅ Fetch fresh lyrics if not cached
+        if (!useCachedLyrics) {
         // Try full name first
-        let json = await tryFetch(artist, title);
+        json = await tryFetch(artist, title);
 
         // If no lyrics found, try CJK-only artist
         if (!json.syncedLyrics && !json.plainLyrics) {
             const cjkOnlyArtist = artist.replace(/[\u0020A-Za-z]+/g, "").trim();
             if (cjkOnlyArtist && cjkOnlyArtist !== artist) {
-                console.log("Retrying with CJK only:", cjkOnlyArtist);
-                json = await tryFetch(cjkOnlyArtist, title);
-                if (json.syncedLyrics || json.plainLyrics) {
-                    artist = cjkOnlyArtist; // Update to working version
-                }
+            console.log("Retrying with CJK only:", cjkOnlyArtist);
+            json = await tryFetch(cjkOnlyArtist, title);
+            if (json.syncedLyrics || json.plainLyrics) {
+                artist = cjkOnlyArtist; // Update to working version
             }
+            }
+        }
         }
 
         const lyrics = json.syncedLyrics || json.plainLyrics;
@@ -4004,46 +4157,60 @@ async function fetchLyricsWithTranslation(title, artist) {
         const isLrc = /^\s*\[\d{1,2}:\d{2}/m.test(lyrics);
         
         if (isLrc) {
-            const parsed = parseLrc(lyrics);
-            lyricsData = { isLrc: true, lrcLines: parsed };
-            
-            // Translate if enabled
-            if (translationEnabled) {
-                const translateStatus = currentLang === 'zh' ? '正在翻译...' : 'Translating...';
-                meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title} (${translateStatus})`;
-                
-                // Use cached translations if available
-                const cacheKey = `${title}-${artist}-${targetLang}`;
-                if (translationCache[cacheKey] && translationCache[cacheKey].translation) {
-                    console.log("Using cached translation");
-                    translatedLyrics = translationCache[cacheKey].translation;
-                } else {
-                    // Fetch new translation line by line
-                    const sourceLang = await detectLanguage(parsed.map(l => l.text).join(' '));
-                    const translatedLines = await translateLyricsLines(parsed, targetLang);
-                    translatedLyrics = translatedLines;
-                    
-                    // Cache the translation
-                    translationCache[cacheKey] = {
-                        translation: translatedLines,
-                        timestamp: Date.now()
-                    };
-                    localStorage.setItem('lyricsTranslationCache', JSON.stringify(translationCache));
+        const parsed = parseLrc(lyrics);
+        lyricsData = { isLrc: true, lrcLines: parsed };
+        
+        // Check for cached translation
+        let useCachedTranslation = false;
+        if (translationEnabled) {
+            const cachedTranslation = localStorage.getItem(translationCacheKey);
+            if (cachedTranslation) {
+            try {
+                const translationData = JSON.parse(cachedTranslation);
+                if (translationData.translation && Date.now() - translationData.timestamp < TRANSLATION_CACHE_EXPIRY) {
+                console.log("Using cached translation");
+                translatedLyrics = translationData.translation;
+                useCachedTranslation = true;
                 }
-                
-                // Check if translation actually happened
-                const hasTranslation = translatedLyrics && 
-                    translatedLyrics.some((line, i) => line !== parsed[i].text);
-                const translationNote = hasTranslation ? 
-                    (currentLang === 'zh' ? '(已翻译)' : '(Translated)') : 
-                    (currentLang === 'zh' ? '(翻译不可用)' : '(Translation unavailable)');
-                
-                renderLrcLinesWithTranslation(parsed, translatedLyrics);
-                meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title} ${translationNote}`;
-            } else {
-                renderLrcLines(parsed);
-                meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}`;
+            } catch (e) {
+                console.warn("Failed to parse cached translation:", e);
             }
+            }
+        }
+        
+        // Translate if enabled
+        if (translationEnabled) {
+            if (!useCachedTranslation) {
+            const translateStatus = currentLang === 'zh' ? '正在翻译...' : 'Translating...';
+            meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title} (${translateStatus})`;
+            
+            // Fetch new translation line by line
+            const sourceLang = await detectLanguage(parsed.map(l => l.text).join(' '));
+            const translatedLines = await translateLyricsLines(parsed, targetLang);
+            translatedLyrics = translatedLines;
+            
+            // Cache the translation
+            localStorage.setItem(translationCacheKey, JSON.stringify({
+                translation: translatedLines,
+                timestamp: Date.now()
+            }));
+            }
+            
+            // Check if translation actually happened
+            const hasTranslation = translatedLyrics && 
+            translatedLyrics.some((line, i) => line !== parsed[i].text);
+            const translationNote = hasTranslation ? 
+            (currentLang === 'zh' ? '(已翻译)' : '(Translated)') : 
+            (currentLang === 'zh' ? '(翻译不可用)' : '(Translation unavailable)');
+            
+            const cacheNote = useCachedLyrics ? ' (Cached)' : '';
+            renderLrcLinesWithTranslation(parsed, translatedLyrics);
+            meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}${cacheNote} ${translationNote}`;
+        } else {
+            const cacheNote = useCachedLyrics ? ' (Cached)' : '';
+            renderLrcLines(parsed);
+            meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}${cacheNote}`;
+        }
             lyricsState.status = "synced";
         } else {
             lyricsData = { isLrc: false, plain: lyrics };
@@ -4111,23 +4278,68 @@ async function fetchLyricsWithTranslation(title, artist) {
                 renderPlainLyricsWithTranslation(lyrics, translatedLyrics);
                 meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title} ${translationNote}`;
             } else {
+                const cacheNote = useCachedLyrics ? ' (Cached)' : '';
                 const lines = lyrics.split(/\r?\n/).filter(l => l.trim().length > 0);
                 textEl.innerHTML = lines.map(line => `<div class="plain-line">${line}</div>`).join("");
-                meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}`;
+                meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}${cacheNote}`;
             }
             lyricsState.status = "plain";
         }
     } catch (e) {
+        console.error("Lyrics fetch error:", e);
         lyricsData = null;
         translatedLyrics = null;
+        
+        if (e.message.includes("No lyrics")) {
         textEl.textContent = t.lyricsNotFound;
+        meta.textContent = t.lyricsNotFound;
+        } else {
+        textEl.textContent = t.lyricsError;
         meta.textContent = t.lyricsError;
+        }
+        
         lyricsState.status = "error";
     }
 
     window.currentSongArtist = artist;
     window.currentSongTitle = title;
 }
+
+function clearExpiredLyricsCache() {
+    let hasChanges = false;
+    const now = Date.now();
+
+    // Clear expired lyrics cache (7 days)
+    for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+
+    // Check if it's a lyrics cache key
+    if (key.startsWith('lyrics_')) {
+        const expiryKey = `${key}_expiry`;
+        const expiry = localStorage.getItem(expiryKey);
+        
+        if (expiry && now > parseInt(expiry)) {
+        localStorage.removeItem(key);
+        localStorage.removeItem(expiryKey);
+        hasChanges = true;
+        }
+    }
+
+    // Check if it's a translation cache key (use the existing clearExpiredTranslationCache)
+    }
+
+    // Also clear the translation cache
+    clearExpiredTranslationCache();
+
+    if (hasChanges) {
+        console.log("Expired lyrics cache cleared");
+    }
+}
+
+// Call this on startup
+document.addEventListener("DOMContentLoaded", function() {
+    clearExpiredLyricsCache();
+});
 
 // Update sync function to handle translation display
 function syncLyricsToTime(currentTime) {
