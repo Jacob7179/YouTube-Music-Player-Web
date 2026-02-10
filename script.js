@@ -1863,7 +1863,7 @@ function updateProgressBar() {
                     player.seekTo(0); // Restart the current song
                     player.playVideo(); // Always play again when Repeat is ON
                 } else if (autoPlay) {
-                    playNextSong(); // Play next song if Auto-Play is ON
+                    const autoPlay = document.getElementById("autoPlayToggle").classList.contains("active");
                 } else {
                     // Show bx-revision when the song ends and Auto-Play is OFF
                     playPauseBtn.innerHTML = ICON_REVISION; // Use constant
@@ -2039,7 +2039,7 @@ document.getElementById("repeatBtn").addEventListener("click", function () {
 function handlePlayerStateChange(event) {
     let albumArt = document.getElementById("albumArt");
     let playPauseBtn = document.getElementById("playPauseBtn");
-    let autoPlay = document.getElementById("autoPlayToggle").checked;
+    let autoPlay = document.getElementById("autoPlayToggle").classList.contains("active");
 
     // Apply album art spin based on current mode
     if (albumArtDisplayMode === "spin") {
@@ -2121,6 +2121,37 @@ function handlePlayerStateChange(event) {
     // Call setupMediaSession when player state changes
     setupMediaSession();
 }
+
+// Initialize auto-play button
+document.addEventListener("DOMContentLoaded", function() {
+    const autoPlayToggle = document.getElementById("autoPlayToggle");
+    
+    // Load saved auto-play state
+    const savedAutoPlay = localStorage.getItem("autoPlay") !== "false"; // Default to true
+    if (savedAutoPlay) {
+        autoPlayToggle.classList.add("active");
+    }
+    
+    // Toggle auto-play on click
+    autoPlayToggle.addEventListener("click", function() {
+        const isActive = this.classList.toggle("active");
+        localStorage.setItem("autoPlay", isActive);
+        
+        // Visual feedback
+        if (isActive) {
+            this.innerHTML = '<i class="bx bx-play-circle"></i>';
+        } else {
+            this.innerHTML = '<i class="bx bx-stop-circle"></i>';
+        }
+    });
+    
+    // Set initial icon
+    if (autoPlayToggle.classList.contains("active")) {
+        autoPlayToggle.innerHTML = '<i class="bx bx-play-circle"></i>';
+    } else {
+        autoPlayToggle.innerHTML = '<i class="bx bx-stop-circle"></i>';
+    }
+});
 
 document.addEventListener("DOMContentLoaded", function () {
     // Check if dark mode is enabled in local storage before page renders
