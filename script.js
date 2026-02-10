@@ -3946,6 +3946,14 @@ async function translateLyricsLines(lines, targetLang) {
         const chunk = lines.slice(i, i + 5);
         const chunkText = chunk.map(l => l.text).join('\n');
         
+        // Skip translation if chunk is empty
+        if (!chunkText.trim()) {
+            for (let j = 0; j < chunk.length; j++) {
+                translatedLines.push(chunk[j].text);
+            }
+            continue;
+        }
+        
         try {
             let translatedChunk;
             
@@ -3969,7 +3977,12 @@ async function translateLyricsLines(lines, targetLang) {
             
             // Ensure we have the same number of lines
             for (let j = 0; j < chunk.length; j++) {
-                translatedLines.push(translatedLinesChunk[j] || chunk[j].text);
+                // Preserve empty lines as empty
+                if (chunk[j].text.trim() === '') {
+                    translatedLines.push('');
+                } else {
+                    translatedLines.push(translatedLinesChunk[j] || chunk[j].text);
+                }
             }
         } catch (error) {
             // If translation fails, use original text for this chunk
@@ -3991,32 +4004,44 @@ function renderLrcLinesWithTranslation(lines, translations = []) {
     
     el.innerHTML = lines
         .map((l, i) => {
-        const m = Math.floor(l.time / 60);
-        const s = Math.floor(l.time % 60);
-        const formattedTime = `${m}:${s < 10 ? "0" + s : s}`;
-        const hasTranslation = translations[i] && translations[i] !== l.text;
-        const translationText = hasTranslation ? translations[i] : '';
-        
-        // Determine display order based on setting
-        const firstText = showOriginalFirst ? l.text : translationText;
-        const secondText = showOriginalFirst ? translationText : l.text;
-        const firstLabel = showOriginalFirst ? 
-            (targetLang === 'zh' ? '原文' : 'Original') : 
-            (targetLang === 'zh' ? '译文' : 'Translation');
-        const secondLabel = showOriginalFirst ? 
-            (targetLang === 'zh' ? '译文' : 'Translation') : 
-            (targetLang === 'zh' ? '原文' : 'Original');
-        
-        return `
-            <div class="lrc-line" data-index="${i}" data-time="${l.time}" data-formatted-time="${formattedTime}">
-            <span class="lrc-time">[${formattedTime}]</span>
-            <div class="lyrics-pair">
-                <div class="original-lyric" data-label="${firstLabel}">${firstText || l.text}</div>
-                ${hasTranslation ? `
-                <div class="translated-lyric" data-label="${secondLabel}">${secondText}</div>
-                ` : ''}
-            </div>
-            </div>`;
+            const m = Math.floor(l.time / 60);
+            const s = Math.floor(l.time % 60);
+            const formattedTime = `${m}:${s < 10 ? "0" + s : s}`;
+            
+            // Check if this line has translation
+            const hasTranslation = translations[i] !== undefined && translations[i] !== null && 
+                                 translations[i] !== '' && translations[i] !== l.text;
+            
+            // Get the translation text for this specific line
+            const translationText = hasTranslation ? translations[i] : '';
+            
+            // Determine display order based on setting
+            const firstText = showOriginalFirst ? l.text : translationText;
+            const secondText = showOriginalFirst ? translationText : l.text;
+            const firstLabel = showOriginalFirst ? 
+                (targetLang === 'zh' ? '原文' : 'Original') : 
+                (targetLang === 'zh' ? '译文' : 'Translation');
+            const secondLabel = showOriginalFirst ? 
+                (targetLang === 'zh' ? '译文' : 'Translation') : 
+                (targetLang === 'zh' ? '原文' : 'Original');
+            
+            // Only show translation container if we actually have a translation for THIS line
+            const shouldShowTranslation = hasTranslation && translationText.trim().length > 0;
+            
+            return `
+                <div class="lrc-line" data-index="${i}" data-time="${l.time}" data-formatted-time="${formattedTime}">
+                    <span class="lrc-time">[${formattedTime}]</span>
+                    <div class="lyrics-pair">
+                        <div class="original-lyric" data-label="${firstLabel}">
+                            ${firstText || l.text || ' '}
+                        </div>
+                        ${shouldShowTranslation ? `
+                        <div class="translated-lyric" data-label="${secondLabel}">
+                            ${secondText}
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>`;
         })
         .join("");
 }
