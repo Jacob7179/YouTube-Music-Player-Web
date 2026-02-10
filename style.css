@@ -2175,7 +2175,7 @@ body.dark-mode .experimental-body .text-danger {
     visibility: hidden;
     z-index: 10000;
     transition: all 0.3s ease-in-out, background-color 0.8s ease-in-out, color 0.8s ease-in-out, border-color 0.8s ease-in-out;
-    border: 1px solid transparent;
+    border: none;
     overflow: hidden;
 }
 
@@ -2534,7 +2534,6 @@ body.dark-mode .translated-lyric {
 
 .lrc-line.highlight .original-lyric {
     font-weight: bold;
-    color: #007bff;
     transition: all 0.8s ease-in-out;
 }
 
@@ -2589,7 +2588,6 @@ body.dark-mode .translation-status {
 
 .lrc-line.highlight {
     background: rgba(0, 123, 255, 0.18);
-    color: #fff;
     font-weight: bold;
     transition: background 0.8s ease-in-out, color 0.8s ease-in-out; /* Already 0.8s, good */
 }
