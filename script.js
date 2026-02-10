@@ -662,6 +662,7 @@ async function searchYouTube() {
     const searchLoading = document.getElementById('searchLoading');
     const searchError = document.getElementById('searchError');
     const searchResultsContainer = document.getElementById('searchResults');
+    const t = translations[currentLang];
 
     searchResultsList.innerHTML = ''; // Clear previous results
     searchError.classList.add('d-none'); // Hide error message
@@ -680,10 +681,6 @@ async function searchYouTube() {
     }
 
     if (typeof YOUTUBE_API_KEY === 'undefined' || YOUTUBE_API_KEY === 'YOUR_YOUTUBE_API_KEY') {
-        const t = translations[currentLang];
-        const searchError = document.getElementById('searchError');
-        const searchLoading = document.getElementById('searchLoading');
-
         // Use innerHTML to properly structure the error message
         searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeApiKeyError}`;
         searchError.classList.remove('d-none');
@@ -694,26 +691,25 @@ async function searchYouTube() {
     searchLoading.classList.remove('d-none'); // Show loading indicator
 
     try {
-        // Construct the URL for the YouTube API call
+        // Construct the URL for the YouTube API call - Direct call, without proxy
         const youtubeApiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchTerm)}&type=video&maxResults=10&key=${YOUTUBE_API_KEY}`;
         
-        // Prepend the CORS proxy URL to the YouTube API URL
-        // The URL for the proxy itself needs to be encoded if it contains query parameters
-        const proxiedUrl = `${CORS_PROXY_URL}${encodeURIComponent(youtubeApiUrl)}`;
+        console.log("Fetching directly from YouTube API:", youtubeApiUrl);
 
-        console.log("Fetching from proxied URL:", proxiedUrl);
-
-        const response = await fetch(proxiedUrl);
+        // Directly call the YouTube API (the YouTube API should support CORS)
+        const response = await fetch(youtubeApiUrl);
         
         if (!response.ok) {
             const errorText = await response.text(); // Get raw text for more info
-            console.error('YouTube API Error (via proxy):', response.status, response.statusText, errorText);
+            console.error('YouTube API Error:', response.status, response.statusText, errorText);
             
             // Handle specific error codes with translations
             if (response.status === 403) {
-                searchError.innerHTML = `<i class='bx bx-error'></i> ${translations[currentLang].youtubeApi403Error}`;
+                searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeApi403Error}`;
+            } else if (response.status === 400) {
+                searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeApiKeyError}`;
             } else {
-                searchError.innerHTML = `<i class='bx bx-error'></i> ${translations[currentLang].youtubeSearchError || `YouTube API Error: ${response.status} ${response.statusText}`}`;
+                searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeSearchError || `YouTube API Error: ${response.status} ${response.statusText}`}`;
             }
             
             searchError.classList.remove('d-none');
@@ -745,12 +741,12 @@ async function searchYouTube() {
                             <h6 class="mb-1">${title}</h6>
                             <p class="mb-0 text-muted"><small>${channelTitle}</small></p>
                         </div>
-                        <button class="btn btn-success btn-sm add-from-search-btn" title="${translations[currentLang].addToPlaylist}"
+                        <button class="btn btn-success btn-sm add-from-search-btn" title="${t.addToPlaylist}"
                                 data-video-id="${videoId}" 
                                 data-song-title="${title.replace(/"/g, '&quot;')}" 
                                 data-author-name="${channelTitle.replace(/"/g, '&quot;')}" 
                                 data-album-art="${thumbnailUrl}">
-                            ${translations[currentLang].add}
+                            ${t.add}
                         </button>
                     `;
                     searchResultsList.appendChild(resultItem);
@@ -767,13 +763,19 @@ async function searchYouTube() {
             }
 
         } else {
-            searchResultsList.innerHTML = `<p class="text-center text-muted">${translations[currentLang].noResultsFound}</p>`;
+            searchResultsList.innerHTML = `<p class="text-center text-muted">${t.noResultsFound}</p>`;
         }
 
     } catch (error) {
-        console.error('Error searching YouTube (via proxy):', error);
+        console.error('Error searching YouTube:', error);
         searchLoading.classList.add('d-none');
-        searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeSearchError}`;
+        
+        // If it's a CORS error, display a specific message.
+        if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
+            searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeSearchError}<br><small>如果持续出现此错误，请检查网络连接或使用其他方式添加歌曲。</small>`;
+        } else {
+            searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeSearchError}`;
+        }
         searchError.classList.remove('d-none');
     }
 }
@@ -819,12 +821,14 @@ async function handleAddSongFromURL() {
     let author = "Unknown Artist";
     let albumArt = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 
-    // --- Try YouTube Data API ---
+    // --- Try YouTube Data API (direct call, no proxy) ---
     if (typeof YOUTUBE_API_KEY !== "undefined" && YOUTUBE_API_KEY && YOUTUBE_API_KEY !== "YOUR_YOUTUBE_API_KEY") {
         try {
             const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
-            const proxiedUrl = `${CORS_PROXY_URL}${encodeURIComponent(apiUrl)}`;
-            const res = await fetch(proxiedUrl);
+            console.log("Fetching video info directly from YouTube API:", apiUrl);
+            
+            // Directly call the YouTube API
+            const res = await fetch(apiUrl);
             if (res.ok) {
                 const data = await res.json();
                 if (data.items && data.items.length > 0) {
@@ -832,27 +836,55 @@ async function handleAddSongFromURL() {
                     title = snippet.title || title;
                     author = snippet.channelTitle || author;
                     albumArt = snippet.thumbnails?.high?.url || albumArt;
+                    console.log("YouTube API success:", title, "by", author);
                 }
             } else {
                 console.warn("YouTube API failed:", res.status, res.statusText);
+                // If a CORS error is encountered, try the oEmbed method.
+                if (res.status === 0 || res.statusText === "") {
+                    console.warn("There may be CORS restrictions, so the oEmbed method will be used.");
+                }
             }
         } catch (err) {
             console.warn("YouTube API fetch failed:", err);
         }
     }
 
-    // --- Fallback: YouTube oEmbed ---
+    // --- Fallback: YouTube oEmbed (if YouTube API fails) ---
     if (title === "Unknown Title" || author === "Unknown Artist") {
         try {
             const oEmbedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+            console.log("Trying oEmbed fallback:", oEmbedUrl);
+            
             const res = await fetch(oEmbedUrl);
             if (res.ok) {
                 const meta = await res.json();
                 title = meta.title || title;
                 author = meta.author_name || author;
+                console.log("oEmbed success:", title, "by", author);
+            } else {
+                console.warn("oEmbed failed:", res.status, res.statusText);
             }
         } catch (err) {
             console.warn("oEmbed fetch failed:", err);
+        }
+    }
+
+    // --- Final alternative: Use noembed.com (completely free, no API key required) ---
+    if (title === "Unknown Title" || author === "Unknown Artist") {
+        try {
+            const noembedUrl = `https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`;
+            console.log("Trying noembed.com fallback:", noembedUrl);
+            
+            const res = await fetch(noembedUrl);
+            if (res.ok) {
+                const data = await res.json();
+                title = data.title || title;
+                author = data.author_name || author;
+                console.log("noembed.com success:", title, "by", author);
+            }
+        } catch (err) {
+            console.warn("noembed.com fetch failed:", err);
         }
     }
 
