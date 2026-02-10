@@ -1001,7 +1001,7 @@ function addSongFromSearch(event) {
 let lastSong = '';
 let lastAuthor = '';
 
-let currentVolume = parseInt(localStorage.getItem("volumeLevel")) || 100;
+let currentVolume = parseInt(localStorage.getItem("volumeLevel")) || 80;
 
 // Make onYouTubeIframeAPIReady globally accessible
 window.onYouTubeIframeAPIReady = function() {
@@ -1009,7 +1009,7 @@ window.onYouTubeIframeAPIReady = function() {
     if (playlist.length > 0) {
         selectedVideoId = playlist[0].videoId;
     } else {
-        selectedVideoId = ''; // No default video if playlist is empty
+        selectedVideoId = '';
     }
 
     player = new YT.Player('player', {
@@ -1019,14 +1019,16 @@ window.onYouTubeIframeAPIReady = function() {
             controls: 0,
             modestbranding: 1,
             showinfo: 0,
-            rel: 0
+            rel: 0,
+            fs: 0,
+            iv_load_policy: 3,
+            start: 0
         },
         events: {
             'onReady': (event) => {
+                // Set volume to 80% to prevent loud start
                 event.target.setVolume(currentVolume);
                 updateVolumeUI(currentVolume);
-                document.getElementById("volumeControl").value = currentVolume;
-                //event.target.playVideo();
             },
             'onStateChange': handlePlayerStateChange, 
             'onError': handleVideoError
@@ -1108,6 +1110,11 @@ function removeArtistFromTitle(title, artist) {
 document.getElementById("songList").addEventListener("click", resetErrorState); // Example event listener
 
 function loadNewVideo(videoId, albumArtUrl, songObject = null) {
+    if (player) {
+        // If player exists, set volume to current value
+        player.setVolume(currentVolume);
+    }
+    
     let albumArt = document.getElementById("albumArt");
     albumArt.style.transition = "opacity 0.5s ease-in-out";
     albumArt.style.opacity = "0";
@@ -1372,36 +1379,78 @@ document.addEventListener("DOMContentLoaded", function () {
     const volumeThumb = document.getElementById("volumeThumb");
     const volumeBarContainer = document.querySelector(".volume-bar-container");
 
+    // Load saved volume or default to 80 (to prevent loud start)
+    currentVolume = parseInt(localStorage.getItem("volumeLevel")) || 80;
     volumeControl.value = currentVolume;
+    
+    // Initialize UI
     updateVolumeUI(currentVolume);
 
     function updateVolumeUI(volumeValue) {
+        if (!volumeBarContainer || !volumeThumb || !volumeProgress) return;
+        
         const progressBarWidth = volumeBarContainer.offsetWidth;
-        const thumbWidth = volumeThumb.offsetWidth; 
-        const thumbPosition = (volumeValue / 100) * (progressBarWidth - thumbWidth) + (thumbWidth / 2);
-
+        const thumbPosition = (volumeValue / 100) * progressBarWidth;
+        
+        // Update progress bar
         volumeProgress.style.width = `${volumeValue}%`;
+        
+        // Update thumb position
         volumeThumb.style.left = `${thumbPosition}px`;
     }
 
+    // Input event for smooth sliding
     volumeControl.addEventListener("input", function () {
-        let volumeValue = this.value;
+        let volumeValue = parseInt(this.value);
         currentVolume = volumeValue;
         localStorage.setItem("volumeLevel", volumeValue);
 
-        if (player) {
+        if (player && player.setVolume) {
             player.setVolume(volumeValue);
         }
+        
         updateVolumeUI(volumeValue);
+    });
+
+    // Click on volume bar to set volume
+    volumeBarContainer.addEventListener("click", function (event) {
+        if (event.target === volumeControl || event.target === volumeThumb) return;
+        
+        const rect = this.getBoundingClientRect();
+        const clickX = event.clientX - rect.left;
+        const percentage = Math.max(0, Math.min(100, Math.round((clickX / rect.width) * 100)));
+        
+        volumeControl.value = percentage;
+        currentVolume = percentage;
+        localStorage.setItem("volumeLevel", percentage);
+        
+        if (player && player.setVolume) {
+            player.setVolume(percentage);
+        }
+        
+        updateVolumeUI(percentage);
+        
+        // Trigger input event for consistency
+        volumeControl.dispatchEvent(new Event('input'));
     });
 
     // Adjust position on window resize
     window.addEventListener("resize", () => {
-        updateVolumeUI(volumeControl.value);
+        updateVolumeUI(currentVolume);
     });
 
     // Initialize on page load
-    updateVolumeUI(volumeControl.value);
+    updateVolumeUI(currentVolume);
+    
+    // Fix for touch devices
+    volumeControl.addEventListener("touchstart", function (e) {
+        e.stopPropagation();
+    }, { passive: false });
+    
+    volumeControl.addEventListener("touchmove", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }, { passive: false });
 });
 
 document.addEventListener("DOMContentLoaded", function () {
