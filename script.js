@@ -10,6 +10,8 @@ let darkModeToggleInProgress = false;
 let actualSelectedVideoId = null;
 let albumArtDisplayMode = localStorage.getItem("albumArtDisplayMode") || "spin";
 let albumArtSpinEnabled = albumArtDisplayMode === "spin";
+let isTranslating = false;
+let showTranslatedView = false;
 
 // YOUTUBE_API_KEY is now loaded from config.js 
 
@@ -772,7 +774,7 @@ async function searchYouTube() {
         
         // If it's a CORS error, display a specific message.
         if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
-            searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeSearchError}<br><small>如果持续出现此错误，请检查网络连接或使用其他方式添加歌曲。</small>`;
+            searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeSearchError}<br><small>If this error persists, please check your network connection or use other methods to add songs.</small>`;
         } else {
             searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeSearchError}`;
         }
@@ -2890,67 +2892,64 @@ function startLyricsSync() {
 }
 
 function cleanTitleAndArtist(rawTitle, rawArtist) {
-  let title = rawTitle || "";
-  let artist = rawArtist || "";
+    let title = rawTitle || "";
+    let artist = rawArtist || "";
 
-  // Remove any extra brackets/annotations
-  title = title.replace(
-    /\[[^\]]*\]|\([^)]*\)|［[^］]*］|【[^】]*】|「[^」]*」|『[^』]*』/g,
-    ""
-  );
+    // Remove all brackets and their content (parentheses, square brackets, Japanese quotes, etc.)
+    title = title.replace(/\[[^\]]*\]|\([^)]*\)|［[^］]*］|【[^】]*】|「[^」]*」|『[^』]*』/g, "");
 
-  // Remove noise keywords
-  title = title.replace(
-    /official\s*video|music\s*video|mv|lyrics?|lyric\s*video|ver\.?|HD|4K|provided\s*to\s*youtube\s*by|auto[-\s]*generated\s*by\s*youtube|topic/gi,
-    ""
-  );
+    // Remove common YouTube noise words (case-insensitive)
+    title = title.replace(
+        /official\s*(music\s*)?video|music\s*video|mv|lyrics?|lyric\s*video|ver\.?|HD|4K|provided\s*to\s*youtube\s*by|auto[-\s]*generated\s*by\s*youtube|topic|\(.*?\)|\[.*?\]/gi,
+        ""
+    );
 
-  title = title.replace(/[\uFF5E\u2013\u2014\-–—]+/g, "-");
-  title = title.replace(/\s{2,}/g, " ").trim();
+    // Normalize dashes and collapse spaces
+    title = title.replace(/[\uFF5E\u2013\u2014\-–—]+/g, "-");
+    title = title.replace(/\s{2,}/g, " ").trim();
 
-  let extractedArtist = artist.trim();
-  let extractedTrack = title.trim();
+    let extractedArtist = artist.trim();
+    let extractedTrack = title.trim();
 
-  // Japanese Artist「Track」 detection
-  const jpMatch = rawTitle.match(/^(.+?)「(.+?)」/);
-  if (jpMatch) {
-    extractedArtist = jpMatch[1].trim();
-    extractedTrack = jpMatch[2].trim();
-  }
+    // Japanese "Artist「Track」" pattern (strongest)
+    const jpMatch = rawTitle.match(/^(.+?)「(.+?)」/);
+    if (jpMatch) {
+        extractedArtist = jpMatch[1].trim();
+        extractedTrack = jpMatch[2].trim();
+    }
+    // "Artist - Track" pattern (only if artist wasn't already extracted)
+    else {
+        const dashMatch = extractedTrack.match(/^(.+?)\s*-\s*(.+)$/);
+        if (dashMatch) {
+            extractedArtist = dashMatch[1].trim();
+            extractedTrack = dashMatch[2].trim();
+        }
+    }
 
-  // Artist - Track format
-  const dashMatch = extractedTrack.match(/^(.+?)\s*-\s*(.+)$/);
-  if (dashMatch) {
-    extractedArtist = dashMatch[1].trim();
-    extractedTrack = dashMatch[2].trim();
-  }
+    // Clean up artist name
+    extractedArtist = extractedArtist
+        .replace(/[【】\[\]()「」『』]/g, "")
+        .replace(/\s*-\s*topic$/i, "")
+        .replace(/^[-–—]+|[-–—]+$/g, "")
+        .trim();
 
-  // ✅ Remove leftover brackets
-  extractedArtist = extractedArtist.replace(/[【】\[\]()「」『』]/g, "").trim();
-  extractedTrack = extractedTrack.replace(/[【】\[\]()「」『』]/g, "").trim();
+    // Clean up track name
+    extractedTrack = extractedTrack
+        .replace(/[【】\[\]()「」『』]/g, "")
+        .trim();
 
-  // ✅ YouTube Auto Generated “- Topic” fix
-  extractedArtist = extractedArtist.replace(/\s*-\s*topic$/i, "").trim();
+    // Avoid artist name repetition in track
+    if (extractedTrack.toLowerCase().startsWith(extractedArtist.toLowerCase())) {
+        extractedTrack = extractedTrack.slice(extractedArtist.length).trim();
+    }
 
-  // ✅ Remove trailing/leading hyphens in artist
-  extractedArtist = extractedArtist.replace(/^[-–—]+|[-–—]+$/g, "").trim();
+    // If track is empty or same as artist, try to extract from original title
+    if (!extractedTrack || extractedTrack.toLowerCase() === extractedArtist.toLowerCase()) {
+        const fallbackJP = rawTitle.match(/「(.+?)」/);
+        if (fallbackJP) extractedTrack = fallbackJP[1].trim();
+    }
 
-  // ✅ Avoid cases like "SEKAI NO OWARI - SEKAI NO OWARI"
-  if (extractedTrack.toLowerCase().startsWith(extractedArtist.toLowerCase())) {
-    extractedTrack = extractedTrack.slice(extractedArtist.length).trim();
-  }
-
-  // If still empty or same → fallback to title-only parsed track
-  if (
-    !extractedTrack ||
-    extractedTrack.toLowerCase() === extractedArtist.toLowerCase()
-  ) {
-    // Try to extract non-letter characters (JP titles etc.)
-    const fallbackJP = rawTitle.match(/「(.+?)」/);
-    if (fallbackJP) extractedTrack = fallbackJP[1].trim();
-  }
-
-  return { artist: extractedArtist, track: extractedTrack };
+    return { artist: extractedArtist, track: extractedTrack };
 }
 
 function loadLyricsFor(title, artist) {
@@ -2988,6 +2987,17 @@ document.getElementById("toggleTranslationBtn")?.addEventListener("click", () =>
     }
 });
 document.getElementById("refreshLyricsBtn").addEventListener("click", async () => {
+    // Use the stored actual video ID to find the original song object
+    if (actualSelectedVideoId) {
+        const currentSong = playlist.find(song => song.videoId === actualSelectedVideoId);
+        if (currentSong) {
+            // Pass the original, unmodified song name and author
+            await loadLyricsFor(currentSong.songName, currentSong.authorName);
+            return;
+        }
+    }
+    
+    // Fallback: read from the DOM (if something went wrong)
     const title = (document.querySelector("#nowPlaying .song-title")?.innerText || "").trim();
     const artist = (document.querySelector("#nowPlaying .author-name")?.innerText || "").trim();
     if (title) {
@@ -3301,36 +3311,6 @@ function applyLanguage(lang) {
     currentLang = lang;
     localStorage.setItem("language", lang);
     const t = translations[lang];
-
-    // 🎧 Player & Labels
-    document.querySelector("h5.card-title i.bxs-music")?.nextSibling?.nodeValue && 
-    (document.querySelector("h5.card-title i.bxs-music").nextSibling.nodeValue = ` ${t.playerTitle}`);
-    document.querySelector("#lyricsTitle")?.lastChild?.nodeValue && 
-    (document.querySelector("#lyricsTitle").lastChild.nodeValue = ` ${t.lyrics}`);
-
-    // Update playlist/lyrics toggle buttons
-    const showSongListBtn = document.getElementById("showSongListBtn");
-    const showLyricsBtn = document.getElementById("showLyricsBtn");
-
-    if (showSongListBtn) {
-        const textSpan = showSongListBtn.querySelector('.btn-text');
-        if (textSpan) {
-            textSpan.textContent = t.showPlaylist;
-        } else {
-            // Fallback if no span element
-            showSongListBtn.innerHTML = `<i class='bx bxs-playlist'></i> ${t.showPlaylist}`;
-        }
-    }
-
-    if (showLyricsBtn) {
-        const textSpan = showLyricsBtn.querySelector('.btn-text');
-        if (textSpan) {
-            textSpan.textContent = t.showLyrics;
-        } else {
-            // Fallback if no span element
-            showLyricsBtn.innerHTML = `<i class='bi bi-music-note-list'></i> ${t.showLyrics}`;
-        }
-    }
 
     // ✅ Keep current meaning when switching language
     const meta = document.getElementById("lyricsMeta");
@@ -3674,7 +3654,6 @@ document.addEventListener('DOMContentLoaded', function() {
     settingsAboutBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         openAboutWindow();
-        closeSettingsMenu(); // Close settings menu when opening about
     });
     
     // Close About window with close button
