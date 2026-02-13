@@ -3312,6 +3312,36 @@ function applyLanguage(lang) {
     localStorage.setItem("language", lang);
     const t = translations[lang];
 
+    // 🎧 Player & Labels
+    document.querySelector("h5.card-title i.bxs-music")?.nextSibling?.nodeValue && 
+    (document.querySelector("h5.card-title i.bxs-music").nextSibling.nodeValue = ` ${t.playerTitle}`);
+    document.querySelector("#lyricsTitle")?.lastChild?.nodeValue && 
+    (document.querySelector("#lyricsTitle").lastChild.nodeValue = ` ${t.lyrics}`);
+
+    // Update playlist/lyrics toggle buttons
+    const showSongListBtn = document.getElementById("showSongListBtn");
+    const showLyricsBtn = document.getElementById("showLyricsBtn");
+
+    if (showSongListBtn) {
+        const textSpan = showSongListBtn.querySelector('.btn-text');
+        if (textSpan) {
+            textSpan.textContent = t.showPlaylist;
+        } else {
+            // Fallback if no span element
+            showSongListBtn.innerHTML = `<i class='bx bxs-playlist'></i> ${t.showPlaylist}`;
+        }
+    }
+
+    if (showLyricsBtn) {
+        const textSpan = showLyricsBtn.querySelector('.btn-text');
+        if (textSpan) {
+            textSpan.textContent = t.showLyrics;
+        } else {
+            // Fallback if no span element
+            showLyricsBtn.innerHTML = `<i class='bi bi-music-note-list'></i> ${t.showLyrics}`;
+        }
+    }
+
     // ✅ Keep current meaning when switching language
     const meta = document.getElementById("lyricsMeta");
     const textEl = document.getElementById("lyricsText");
