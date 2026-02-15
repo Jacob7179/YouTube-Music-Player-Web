@@ -2730,7 +2730,7 @@ let lyricsState = {
 
 async function fetchLyrics(title, artist) {
   // ✅ Create a cache key from artist and title
-  const cacheKey = `lyrics_${artist}_${title}`.replace(/[^a-zA-Z0-9_]/g, '_');
+  const cacheKey = `lyrics_${encodeURIComponent(artist)}_${encodeURIComponent(title)}`;
   
   // ✅ Check local storage first
   const cachedLyrics = localStorage.getItem(cacheKey);
@@ -4209,8 +4209,8 @@ async function loadLyricsFor(title, artist) {
 
 async function fetchLyricsWithTranslation(title, artist) {
     // ✅ Create cache keys
-    const lyricsCacheKey = `lyrics_${artist}_${title}`.replace(/[^a-zA-Z0-9_]/g, '_');
-    const translationCacheKey = `translation_${artist}_${title}_${currentLang}`.replace(/[^a-zA-Z0-9_]/g, '_');
+    const lyricsCacheKey = `lyrics_${encodeURIComponent(artist)}_${encodeURIComponent(title)}`;
+    const translationCacheKey = `translation_${encodeURIComponent(artist)}_${encodeURIComponent(title)}_${currentLang}`;
 
     // ✅ Check for cached lyrics first
     const cachedLyrics = localStorage.getItem(lyricsCacheKey);
