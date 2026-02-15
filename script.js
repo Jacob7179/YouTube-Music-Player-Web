@@ -2900,9 +2900,23 @@ function cleanTitleAndArtist(rawTitle, rawArtist) {
 
     // Remove common YouTube noise words (case-insensitive)
     title = title.replace(
-        /official\s*(music\s*)?video|music\s*video|mv|lyrics?|lyric\s*video|ver\.?|HD|4K|provided\s*to\s*youtube\s*by|auto[-\s]*generated\s*by\s*youtube|topic|\(.*?\)|\[.*?\]/gi,
+        /official\s*(music\s*)?video|music\s*video|mv|lyrics?|lyric\s*video|ver\.?|HD|4K|provided\s*to\s*youtube\s*by|auto[-\s]*generated\s*by\s*youtube|topic/gi,
         ""
     );
+
+    // Remove "feat.", "ft.", "featuring" and everything that follows them
+    title = title.replace(/\s+[fF](?:ea)?t\.?\s+[^-–—]*/g, "");
+    title = title.replace(/\s+[fF]eaturing\s+[^-–—]*/g, "");
+    
+    // Also remove if feat is followed by a dash
+    title = title.replace(/\s+[fF](?:ea)?t\.?\s*[-–—]/g, "");
+    title = title.replace(/\s+[fF]eaturing\s*[-–—]/g, "");
+
+    // Clean up any remaining parentheses that might be empty or contain only spaces
+    title = title.replace(/\(\s*\)/g, ""); // Remove empty parentheses
+    title = title.replace(/\[\s*\]/g, ""); // Remove empty square brackets
+    title = title.replace(/\（\s*\）/g, ""); // Remove empty full-width parentheses
+    title = title.replace(/\［\s*\］/g, ""); // Remove empty full-width square brackets
 
     // Normalize dashes and collapse spaces
     title = title.replace(/[\uFF5E\u2013\u2014\-–—]+/g, "-");
@@ -2933,9 +2947,13 @@ function cleanTitleAndArtist(rawTitle, rawArtist) {
         .replace(/^[-–—]+|[-–—]+$/g, "")
         .trim();
 
-    // Clean up track name
+    // Clean up track name (additional cleaning for feat patterns in the extracted track)
     extractedTrack = extractedTrack
         .replace(/[【】\[\]()「」『』]/g, "")
+        .replace(/\s+[fF](?:ea)?t\.?\s+[^-–—]*/g, "")
+        .replace(/\s+[fF]eaturing\s+[^-–—]*/g, "")
+        .replace(/\(\s*\)/g, "") // Remove empty parentheses
+        .replace(/\[\s*\]/g, "") // Remove empty square brackets
         .trim();
 
     // Avoid artist name repetition in track
