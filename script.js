@@ -1153,15 +1153,6 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
     albumArt.style.transition = "opacity 0.5s ease-in-out";
     albumArt.style.opacity = "0";
     
-    // Preload album art regardless of current mode
-    if (albumArtUrl && isValidImageUrl(albumArtUrl)) {
-        const imgPreload = new Image();
-        imgPreload.src = albumArtUrl;
-        imgPreload.onload = () => {
-            console.log("Album art preloaded for next song:", albumArtUrl);
-        };
-    }
-    
     // Only fade album art if we're in spin or none mode
     if (albumArtDisplayMode !== "video") {
         setTimeout(() => {
@@ -1192,6 +1183,7 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
         setTimeout(() => {
             initializeVideoPlayerInAlbumArt(videoId);
         }, 100);
+        albumArt.style.opacity = "1";
     }
 
     updateBackgroundImage(albumArtUrl);
@@ -1548,15 +1540,6 @@ function applyAlbumArtDisplayMode() {
     
     // Remove all mode classes first
     document.body.classList.remove('album-art-spin-mode', 'album-art-none-mode', 'album-art-video-mode');
-    
-    // Preload album art image regardless of mode
-    if (currentAlbumArtUrl) {
-        const imgPreload = new Image();
-        imgPreload.src = currentAlbumArtUrl;
-        imgPreload.onload = () => {
-            console.log("Album art preloaded:", currentAlbumArtUrl);
-        };
-    }
     
     // Apply the selected mode
     switch(albumArtDisplayMode) {
