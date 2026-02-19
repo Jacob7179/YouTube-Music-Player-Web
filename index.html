@@ -346,6 +346,121 @@
             </div>
         </div>
 
+        <!-- Cache Manager Window -->
+        <div id="cacheManagerWindow" class="cache-manager-window">
+            <div class="cache-manager-header">
+                <h6><i class='bx bx-trash'></i> <span data-translate="cacheManagerTitle">Cache Manager</span></h6>
+                <button class="btn-close cache-manager-close-btn"></button>
+            </div>
+            <div class="cache-manager-body">
+                <div class="cache-manager-content">
+                    <!-- Cache Categories -->
+                    <div class="cache-categories">
+                        <button class="btn btn-outline-primary btn-sm active" data-cache-type="all">
+                            <i class='bx bx-layer'></i> <span data-translate="all">All</span>
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" data-cache-type="search">
+                            <i class='bx bx-search'></i> <span data-translate="searchCache">Search</span>
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" data-cache-type="lyrics">
+                            <i class='bx bx-music'></i> <span data-translate="lyricsCache">Lyrics</span>
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" data-cache-type="translation">
+                            <i class='bx bx-transfer'></i> <span data-translate="translationCache">Translation</span>
+                        </button>
+                    </div>
+
+                    <!-- Cache Stats -->
+                    <div class="cache-stats">
+                        <div class="stat-item">
+                            <span class="stat-label" data-translate="totalItems">Total Items:</span>
+                            <span class="stat-value" id="totalCacheItems">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label" data-translate="totalSize">Total Size:</span>
+                            <span class="stat-value" id="totalCacheSize">0 KB</span>
+                        </div>
+                    </div>
+
+                    <!-- Cache Actions -->
+                    <div class="cache-actions">
+                        <button id="clearSelectedCacheBtn" class="btn btn-danger btn-sm">
+                            <i class='bx bx-trash'></i> <span data-translate="clearSelected">Clear Selected</span>
+                        </button>
+                        <button id="refreshCacheListBtn" class="btn btn-secondary btn-sm">
+                            <i class='bx bx-refresh'></i> <span data-translate="refresh">Refresh</span>
+                        </button>
+                        <button id="clearAllCacheBtn" class="btn btn-warning btn-sm">
+                            <i class='bx bx-trash-alt'></i> <span data-translate="clearAll">Clear All</span>
+                        </button>
+                    </div>
+
+                    <!-- Cache List -->
+                    <div class="cache-list-container">
+                        <div class="cache-list-header">
+                            <div class="cache-checkbox">
+                                <input type="checkbox" id="selectAllCache" class="form-check-input">
+                            </div>
+                            <div class="cache-key" data-translate="cacheKey">Cache Key</div>
+                            <div class="cache-type" data-translate="type">Type</div>
+                            <div class="cache-size" data-translate="size">Size</div>
+                            <div class="cache-age" data-translate="age">Age</div>
+                            <div class="cache-actions-header" data-translate="actions">Actions</div>
+                        </div>
+                        <div id="cacheList" class="cache-list">
+                            <!-- Cache items will be dynamically loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Cache Item Details Modal -->
+                    <div id="cacheItemDetailsModal" class="cache-item-details-modal">
+                        <div class="cache-item-details-content">
+                            <div class="cache-item-details-header">
+                                <h6><i class='bx bx-detail'></i> <span data-translate="cacheItemDetails">Cache Item Details</span></h6>
+                                <button class="btn-close cache-details-close-btn"></button>
+                            </div>
+                            <div class="cache-item-details-body">
+                                <div class="detail-section">
+                                    <label data-translate="cacheKey">Cache Key:</label>
+                                    <div id="detailCacheKey" class="detail-value"></div>
+                                </div>
+                                <div class="detail-section">
+                                    <label data-translate="cacheType">Type:</label>
+                                    <div id="detailCacheType" class="detail-value"></div>
+                                </div>
+                                <div class="detail-section">
+                                    <label data-translate="cacheSize">Size:</label>
+                                    <div id="detailCacheSize" class="detail-value"></div>
+                                </div>
+                                <div class="detail-section">
+                                    <label data-translate="cacheAge">Age:</label>
+                                    <div id="detailCacheAge" class="detail-value"></div>
+                                </div>
+                                <div class="detail-section">
+                                    <label data-translate="cacheContent">Content:</label>
+                                    <pre id="detailCacheContent" class="detail-content"></pre>
+                                </div>
+                            </div>
+                            <div class="cache-item-details-footer">
+                                <button id="deleteFromDetailsBtn" class="btn btn-danger btn-sm">
+                                    <i class='bx bx-trash'></i> <span data-translate="delete">Delete</span>
+                                </button>
+                                <button id="copyContentBtn" class="btn btn-primary btn-sm">
+                                    <i class='bx bx-copy'></i> <span data-translate="copyContent">Copy Content</span>
+                                </button>
+                                <button class="btn btn-secondary btn-sm cache-details-close-btn">
+                                    <span data-translate="close">Close</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cache Manager Overlay -->
+        <div id="cacheManagerOverlay" class="cache-manager-overlay"></div>
+
         <div class="floating-top" style="right: 20px !important;">
             <button id="goTopBtn" class="btn btn-secondary rounded-circle go-top-btn" title="Go to Top">
                 <i class='bx bx-chevron-up'></i>

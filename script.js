@@ -2230,7 +2230,6 @@ document.addEventListener("DOMContentLoaded", function() {
     const floatingSettings = document.querySelector(".floating-settings");
     const settingsExportBtn = document.getElementById("settingsExportBtn");
     const settingsImportBtn = document.getElementById("settingsImportBtn");
-    const settingsClearCacheBtn = document.getElementById("settingsClearCacheBtn");
     const settingsCloseBtn = document.querySelector(".settings-close-btn");
     const importFileInput = document.getElementById("importFileInput");
     
@@ -2279,19 +2278,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 alert(translations[currentLang].importFileTypeError);
             }
             this.value = '';
-        }
-    });
-
-    // Clear cache functionality
-    settingsClearCacheBtn.addEventListener("click", function() {
-        if (confirm(translations[currentLang].clearCacheConfirm)) {
-            localStorage.removeItem('ytSearchCache');
-            for (const key in searchCache) {
-                delete searchCache[key];
-            }
-            alert(translations[currentLang].cacheCleared);
-            console.log(translations[currentLang].cacheCleared);
-            closeSettingsMenu();
         }
     });
     
@@ -3053,10 +3039,9 @@ const translations = {
     searchYouTubeTitle: "Search YouTube",
     exportTitle: "Export Playlist & Data",
     importTitle: "Import Playlist & Data",
-    clearCacheTitle: "Clear Search Cache",
     exportPlaylist: "Export Playlist & Data",
     importPlaylist: "Import Playlist & Data",
-    clearCache: "Clear Search Cache",
+    clearCache: "Clear Cache",
     albumArtSpin: "Album Art Spin",
     showLyrics: "Lyrics",
     darkMode: "Dark Mode",
@@ -3179,10 +3164,9 @@ const translations = {
     searchYouTubeTitle: "搜索 YouTube",
     exportTitle: "导出播放列表和数据",
     importTitle: "导入播放列表和数据",
-    clearCacheTitle: "清除搜索缓存",
     exportPlaylist: "导出播放列表和数据",
     importPlaylist: "导入播放列表和数据",
-    clearCache: "清除搜索缓存",
+    clearCache: "清除缓存",
     albumArtSpin: "唱片旋转",
     showLyrics: "歌词",
     darkMode: "深色模式",
@@ -3428,7 +3412,7 @@ function applyLanguage(lang) {
     // Settings submenu buttons
     document.querySelector("#settingsExportBtn")?.setAttribute("title", t.exportTitle);
     document.querySelector("#settingsImportBtn")?.setAttribute("title", t.importTitle);
-    document.querySelector("#settingsClearCacheBtn")?.setAttribute("title", t.clearCacheTitle);
+    document.querySelector("#settingsClearCacheBtn")?.setAttribute("title", t.clearCache);
 
 
     // 🧩 Settings Menu
@@ -4568,42 +4552,6 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-function clearExpiredLyricsCache() {
-    let hasChanges = false;
-    const now = Date.now();
-
-    // Clear expired lyrics cache (7 days)
-    for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-
-    // Check if it's a lyrics cache key
-    if (key.startsWith('lyrics_')) {
-        const expiryKey = `${key}_expiry`;
-        const expiry = localStorage.getItem(expiryKey);
-        
-        if (expiry && now > parseInt(expiry)) {
-        localStorage.removeItem(key);
-        localStorage.removeItem(expiryKey);
-        hasChanges = true;
-        }
-    }
-
-    // Check if it's a translation cache key (use the existing clearExpiredTranslationCache)
-    }
-
-    // Also clear the translation cache
-    clearExpiredTranslationCache();
-
-    if (hasChanges) {
-        console.log("Expired lyrics cache cleared");
-    }
-}
-
-// Call this on startup
-document.addEventListener("DOMContentLoaded", function() {
-    clearExpiredLyricsCache();
-});
-
 // Update sync function to handle translation display
 function syncLyricsToTime(currentTime) {
     if (!lyricsData || !lyricsData.isLrc) return;
@@ -4700,4 +4648,502 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     }
+});
+
+// ================ CACHE MANAGER ================
+
+let currentCacheType = 'all';
+let selectedCacheItems = new Set();
+
+// Initialize cache manager
+function initCacheManager() {
+    const settingsClearCacheBtn = document.getElementById('settingsClearCacheBtn');
+    const cacheManagerWindow = document.getElementById('cacheManagerWindow');
+    const cacheManagerOverlay = document.getElementById('cacheManagerOverlay');
+    const cacheManagerCloseBtn = document.querySelector('.cache-manager-close-btn');
+    const cacheCategories = document.querySelectorAll('[data-cache-type]');
+    const selectAllCheckbox = document.getElementById('selectAllCache');
+    const clearSelectedBtn = document.getElementById('clearSelectedCacheBtn');
+    const refreshBtn = document.getElementById('refreshCacheListBtn');
+    const clearAllBtn = document.getElementById('clearAllCacheBtn');
+    
+    // Open cache manager
+    settingsClearCacheBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        openCacheManager();
+    });
+    
+    // Close cache manager
+    cacheManagerCloseBtn.addEventListener('click', closeCacheManager);
+    cacheManagerOverlay.addEventListener('click', closeCacheManager);
+    
+    // Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && cacheManagerWindow.classList.contains('show')) {
+            closeCacheManager();
+        }
+    });
+    
+    // Category filtering
+    cacheCategories.forEach(btn => {
+        btn.addEventListener('click', function() {
+            cacheCategories.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentCacheType = this.getAttribute('data-cache-type');
+            loadCacheList();
+        });
+    });
+    
+    // Select all
+    selectAllCheckbox.addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.cache-item-checkbox');
+        selectedCacheItems.clear();
+        
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+            const key = checkbox.getAttribute('data-key');
+            const item = checkbox.closest('.cache-item');
+            
+            if (this.checked) {
+                selectedCacheItems.add(key);
+                if (item) item.classList.add('selected');
+            } else {
+                if (item) item.classList.remove('selected');
+            }
+        });
+        
+        updateSelectAllCheckbox();
+    });
+    
+    // Clear selected
+    clearSelectedBtn.addEventListener('click', function() {
+        if (selectedCacheItems.size === 0) {
+            alert(translations[currentLang].noItemsSelected || 'No items selected');
+            return;
+        }
+        
+        if (confirm(translations[currentLang].confirmDeleteSelected || `Delete ${selectedCacheItems.size} selected item(s)?`)) {
+            deleteCacheItems(Array.from(selectedCacheItems));
+        }
+    });
+    
+    // Refresh
+    refreshBtn.addEventListener('click', loadCacheList);
+    
+    // Clear all
+    clearAllBtn.addEventListener('click', function() {
+        if (confirm(translations[currentLang].confirmClearAllCache || 'Are you sure you want to clear ALL cache? This cannot be undone.')) {
+            clearAllCache();
+        }
+    });
+    
+    // Details modal close
+    const detailsCloseBtns = document.querySelectorAll('.cache-details-close-btn');
+    detailsCloseBtns.forEach(btn => {
+        btn.addEventListener('click', closeCacheDetails);
+    });
+    
+    // Delete from details
+    document.getElementById('deleteFromDetailsBtn').addEventListener('click', function() {
+        const cacheKey = this.getAttribute('data-cache-key');
+        if (cacheKey) {
+            deleteCacheItems([cacheKey]);
+            closeCacheDetails();
+        }
+    });
+    
+    // Copy content
+    document.getElementById('copyContentBtn').addEventListener('click', function() {
+        const content = document.getElementById('detailCacheContent').textContent;
+        navigator.clipboard.writeText(content).then(() => {
+            alert(translations[currentLang].copiedToClipboard || 'Copied to clipboard!');
+        });
+    });
+}
+
+// Open cache manager
+function openCacheManager() {
+    const cacheManagerWindow = document.getElementById('cacheManagerWindow');
+    const cacheManagerOverlay = document.getElementById('cacheManagerOverlay');
+    
+    cacheManagerWindow.classList.add('show');
+    cacheManagerOverlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    
+    loadCacheList();
+}
+
+// Close cache manager
+function closeCacheManager() {
+    const cacheManagerWindow = document.getElementById('cacheManagerWindow');
+    const cacheManagerOverlay = document.getElementById('cacheManagerOverlay');
+    
+    cacheManagerWindow.classList.remove('show');
+    cacheManagerOverlay.classList.remove('show');
+    document.body.style.overflow = '';
+    
+    // Clear selection
+    selectedCacheItems.clear();
+}
+
+// Load cache list
+function loadCacheList() {
+    const cacheList = document.getElementById('cacheList');
+    const totalItemsSpan = document.getElementById('totalCacheItems');
+    const totalSizeSpan = document.getElementById('totalCacheSize');
+    
+    let cacheItems = [];
+    let totalSize = 0;
+    
+    // Collect all cache items from localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        let type = 'unknown';
+        
+        // Determine cache type
+        if (key.startsWith('lyrics_')) {
+            type = 'lyrics';
+        } else if (key.startsWith('ytSearchCache') || key === 'ytSearchCache') {
+            type = 'search';
+        } else if (key.startsWith('translation_') || key === 'lyricsTranslationCache') {
+            type = 'translation';
+        } else {
+            continue; // Skip non-cache items
+        }
+        
+        // Filter by current type
+        if (currentCacheType !== 'all' && type !== currentCacheType) {
+            continue;
+        }
+        
+        try {
+            const value = localStorage.getItem(key);
+            const size = new Blob([value]).size;
+            totalSize += size;
+            
+            cacheItems.push({
+                key: key,
+                type: type,
+                size: size,
+                timestamp: getCacheTimestamp(key, value),
+                value: value
+            });
+        } catch (e) {
+            console.warn('Error reading cache item:', e);
+        }
+    }
+    
+    // Sort by timestamp (newest first)
+    cacheItems.sort((a, b) => b.timestamp - a.timestamp);
+    
+    // Update stats
+    totalItemsSpan.textContent = cacheItems.length;
+    totalSizeSpan.textContent = formatBytes(totalSize);
+    
+    // Render list
+    renderCacheList(cacheItems);
+    
+    // Clear selection
+    selectedCacheItems.clear();
+    document.getElementById('selectAllCache').checked = false;
+}
+
+// Render cache list
+function renderCacheList(items) {
+    const cacheList = document.getElementById('cacheList');
+    const t = translations[currentLang];
+    
+    if (items.length === 0) {
+        cacheList.innerHTML = `
+            <div class="empty-cache-list">
+                <i class='bx bx-folder-open'></i>
+                <p>${t.noCacheItems || 'No cache items found'}</p>
+            </div>
+        `;
+        return;
+    }
+    
+    cacheList.innerHTML = items.map(item => {
+        // Check if this item is already selected
+        const isSelected = selectedCacheItems.has(item.key);
+        
+        return `
+        <div class="cache-item ${isSelected ? 'selected' : ''}" data-cache-key="${item.key}" data-cache-type="${item.type}">
+            <div class="cache-checkbox">
+                <input type="checkbox" class="form-check-input cache-item-checkbox" data-key="${item.key}" ${isSelected ? 'checked' : ''}>
+            </div>
+            <div class="cache-key" title="${item.key}">${item.key}</div>
+            <div class="cache-type">
+                <span class="cache-type-badge ${item.type}">${getCacheTypeLabel(item.type)}</span>
+            </div>
+            <div class="cache-size">${formatBytes(item.size)}</div>
+            <div class="cache-age">${formatCacheAge(item.timestamp)}</div>
+            <div class="cache-item-actions">
+                <button class="btn btn-sm btn-info view-cache-btn" data-key="${item.key}" title="${t.viewDetails || 'View Details'}">
+                    <i class='bx bx-show'></i>
+                </button>
+                <button class="btn btn-sm btn-danger delete-cache-btn" data-key="${item.key}" title="${t.delete || 'Delete'}">
+                    <i class='bx bx-trash'></i>
+                </button>
+            </div>
+        </div>
+    `}).join('');
+    
+    // Add event listeners to checkboxes
+    document.querySelectorAll('.cache-item-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function(e) {
+            const key = this.getAttribute('data-key');
+            const item = this.closest('.cache-item');
+            
+            if (this.checked) {
+                selectedCacheItems.add(key);
+                if (item) item.classList.add('selected');
+            } else {
+                selectedCacheItems.delete(key);
+                if (item) item.classList.remove('selected');
+            }
+            
+            updateSelectAllCheckbox();
+        });
+    });
+    
+    // Add click event to the whole cache item (but not when clicking on buttons or checkbox)
+    document.querySelectorAll('.cache-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            // Don't trigger if clicking on checkbox, view button, or delete button
+            if (e.target.closest('.cache-item-checkbox') || 
+                e.target.closest('.view-cache-btn') || 
+                e.target.closest('.delete-cache-btn')) {
+                return;
+            }
+            
+            const checkbox = this.querySelector('.cache-item-checkbox');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                // Trigger change event
+                const event = new Event('change', { bubbles: true });
+                checkbox.dispatchEvent(event);
+            }
+        });
+    });
+    
+    document.querySelectorAll('.view-cache-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const key = this.getAttribute('data-key');
+            viewCacheItem(key);
+        });
+    });
+    
+    document.querySelectorAll('.delete-cache-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const key = this.getAttribute('data-key');
+            if (confirm(translations[currentLang].confirmDeleteItem || 'Delete this cache item?')) {
+                deleteCacheItems([key]);
+            }
+        });
+    });
+    
+    // Update select all checkbox state
+    updateSelectAllCheckbox();
+}
+
+// Handle cache item checkbox
+function handleCacheItemCheckbox(e) {
+    const key = e.target.getAttribute('data-key');
+    const item = e.target.closest('.cache-item');
+    
+    if (e.target.checked) {
+        selectedCacheItems.add(key);
+        if (item) item.classList.add('selected');
+    } else {
+        selectedCacheItems.delete(key);
+        if (item) item.classList.remove('selected');
+    }
+    
+    updateSelectAllCheckbox();
+}
+
+// Update select all checkbox
+function updateSelectAllCheckbox() {
+    const selectAll = document.getElementById('selectAllCache');
+    const checkboxes = document.querySelectorAll('.cache-item-checkbox');
+    const checkedBoxes = document.querySelectorAll('.cache-item-checkbox:checked');
+    
+    if (!selectAll) return;
+    
+    if (checkboxes.length === 0) {
+        selectAll.checked = false;
+        selectAll.indeterminate = false;
+        return;
+    }
+    
+    if (checkedBoxes.length === checkboxes.length) {
+        selectAll.checked = true;
+        selectAll.indeterminate = false;
+    } else if (checkedBoxes.length === 0) {
+        selectAll.checked = false;
+        selectAll.indeterminate = false;
+    } else {
+        selectAll.checked = false;
+        selectAll.indeterminate = true;
+    }
+}
+
+// Delete cache items
+function deleteCacheItems(keys) {
+    keys.forEach(key => {
+        localStorage.removeItem(key);
+        
+        // Also remove from in-memory caches
+        if (key === 'ytSearchCache') {
+            Object.keys(searchCache).forEach(k => delete searchCache[k]);
+        } else if (key === 'lyricsTranslationCache') {
+            Object.keys(translationCache).forEach(k => delete translationCache[k]);
+        } else if (key.startsWith('lyrics_')) {
+            // Also remove expiry
+            localStorage.removeItem(`${key}_expiry`);
+        }
+    });
+    
+    // Clear selection
+    selectedCacheItems.clear();
+    
+    // Reload list
+    loadCacheList();
+}
+
+// Clear all cache
+function clearAllCache() {
+    const keysToRemove = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('lyrics_') || 
+            key.startsWith('ytSearchCache') || 
+            key === 'ytSearchCache' ||
+            key.startsWith('translation_') || 
+            key === 'lyricsTranslationCache') {
+            keysToRemove.push(key);
+        }
+    }
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Clear in-memory caches
+    Object.keys(searchCache).forEach(k => delete searchCache[k]);
+    Object.keys(translationCache).forEach(k => delete translationCache[k]);
+    
+    // Clear selection
+    selectedCacheItems.clear();
+    
+    // Reload list
+    loadCacheList();
+}
+
+// View cache item details
+function viewCacheItem(key) {
+    const modal = document.getElementById('cacheItemDetailsModal');
+    const value = localStorage.getItem(key);
+    const type = getCacheTypeFromKey(key);
+    const size = new Blob([value]).size;
+    const timestamp = getCacheTimestamp(key, value);
+    
+    document.getElementById('detailCacheKey').textContent = key;
+    document.getElementById('detailCacheType').textContent = getCacheTypeLabel(type);
+    document.getElementById('detailCacheSize').textContent = formatBytes(size);
+    document.getElementById('detailCacheAge').textContent = formatCacheAge(timestamp);
+    
+    // Format content for display
+    let content = value;
+    try {
+        // Try to pretty print JSON
+        const parsed = JSON.parse(value);
+        content = JSON.stringify(parsed, null, 2);
+    } catch (e) {
+        // Not JSON, keep as is
+    }
+    document.getElementById('detailCacheContent').textContent = content;
+    
+    // Set delete button data
+    document.getElementById('deleteFromDetailsBtn').setAttribute('data-cache-key', key);
+    
+    modal.classList.add('show');
+}
+
+// Close cache details
+function closeCacheDetails() {
+    document.getElementById('cacheItemDetailsModal').classList.remove('show');
+}
+
+// Get cache type from key
+function getCacheTypeFromKey(key) {
+    if (key.startsWith('lyrics_')) return 'lyrics';
+    if (key.startsWith('ytSearchCache') || key === 'ytSearchCache') return 'search';
+    if (key.startsWith('translation_') || key === 'lyricsTranslationCache') return 'translation';
+    return 'unknown';
+}
+
+// Get cache type label
+function getCacheTypeLabel(type) {
+    const t = translations[currentLang];
+    switch(type) {
+        case 'search': return t.searchCache || 'Search';
+        case 'lyrics': return t.lyricsCache || 'Lyrics';
+        case 'translation': return t.translationCache || 'Translation';
+        default: return t.unknown || 'Unknown';
+    }
+}
+
+// Get cache timestamp
+function getCacheTimestamp(key, value) {
+    // Try to extract timestamp from cache data
+    try {
+        const parsed = JSON.parse(value);
+        if (parsed.timestamp) {
+            return parsed.timestamp;
+        }
+    } catch (e) {
+        // Not JSON or no timestamp
+    }
+    
+    // Check for expiry key
+    const expiryKey = `${key}_expiry`;
+    const expiry = localStorage.getItem(expiryKey);
+    if (expiry) {
+        return parseInt(expiry) - (7 * 24 * 60 * 60 * 1000); // Approximate creation time
+    }
+    
+    // Fallback to current time minus 1 hour
+    return Date.now() - 3600000;
+}
+
+// Format bytes
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Format cache age
+function formatCacheAge(timestamp) {
+    const now = Date.now();
+    const diff = now - timestamp;
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (minutes > 0) return `${minutes}m ago`;
+    return 'Just now';
+}
+
+// Initialize on DOM load
+document.addEventListener('DOMContentLoaded', function() {
+    initCacheManager();
 });
