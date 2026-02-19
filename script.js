@@ -123,6 +123,8 @@ function loadPlaylist() {
             { videoId: 'eJpkUecGyMI', songName: '恋花', authorName: 'SHIN - Topic', albumArt: 'https://i.ytimg.com/vi/eJpkUecGyMI/hqdefault.jpg' },
             { videoId: 'dzniwGFO79g', songName: 'ハルカスミ', authorName: 'SHIN - Topic', albumArt: 'https://i.ytimg.com/vi/dzniwGFO79g/hqdefault.jpg' },
             { videoId: 'TQ8WlA2GXbk', songName: 'Official髭男dism - Pretender［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/TQ8WlA2GXbk/hqdefault.jpg' },
+            { videoId: 'cqzyiJE4SQE', songName: '笑顔の待つ場所', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/cqzyiJE4SQE/hqdefault.jpg' },
+            { videoId: 'sPAJ6mTxNCU', songName: 'ふりだす雨、ゴキゲンな君', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/sPAJ6mTxNCU/hqdefault.jpg' },
             { videoId: 'DuMqFknYHBs', songName: 'Official髭男dism - イエスタデイ［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/DuMqFknYHBs/hqdefault.jpg' },
             { videoId: 'aRtoPwe4ado', songName: 'Sanitizer', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/aRtoPwe4ado/hqdefault.jpg' },
             { videoId: 'l2nqfPAMrSo', songName: 'Chessboard', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/l2nqfPAMrSo/hqdefault.jpg' },
