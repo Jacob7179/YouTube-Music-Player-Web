@@ -2197,16 +2197,25 @@ document.getElementById("darkModeToggle").addEventListener("change", function ()
 
 function applyDarkModeToElements(enable) {
     document.querySelectorAll(
-        ".card, .btn-dark-mode-toggle, .author-name, .song-title, box-icon, #songList, #songList .list-group-item, #songList .list-group-item-action, #songList .song, #songList .author, #searchResultsList .list-group-item, #searchResultsList h6, #searchResultsList p"
+        ".card, .btn-dark-mode-toggle, .author-name, .song-title, box-icon, #songList, #songList .list-group-item, #songList .list-group-item-action, #songList .song, #songList .author, #searchResultsList .list-group-item, #searchResultsList h6, #searchResultsList p, .cache-manager-window, .cache-manager-body, .cache-manager-content, .cache-list-container, .cache-list-header, .cache-list, .cache-item, .cache-item-details-modal, .cache-item-details-body, .cache-stats"
     ).forEach(el => el.classList.toggle("dark-mode", enable));
-
+    
+    // Update cache manager checkboxes visibility if needed
+    if (typeof loadCacheList === 'function') {
+        // Refresh cache list if it's open to apply dark mode styles
+        const cacheManagerWindow = document.getElementById('cacheManagerWindow');
+        if (cacheManagerWindow && cacheManagerWindow.classList.contains('show')) {
+            loadCacheList();
+        }
+    }
+    
     // Explicitly change text color for smooth transition
-    document.querySelectorAll("#nowPlaying .song-title, #nowPlaying .author-name, #songList .author, #searchResultsList h6, #searchResultsList p")
+    document.querySelectorAll("#nowPlaying .song-title, #nowPlaying .author-name, #songList .author, #searchResultsList h6, #searchResultsList p, .cache-key, .stat-label, .stat-value")
         .forEach(elem => {
             elem.style.transition = "color 0.8s ease-in-out";
             elem.style.color = enable ? "white" : "black";
         });
-
+    
     const darkModeToggle = document.getElementById("darkModeToggle");
     if (darkModeToggle) {
         darkModeToggle.checked = enable;
@@ -3125,6 +3134,50 @@ const translations = {
     showOriginalFirstLabel: "Show Original First",
     noResultsFound: "No results found.",
     cached: "(Cached)",
+    searchCache: "Search Cache",
+    lyricsCache: "Lyrics Cache",
+    translationCache: "Translation Cache",
+    unknown: "Unknown",
+    viewDetails: "View Details",
+    delete: "Delete",
+    noCacheItems: "No cache items found",
+    totalItems: "Total Items",
+    totalSize: "Total Size",
+    selectAll: "Select All",
+    clearSelected: "Clear Selected",
+    refresh: "Refresh",
+    clearAll: "Clear All Cache",
+    cacheManagerTitle: "Cache Manager",
+    cacheItems: "Cache Items",
+    cacheKey: "Cache Key",
+    cacheType: "Type",
+    cacheSize: "Size",
+    cacheAge: "Age",
+    actions: "Actions",
+    confirmDeleteSelected: "Delete {count} selected item(s)?",
+    confirmDeleteItem: "Delete this cache item?",
+    confirmClearAllCache: "Are you sure you want to clear ALL cache? This cannot be undone.",
+    noItemsSelected: "No items selected",
+    copiedToClipboard: "Copied to clipboard!",
+    cacheItemDetails: "Cache Details",
+    cacheContent: "Content",
+    copyContent: "Copy Content",
+    deleteItem: "Delete Item",
+    close: "Close",
+    search: "Search",
+    lyrics: "Lyrics",
+    translation: "Translation",
+    all: "All",
+    itemsSelected: "{count} item(s) selected",
+    cacheStats: "Cache Statistics",
+    lastUpdated: "Last Updated",
+    expiresIn: "Expires in",
+    never: "Never",
+    expired: "Expired",
+    valid: "Valid",
+    invalid: "Invalid",
+    cacheInfo: "Cache Information",
+    cacheDescription: "Manage cached data including search results, lyrics, and translations. Cached data helps reduce API calls and improves performance.",
   },
   zh: {
     playerTitle: "YouTube 音乐播放器",
@@ -3250,6 +3303,50 @@ const translations = {
     showOriginalFirstLabel: "原文优先显示",
     noResultsFound: "未找到结果。",
     cached: "(已缓存)",
+    searchCache: "搜索缓存",
+    lyricsCache: "歌词缓存",
+    translationCache: "翻译缓存",
+    unknown: "未知",
+    viewDetails: "查看详情",
+    delete: "删除",
+    noCacheItems: "未找到缓存项目",
+    totalItems: "总项目数",
+    totalSize: "总大小",
+    selectAll: "全选",
+    clearSelected: "清除选中",
+    refresh: "刷新",
+    clearAll: "清除所有缓存",
+    cacheManagerTitle: "缓存管理",
+    cacheItems: "缓存项目",
+    cacheKey: "缓存键",
+    cacheType: "类型",
+    cacheSize: "大小",
+    cacheAge: "时间",
+    actions: "操作",
+    confirmDeleteSelected: "删除选中的 {count} 个项目？",
+    confirmDeleteItem: "删除此缓存项目？",
+    confirmClearAllCache: "确定要清除所有缓存吗？此操作无法撤销。",
+    noItemsSelected: "未选中任何项目",
+    copiedToClipboard: "已复制到剪贴板！",
+    cacheItemDetails: "缓存详情",
+    cacheContent: "内容",
+    copyContent: "复制内容",
+    deleteItem: "删除项目",
+    close: "关闭",
+    search: "搜索",
+    lyrics: "歌词",
+    translation: "翻译",
+    all: "全部",
+    itemsSelected: "已选中 {count} 个项目",
+    cacheStats: "缓存统计",
+    lastUpdated: "最后更新",
+    expiresIn: "过期时间",
+    never: "永不过期",
+    expired: "已过期",
+    valid: "有效",
+    invalid: "无效",
+    cacheInfo: "缓存信息",
+    cacheDescription: "管理缓存数据，包括搜索结果、歌词和翻译。缓存数据有助于减少 API 调用并提高性能。",
   }
 };
 
@@ -4252,6 +4349,7 @@ async function fetchLyricsWithTranslation(title, artist) {
         
         // ✅ Cache the response in local storage
         if (data.syncedLyrics || data.plainLyrics) {
+            data.timestamp = Date.now();
             localStorage.setItem(lyricsCacheKey, JSON.stringify(data));
             console.log("Lyrics cached for:", artistName, "-", trackName);
         } else {
@@ -4680,6 +4778,7 @@ function initCacheManager() {
     // Escape key
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape' && cacheManagerWindow.classList.contains('show')) {
+            closeCacheDetails();
             closeCacheManager();
         }
     });
@@ -4722,7 +4821,11 @@ function initCacheManager() {
             return;
         }
         
-        if (confirm(translations[currentLang].confirmDeleteSelected || `Delete ${selectedCacheItems.size} selected item(s)?`)) {
+        // Get the translation string and replace the placeholder
+        const confirmMessage = (translations[currentLang].confirmDeleteSelected || 'Delete {count} selected item(s)?')
+            .replace('{count}', selectedCacheItems.size);
+        
+        if (confirm(confirmMessage)) {
             deleteCacheItems(Array.from(selectedCacheItems));
         }
     });
@@ -4777,6 +4880,8 @@ function openCacheManager() {
 function closeCacheManager() {
     const cacheManagerWindow = document.getElementById('cacheManagerWindow');
     const cacheManagerOverlay = document.getElementById('cacheManagerOverlay');
+
+    closeCacheDetails();
     
     cacheManagerWindow.classList.remove('show');
     cacheManagerOverlay.classList.remove('show');
@@ -5074,7 +5179,10 @@ function viewCacheItem(key) {
 
 // Close cache details
 function closeCacheDetails() {
-    document.getElementById('cacheItemDetailsModal').classList.remove('show');
+    const modal = document.getElementById('cacheItemDetailsModal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
 }
 
 // Get cache type from key
@@ -5116,7 +5224,7 @@ function getCacheTimestamp(key, value) {
     }
     
     // Fallback to current time minus 1 hour
-    return Date.now() - 3600000;
+    return Date.now();
 }
 
 // Format bytes

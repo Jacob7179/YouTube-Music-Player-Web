@@ -2934,7 +2934,7 @@ body.dark-mode .translation-status {
     justify-content: space-between;
     align-items: center;
     padding: 12px 15px;
-    background: linear-gradient(135deg, #17a2b8, #117a8b);
+    background: linear-gradient(135deg, #007bff, #0056b3);
     color: white;
 }
 
@@ -3029,69 +3029,167 @@ body.dark-mode .translation-status {
 
 /* Dark mode support */
 body.dark-mode .cache-manager-window {
-    background: #222;
-    border-color: #444;
+    background-color: #222 !important;
+    border-color: #444 !important;
 }
 
 body.dark-mode .cache-manager-body {
-    background: #222;
+    background-color: #222 !important;
+}
+
+body.dark-mode .cache-manager-content {
+    background-color: #222 !important;
 }
 
 body.dark-mode .cache-list-container {
-    border-color: #444;
+    background-color: #222 !important;
+    border-color: #444 !important;
 }
 
 body.dark-mode .cache-list-header {
-    background: linear-gradient(135deg, #333, #222);
+    background: linear-gradient(135deg, #333, #222) !important;
+    color: white !important;
+    border-bottom-color: #444 !important;
 }
 
 body.dark-mode .cache-list {
-    background: #222;
+    background-color: #222 !important;
 }
 
 body.dark-mode .cache-item {
-    border-bottom-color: #333;
+    background-color: #222 !important;
+    border-bottom-color: #333 !important;
+    color: white !important;
 }
 
 body.dark-mode .cache-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background-color: #333 !important;
+}
+
+body.dark-mode .cache-item.selected {
+    background-color: #2a3f5a !important;
 }
 
 body.dark-mode .cache-item .cache-key {
-    color: #fff;
+    color: white !important;
 }
 
 body.dark-mode .cache-item .cache-size,
 body.dark-mode .cache-item .cache-age {
-    color: #aaa;
+    color: #aaa !important;
 }
 
+/* Cache Type Badges in Dark Mode */
+body.dark-mode .cache-type-badge.search {
+    background: rgba(23, 162, 184, 0.2) !important;
+    color: #5bc0de !important;
+    border-color: #17a2b8 !important;
+}
+
+body.dark-mode .cache-type-badge.lyrics {
+    background: rgba(40, 167, 69, 0.2) !important;
+    color: #5cb85c !important;
+    border-color: #28a745 !important;
+}
+
+body.dark-mode .cache-type-badge.translation {
+    background: rgba(255, 193, 7, 0.2) !important;
+    color: #ffc107 !important;
+    border-color: #ffc107 !important;
+}
+
+/* Cache Stats in Dark Mode */
 body.dark-mode .cache-stats {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: #333;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: #444 !important;
 }
 
 body.dark-mode .stat-label {
-    color: #aaa;
+    color: #aaa !important;
+}
+
+body.dark-mode .stat-value {
+    color: #007bff !important;
+}
+
+/* Cache Actions Buttons in Dark Mode */
+body.dark-mode .cache-actions .btn-outline-primary {
+    color: #007bff !important;
+    border-color: #007bff !important;
+    background-color: transparent !important;
+}
+
+body.dark-mode .cache-actions .btn-outline-primary:hover {
+    color: white !important;
+    background-color: #007bff !important;
+}
+
+body.dark-mode .cache-actions .btn-outline-danger {
+    color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    background-color: transparent !important;
+}
+
+body.dark-mode .cache-actions .btn-outline-danger:hover {
+    color: white !important;
+    background-color: #dc3545 !important;
+}
+
+/* Cache Item Details Modal in Dark Mode */
+body.dark-mode .cache-item-details-modal {
+    background-color: #222 !important;
+    border-color: #444 !important;
+}
+
+body.dark-mode .cache-item-details-header {
+    border-bottom-color: #444 !important;
+}
+
+body.dark-mode .cache-item-details-body {
+    background-color: #222 !important;
 }
 
 body.dark-mode .detail-section label {
-    color: #aaa;
+    color: #aaa !important;
 }
 
 body.dark-mode .detail-value,
 body.dark-mode .detail-content {
-    background: #333;
-    border-color: #444;
-    color: #ddd;
+    background-color: #333 !important;
+    border-color: #444 !important;
+    color: #ddd !important;
 }
 
+body.dark-mode .cache-item-details-footer {
+    background-color: #222 !important;
+    border-top-color: #444 !important;
+}
+
+/* Empty Cache List in Dark Mode */
 body.dark-mode .empty-cache-list {
-    color: #aaa;
+    color: #aaa !important;
 }
 
 body.dark-mode .empty-cache-list i {
-    color: #444;
+    color: #444 !important;
+}
+
+body.dark-mode .form-check-input:checked {
+    background-color: #007bff !important;
+    border-color: #007bff !important;
+}
+
+/* Scrollbar in Dark Mode */
+body.dark-mode .cache-list::-webkit-scrollbar-track {
+    background: #222 !important;
+}
+
+body.dark-mode .cache-list::-webkit-scrollbar-thumb {
+    background: #444 !important;
+}
+
+body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
+    background: #555 !important;
 }
 
 /* Responsive */

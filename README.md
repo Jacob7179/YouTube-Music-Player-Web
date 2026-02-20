@@ -103,7 +103,7 @@ If you don't want to set up the YouTube API, you can still:
 15. **Import Playlist & Data**: Import playlist and data (Dark mode, Album Art spin settings & Lyrics settings) from JSON or TXT file
 16. **Export Playlist & Data**: Export playlist and data (Dark mode, Album Art spin settings & Lyrics settings) to TXT file
 17. **Album Art Display**: Select Album Art Display option to switch Spin, None or Video mode.
-18. **Delete Search Cache**: Delete search cache from browser storage
+18. **Delete Cache**: Delete cache from browser storage
 
 ## 🔧 GitHub Actions Workflow
 

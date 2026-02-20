@@ -234,8 +234,8 @@
                     <button id="settingsImportBtn" class="btn btn-warning btn-sm w-100 mb-2" title="Import Playlist & Data">
                         <i class='bx bx-import'></i> Import Playlist & Data
                     </button>
-                    <button id="settingsClearCacheBtn" class="btn btn-danger btn-sm w-100 mb-2" title="Clear Search Cache">
-                        <i class='bx bx-trash'></i> Clear Search Cache
+                    <button id="settingsClearCacheBtn" class="btn btn-danger btn-sm w-100 mb-2" title="Clear Cache">
+                        <i class='bx bx-trash'></i> Clear Cache
                     </button>
                     <div class="form-check form-switch dark-mode-switch mb-2">
                         <input class="form-check-input darkModeToggle" type="checkbox" id="darkModeToggle">
@@ -339,7 +339,7 @@
                     <div class="about-section">
                         <h6><i class="bx bx-info-circle"></i> <span data-translate="versionInfoTitle">Version Information</span></h6>
                         <small data-translate="version">Version: </small><small>1.5</small><br>
-                        <small data-translate="lastUpdated">Last Updated: </small><small id="formattedDate" data-original-date="15d 2m 2026y">15d 2m 2026y</small><br>
+                        <small data-translate="lastUpdated">Last Updated: </small><small id="formattedDate" data-original-date="20d 2m 2026y">20d 2m 2026y</small><br>
                         <small data-translate="languages">Languages: </small><small>English & 中文</small>
                     </div>
                 </div>
@@ -402,9 +402,9 @@
                                 <input type="checkbox" id="selectAllCache" class="form-check-input">
                             </div>
                             <div class="cache-key" data-translate="cacheKey">Cache Key</div>
-                            <div class="cache-type" data-translate="type">Type</div>
-                            <div class="cache-size" data-translate="size">Size</div>
-                            <div class="cache-age" data-translate="age">Age</div>
+                            <div class="cache-type" data-translate="cacheType">Type</div>
+                            <div class="cache-size" data-translate="cacheSize">Size</div>
+                            <div class="cache-age" data-translate="cacheAge">Age</div>
                             <div class="cache-actions-header" data-translate="actions">Actions</div>
                         </div>
                         <div id="cacheList" class="cache-list">
@@ -412,48 +412,50 @@
                         </div>
                     </div>
 
-                    <!-- Cache Item Details Modal -->
-                    <div id="cacheItemDetailsModal" class="cache-item-details-modal">
-                        <div class="cache-item-details-content">
-                            <div class="cache-item-details-header">
-                                <h6><i class='bx bx-detail'></i> <span data-translate="cacheItemDetails">Cache Item Details</span></h6>
-                                <button class="btn-close cache-details-close-btn"></button>
-                            </div>
-                            <div class="cache-item-details-body">
-                                <div class="detail-section">
-                                    <label data-translate="cacheKey">Cache Key:</label>
-                                    <div id="detailCacheKey" class="detail-value"></div>
-                                </div>
-                                <div class="detail-section">
-                                    <label data-translate="cacheType">Type:</label>
-                                    <div id="detailCacheType" class="detail-value"></div>
-                                </div>
-                                <div class="detail-section">
-                                    <label data-translate="cacheSize">Size:</label>
-                                    <div id="detailCacheSize" class="detail-value"></div>
-                                </div>
-                                <div class="detail-section">
-                                    <label data-translate="cacheAge">Age:</label>
-                                    <div id="detailCacheAge" class="detail-value"></div>
-                                </div>
-                                <div class="detail-section">
-                                    <label data-translate="cacheContent">Content:</label>
-                                    <pre id="detailCacheContent" class="detail-content"></pre>
-                                </div>
-                            </div>
-                            <div class="cache-item-details-footer">
-                                <button id="deleteFromDetailsBtn" class="btn btn-danger btn-sm">
-                                    <i class='bx bx-trash'></i> <span data-translate="delete">Delete</span>
-                                </button>
-                                <button id="copyContentBtn" class="btn btn-primary btn-sm">
-                                    <i class='bx bx-copy'></i> <span data-translate="copyContent">Copy Content</span>
-                                </button>
-                                <button class="btn btn-secondary btn-sm cache-details-close-btn">
-                                    <span data-translate="close">Close</span>
-                                </button>
-                            </div>
-                        </div>
+                    
+                </div>
+            </div>
+        </div>
+
+        <!-- Cache Item Details Modal -->
+        <div id="cacheItemDetailsModal" class="cache-item-details-modal">
+            <div class="cache-item-details-content">
+                <div class="cache-item-details-header">
+                    <h6><i class='bx bx-detail'></i> <span data-translate="cacheItemDetails">Cache Item Details</span></h6>
+                    <button class="btn-close cache-details-close-btn"></button>
+                </div>
+                <div class="cache-item-details-body">
+                    <div class="detail-section">
+                        <label data-translate="cacheKey">Cache Key:</label>
+                        <div id="detailCacheKey" class="detail-value"></div>
                     </div>
+                    <div class="detail-section">
+                        <label data-translate="cacheType">Type:</label>
+                        <div id="detailCacheType" class="detail-value"></div>
+                    </div>
+                    <div class="detail-section">
+                        <label data-translate="cacheSize">Size:</label>
+                        <div id="detailCacheSize" class="detail-value"></div>
+                    </div>
+                    <div class="detail-section">
+                        <label data-translate="cacheAge">Age:</label>
+                        <div id="detailCacheAge" class="detail-value"></div>
+                    </div>
+                    <div class="detail-section">
+                        <label data-translate="cacheContent">Content:</label>
+                        <pre id="detailCacheContent" class="detail-content"></pre>
+                    </div>
+                </div>
+                <div class="cache-item-details-footer">
+                    <button id="deleteFromDetailsBtn" class="btn btn-danger btn-sm">
+                        <i class='bx bx-trash'></i> <span data-translate="delete">Delete</span>
+                    </button>
+                    <button id="copyContentBtn" class="btn btn-primary btn-sm">
+                        <i class='bx bx-copy'></i> <span data-translate="copyContent">Copy Content</span>
+                    </button>
+                    <button class="btn btn-secondary btn-sm cache-details-close-btn">
+                        <span data-translate="close">Close</span>
+                    </button>
                 </div>
             </div>
         </div>
