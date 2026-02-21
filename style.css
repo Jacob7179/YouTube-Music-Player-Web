@@ -1743,6 +1743,8 @@ body.dark-mode .settings-menu .card {
     filter: none;
     opacity: 1;
     transition: filter 0.8s ease-in-out, opacity 0.8s ease-in-out;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 /* Dark mode */
@@ -2186,7 +2188,6 @@ body.dark-mode .experimental-body .text-danger {
 }
 
 .about-close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
     opacity: 1;
 }
 
@@ -2690,7 +2691,6 @@ body.dark-mode .translation-status {
 }
 
 .cache-manager-close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
     opacity: 1;
 }
 
