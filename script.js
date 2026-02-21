@@ -3170,14 +3170,11 @@ const translations = {
     all: "All",
     itemsSelected: "{count} item(s) selected",
     cacheStats: "Cache Statistics",
-    lastUpdated: "Last Updated",
     expiresIn: "Expires in",
     never: "Never",
     expired: "Expired",
     valid: "Valid",
     invalid: "Invalid",
-    cacheInfo: "Cache Information",
-    cacheDescription: "Manage cached data including search results, lyrics, and translations. Cached data helps reduce API calls and improves performance.",
   },
   zh: {
     playerTitle: "YouTube 音乐播放器",
@@ -3339,14 +3336,11 @@ const translations = {
     all: "全部",
     itemsSelected: "已选中 {count} 个项目",
     cacheStats: "缓存统计",
-    lastUpdated: "最后更新",
     expiresIn: "过期时间",
     never: "永不过期",
     expired: "已过期",
     valid: "有效",
     invalid: "无效",
-    cacheInfo: "缓存信息",
-    cacheDescription: "管理缓存数据，包括搜索结果、歌词和翻译。缓存数据有助于减少 API 调用并提高性能。",
   }
 };
 
@@ -5209,6 +5203,49 @@ function getCacheTimestamp(key, value) {
     // Try to extract timestamp from cache data
     try {
         const parsed = JSON.parse(value);
+
+        if (key === 'ytSearchCache') {
+            // Find the most recent timestamp among all search terms
+            let newestTimestamp = 0;
+            let hasValidTimestamp = false;
+            
+            // Loop through each search term in the cache
+            for (const searchTerm in parsed) {
+                if (parsed[searchTerm] && parsed[searchTerm].timestamp) {
+                    const termTimestamp = parsed[searchTerm].timestamp;
+                    if (termTimestamp > newestTimestamp) {
+                        newestTimestamp = termTimestamp;
+                    }
+                    hasValidTimestamp = true;
+                }
+            }
+            
+            if (hasValidTimestamp) {
+                return newestTimestamp;
+            }
+        }
+
+        if (key === 'lyricsTranslationCache') {
+            // Find the most recent timestamp among all translation entries
+            let newestTimestamp = 0;
+            let hasValidTimestamp = false;
+            
+            // Loop through each translation entry in the cache
+            for (const translationKey in parsed) {
+                if (parsed[translationKey] && parsed[translationKey].timestamp) {
+                    const entryTimestamp = parsed[translationKey].timestamp;
+                    if (entryTimestamp > newestTimestamp) {
+                        newestTimestamp = entryTimestamp;
+                    }
+                    hasValidTimestamp = true;
+                }
+            }
+            
+            if (hasValidTimestamp) {
+                return newestTimestamp;
+            }
+        }
+
         if (parsed.timestamp) {
             return parsed.timestamp;
         }
