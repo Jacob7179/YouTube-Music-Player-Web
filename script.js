@@ -1104,7 +1104,7 @@ function handleVideoError(event) {
             errorMsg.style.opacity = "0";
             setTimeout(() => {
                 errorMsg.style.display = "none";
-                if (document.getElementById("autoPlayToggle").checked) {
+                if (document.getElementById("autoPlayToggle").classList.contains("active")) {
                     playNextSong();
                 }
             }, 500);
