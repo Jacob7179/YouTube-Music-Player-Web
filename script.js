@@ -13,7 +13,39 @@ let albumArtSpinEnabled = albumArtDisplayMode === "spin";
 let isTranslating = false;
 let showTranslatedView = false;
 
-// YOUTUBE_API_KEY is now loaded from config.js 
+// YOUTUBE_API_KEY is now loaded from config.js or Vercel API endpoint
+const VERCEL_API_KEY_ENDPOINT = '/api/getApiKey';
+let cachedApiKey = null;
+
+async function getApiKey() {
+    if (cachedApiKey) return cachedApiKey;
+
+    // 1. Try config.js (global variable)
+    if (typeof YOUTUBE_API_KEY !== 'undefined' && 
+        YOUTUBE_API_KEY && 
+        YOUTUBE_API_KEY !== 'YOUR_YOUTUBE_API_KEY') {
+        cachedApiKey = YOUTUBE_API_KEY;
+        return cachedApiKey;
+    }
+
+    // 2. Fallback: fetch from Vercel serverless function
+    try {
+        const response = await fetch(VERCEL_API_KEY_ENDPOINT);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.apiKey) {
+            cachedApiKey = data.apiKey;
+            return cachedApiKey;
+        } else {
+            throw new Error('No apiKey in response');
+        }
+    } catch (error) {
+        console.warn('Could not fetch API key from Vercel:', error);
+        throw new Error('No API key available. Please set YOUTUBE_API_KEY in config.js or Vercel environment.');
+    }
+}
 
 // Search Cache to minimize API calls for repeated searches
 const searchCache = JSON.parse(localStorage.getItem('ytSearchCache') || '{}');
@@ -660,9 +692,15 @@ document.getElementById('youtubeSearchInput').addEventListener('keypress', funct
 });
 
 async function searchYouTube() {
+    let apiKey;
+    try {
+        apiKey = await getApiKey();
+    } catch (error) {
+        console.error('Error fetching API key:', error);
+    }
+
     console.log("Attempting YouTube search...");
-    // YOUTUBE_API_KEY is now a global variable from config.js
-    console.log("API Key present (from config.js): ", typeof YOUTUBE_API_KEY !== 'undefined' && YOUTUBE_API_KEY.length > 10);
+    console.log("API Key present (from config.js): ", typeof apiKey !== 'undefined' && apiKey.length > 10);
 
     const searchTerm = document.getElementById('youtubeSearchInput').value.trim();
     const searchResultsList = document.getElementById('searchResultsList');
@@ -687,7 +725,7 @@ async function searchYouTube() {
         return;
     }
 
-    if (typeof YOUTUBE_API_KEY === 'undefined' || YOUTUBE_API_KEY === 'YOUR_YOUTUBE_API_KEY') {
+    if (typeof apiKey === 'undefined' || apiKey === 'YOUR_YOUTUBE_API_KEY') {
         // Use innerHTML to properly structure the error message
         searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeApiKeyError}`;
         searchError.classList.remove('d-none');
@@ -699,7 +737,7 @@ async function searchYouTube() {
 
     try {
         // Construct the URL for the YouTube API call - Direct call, without proxy
-        const youtubeApiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchTerm)}&type=video&maxResults=10&key=${YOUTUBE_API_KEY}`;
+        const youtubeApiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchTerm)}&type=video&maxResults=10&key=${apiKey}`;
         
         console.log("Fetching directly from YouTube API:", youtubeApiUrl);
 
@@ -789,6 +827,12 @@ async function searchYouTube() {
 
 // 🎵 Handle add_song URL param — Always fetch title + author, and alert user
 async function handleAddSongFromURL() {
+    let apiKey;
+    try {
+        apiKey = await getApiKey();
+    } catch (e) {
+        console.error('Error fetching API key:', e);
+    }
     const params = new URLSearchParams(window.location.search);
     let songLink = params.get("add_song");
     if (!songLink) return;
@@ -829,9 +873,9 @@ async function handleAddSongFromURL() {
     let albumArt = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 
     // --- Try YouTube Data API (direct call, no proxy) ---
-    if (typeof YOUTUBE_API_KEY !== "undefined" && YOUTUBE_API_KEY && YOUTUBE_API_KEY !== "YOUR_YOUTUBE_API_KEY") {
+    if (typeof apiKey !== "undefined" && apiKey && apiKey !== "YOUR_YOUTUBE_API_KEY") {
         try {
-            const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
+            const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${apiKey}`;
             console.log("Fetching video info directly from YouTube API:", apiUrl);
             
             // Directly call the YouTube API
