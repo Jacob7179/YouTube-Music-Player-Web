@@ -54,13 +54,13 @@ let searchTimeout;
 
 // CORS Proxy URL - Used to bypass CORS restrictions for YouTube API calls
 // You can change this if you find a more reliable proxy.
-// Alternative CORS proxies (uncomment one):
 const CORS_PROXIES = [
-    'https://corsproxy.io/?',      // Primary (may have rate limits)
-    'https://api.codetabs.com/v1/proxy?quest=' // Fallback
+    'https://cors-proxy.jacobng9022.workers.dev/?url=', // Custom proxy (Cloudflare Worker)
+    'https://corsproxy.io/?',
+    'https://api.codetabs.com/v1/proxy?quest=',
+    'https://api.allorigins.win/raw?url=',
+    'https://thingproxy.freeboard.io/fetch/'
 ];
-// const CORS_PROXY_URL = 'https://thingproxy.freeboard.io/fetch/';
-// const CORS_PROXY_URL = 'https://api.allorigins.win/'; // Blocked
 // const CORS_PROXY_URL = 'https://cors-anywhere.herokuapp.com/'; // Requires authorization
 
 let playlist = []; // Array to store playlist data
@@ -4724,7 +4724,7 @@ async function fetchLyricsWithTranslation(title, artist) {
             textEl.textContent = t.lyricsNotFound;
             meta.textContent = t.lyricsNotFound;
         } else {
-            textEl.textContent = t.lyricsError + " (try refreshing)";
+            textEl.textContent = t.lyricsError;
             meta.textContent = t.lyricsError;
         }
         
