@@ -23,9 +23,10 @@ let searchTimeout;
 // CORS Proxy URL - Used to bypass CORS restrictions for YouTube API calls
 // You can change this if you find a more reliable proxy.
 // Alternative CORS proxies (uncomment one):
-// Example: https://corsproxy.io/?
-// const CORS_PROXY_URL = 'https://corsproxy.io/?'; // Free usage is limited
-const CORS_PROXY_URL = 'https://api.codetabs.com/v1/proxy?quest=';
+const CORS_PROXIES = [
+    'https://corsproxy.io/?',      // Primary (may have rate limits)
+    'https://api.codetabs.com/v1/proxy?quest=' // Fallback
+];
 // const CORS_PROXY_URL = 'https://thingproxy.freeboard.io/fetch/';
 // const CORS_PROXY_URL = 'https://api.allorigins.win/'; // Blocked
 // const CORS_PROXY_URL = 'https://cors-anywhere.herokuapp.com/'; // Requires authorization
@@ -3826,6 +3827,87 @@ function formatDateForLanguage(lang, dateString) {
     }
 }
 
+// ========== AUTO BUILD DATE ==========
+async function updateBuildDate() {
+    const dateElement = document.getElementById('formattedDate');
+    if (!dateElement) return;
+
+    // List of files to check (add/remove any core files)
+    const filesToCheck = [
+        'index.html',
+        'style.css',
+        'script.js'
+    ];
+
+    let latestDate = null;
+
+    // Start with the current HTML document's last modified as a baseline
+    if (document.lastModified) {
+        const d = new Date(document.lastModified);
+        if (!isNaN(d.getTime())) latestDate = d;
+    }
+
+    try {
+        // Fetch each file's HEAD to get Last-Modified header
+        const fetchPromises = filesToCheck.map(async (file) => {
+            try {
+                const response = await fetch(file, { method: 'HEAD' });
+                if (response.ok) {
+                    const lastModified = response.headers.get('Last-Modified');
+                    if (lastModified) return new Date(lastModified);
+                }
+            } catch (e) {
+                // Silently ignore (file may not exist, CORS, network error)
+                console.warn(`Could not fetch Last-Modified for ${file}`, e);
+            }
+            return null;
+        });
+
+        const dates = await Promise.all(fetchPromises);
+
+        // Filter out invalid dates
+        const validDates = dates.filter(d => d && !isNaN(d.getTime()));
+        
+        // Add the document date again just to be safe
+        if (document.lastModified) {
+            const docDate = new Date(document.lastModified);
+            if (!isNaN(docDate.getTime())) validDates.push(docDate);
+        }
+
+        // Find the most recent date among all
+        if (validDates.length > 0) {
+            const maxDate = new Date(Math.max(...validDates.map(d => d.getTime())));
+            if (!latestDate || maxDate > latestDate) {
+                latestDate = maxDate;
+            }
+        }
+    } catch (error) {
+        console.warn("Could not fetch file dates, using document.lastModified fallback", error);
+    }
+
+    // Update the data attribute with the determined date
+    if (latestDate) {
+        const day = latestDate.getDate();
+        const month = latestDate.getMonth() + 1; // months are 0-indexed
+        const year = latestDate.getFullYear();
+        const dateString = `${day}d ${month}m ${year}y`;
+        dateElement.setAttribute('data-original-date', dateString);
+    } else {
+        // Ultimate fallback (keep the existing attribute or set default)
+        if (!dateElement.getAttribute('data-original-date')) {
+            dateElement.setAttribute('data-original-date', '19d 6m 2026y');
+        }
+    }
+
+    // Re-apply current language formatting to update the displayed date
+    applyLanguage(currentLang);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    applyLanguage(currentLang);
+    updateBuildDate();
+});
+
 /* ================ LYRICS TRANSLATION SYSTEM ================ */
 let translatedLyrics = null;
 let translationEnabled = false;
@@ -4322,43 +4404,49 @@ async function fetchLyricsWithTranslation(title, artist) {
 
     lyricsState = { status: "loading", artist, title };
 
-    // ✅ FIXED: Properly encode the URL components (only if we need to fetch)
     const tryFetch = async (artistName, trackName) => {
-        // Properly encode the parameters separately
         const encodedArtist = encodeURIComponent(artistName);
         const encodedTrack = encodeURIComponent(trackName);
         const url = `https://lrclib.net/api/get?artist_name=${encodedArtist}&track_name=${encodedTrack}`;
         console.log("Fetching fresh lyrics from API:", url);
 
-        // Use the CORS proxy (same as YouTube API)
-        const proxiedUrl = `${CORS_PROXY_URL}${encodeURIComponent(url)}`;
+        // Try each proxy in order
+        for (const proxy of CORS_PROXIES) {
+            try {
+                const proxiedUrl = `${proxy}${encodeURIComponent(url)}`;
+                console.log("Trying proxy:", proxy);
 
-        try {
-        const response = await fetch(proxiedUrl);
-        
-        if (!response.ok) {
-            console.error("Lyrics API error:", response.status, response.statusText);
-            throw new Error(`Lyrics API error: ${response.status}`);
+                const response = await fetch(proxiedUrl, {
+                    signal: AbortSignal.timeout(10000) // 10 second timeout
+                });
+
+                if (!response.ok) {
+                    console.warn(`Proxy ${proxy} returned ${response.status}, trying next...`);
+                    continue; // Try next proxy
+                }
+
+                const data = await response.json();
+                
+                // Cache the response in local storage
+                if (data.syncedLyrics || data.plainLyrics) {
+                    data.timestamp = Date.now();
+                    localStorage.setItem(lyricsCacheKey, JSON.stringify(data));
+                    console.log("Lyrics cached for:", artistName, "-", trackName);
+                } else {
+                    // Cache "no lyrics" result
+                    const noLyricsData = { noLyrics: true, timestamp: Date.now() };
+                    localStorage.setItem(lyricsCacheKey, JSON.stringify(noLyricsData));
+                }
+                
+                return data;
+            } catch (error) {
+                console.warn(`Proxy ${proxy} failed:`, error.message);
+                continue; // Try next proxy
+            }
         }
-        
-        const data = await response.json();
-        
-        // ✅ Cache the response in local storage
-        if (data.syncedLyrics || data.plainLyrics) {
-            data.timestamp = Date.now();
-            localStorage.setItem(lyricsCacheKey, JSON.stringify(data));
-            console.log("Lyrics cached for:", artistName, "-", trackName);
-        } else {
-            // Cache "no lyrics" result
-            const noLyricsData = { noLyrics: true, timestamp: Date.now() };
-            localStorage.setItem(lyricsCacheKey, JSON.stringify(noLyricsData));
-        }
-        
-        return data;
-        } catch (error) {
-        console.error("Failed to fetch lyrics:", error);
-        throw error;
-        }
+
+        // If all proxies fail, throw error
+        throw new Error("All lyrics proxies failed");
     };
 
     if (!useCachedLyrics) {
@@ -4589,11 +4677,11 @@ async function fetchLyricsWithTranslation(title, artist) {
         isTranslating = false;
         
         if (e.message.includes("No lyrics")) {
-        textEl.textContent = t.lyricsNotFound;
-        meta.textContent = t.lyricsNotFound;
+            textEl.textContent = t.lyricsNotFound;
+            meta.textContent = t.lyricsNotFound;
         } else {
-        textEl.textContent = t.lyricsError;
-        meta.textContent = t.lyricsError;
+            textEl.textContent = t.lyricsError + " (try refreshing)";
+            meta.textContent = t.lyricsError;
         }
         
         lyricsState.status = "error";
