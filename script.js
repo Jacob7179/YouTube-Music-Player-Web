@@ -75,6 +75,22 @@ const ICON_PREVIOUS = '<i class=\'bx bx-skip-previous\' ></i>';
 const ICON_NEXT = '<i class=\'bx bx-skip-next\' ></i>';
 const ICON_REPEAT = '<i class=\'bx bx-repeat\' ></i>';
 
+function cleanSongTitle(title, author) {
+    if (!title) return '';
+    let cleaned = title.trim();
+    if (!author) return cleaned;
+
+    // Escape special regex characters in author
+    const escapedAuthor = author.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Remove "Author - " at start
+    cleaned = cleaned.replace(new RegExp(`^${escapedAuthor}\\s*[-–—]\\s*`), '');
+    // Remove " - Author" at end
+    cleaned = cleaned.replace(new RegExp(`\\s*[-–—]\\s*${escapedAuthor}$`), '');
+
+    return cleaned;
+}
+
 // Add toggle functionality for song list/lyrics
 document.addEventListener('DOMContentLoaded', function() {
     const showSongListBtn = document.getElementById('showSongListBtn');
@@ -246,12 +262,7 @@ function renderPlaylist(songsToRender) {
         const songNameSpan = document.createElement('span');
         songNameSpan.classList.add('song-name');
         
-        // Clean the song name - remove author name if it's included
-        let cleanSongName = song.songName;
-        cleanSongName = cleanSongName.replace(new RegExp(`^${song.authorName}\\s*-\\s*`), '');
-        cleanSongName = cleanSongName.replace(new RegExp(`\\s*-\\s*${song.authorName}$`), '');
-        cleanSongName = cleanSongName.replace(new RegExp(`\\s*by\\s*${song.authorName}$`, 'i'), '');
-        
+        const cleanSongName = cleanSongTitle(song.songName, song.authorName);
         songNameSpan.textContent = cleanSongName;
 
         // Column 3: Author Name - Separate column
@@ -341,7 +352,7 @@ function renderPlaylist(songsToRender) {
                 cleanSongName = cleanSongName.replace(new RegExp(`\\s*-\\s*${firstSongObj.authorName}$`), '');
                 cleanSongName = cleanSongName.replace(new RegExp(`\\s*by\\s*${firstSongObj.authorName}$`, 'i'), '');
                 
-                document.querySelector("#nowPlaying .song-title").innerText = cleanSongName;
+                updateSongTitle(cleanSongName);
                 document.querySelector("#nowPlaying .author-name").innerText = firstSongObj.authorName;
                 loadLyricsFor(firstSongObj.songName, firstSongObj.authorName);
 
@@ -618,7 +629,7 @@ function removeSong(videoIdToRemove) {
             playing = false;
             document.getElementById("playPauseBtn").innerHTML = ICON_PLAY;
             document.getElementById("albumArt").src = "https://via.placeholder.com/300";
-            document.querySelector("#nowPlaying .song-title").innerText = "No Song";
+            updateSongTitle("No Song");
             document.querySelector("#nowPlaying .author-name").innerText = "";
             document.getElementById("progress").style.width = "0%";
             document.getElementById("currentTime").innerText = "0:00";
@@ -1170,25 +1181,6 @@ function resetErrorState() {
         }
 }
 
-function removeArtistFromTitle(title, artist) {
-  if (!title) return title;
-
-  let cleanedTitle = title.trim();
-
-  // ✅ Rule 1: Exact author at start → remove author + optional dash
-  if (artist) {
-    const pattern = new RegExp(`^${artist}\\s*-?\\s*`, "i");
-    cleanedTitle = cleanedTitle.replace(pattern, "").trim();
-  }
-
-  // ✅ Rule 2: If still contains dash → remove everything before first dash
-  if (cleanedTitle.includes("-")) {
-    cleanedTitle = cleanedTitle.split("-").slice(1).join("-").trim();
-  }
-
-  return cleanedTitle;
-}
-
 // Attach reset function to song change event
 document.getElementById("songList").addEventListener("click", resetErrorState); // Example event listener
 
@@ -1241,21 +1233,21 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
     let authorNameElem = document.querySelector("#nowPlaying .author-name");
 
     if (songObject) {
-        let songName = songObject.songName;
+        let originalSongName = songObject.songName;
         let authorName = songObject.authorName;
+        let cleanSongName = cleanSongTitle(originalSongName, authorName);
 
-        if (songName !== lastSong) {  // Only animate if song name changes
+        if (cleanSongName !== lastSong) {
             songTitleElem.style.transition = "opacity 0.5s ease-in-out";
             songTitleElem.style.opacity = "0";
             setTimeout(() => {
-                const displayTitle = removeArtistFromTitle(songName, authorName);
-                songTitleElem.innerText = displayTitle;
+                updateSongTitle(cleanSongName);
                 songTitleElem.style.opacity = "1";
             }, 500);
-            lastSong = songName;
+            lastSong = cleanSongName;
         }
         
-        if (authorName !== lastAuthor) { // Only animate if author name changes
+        if (authorName !== lastAuthor) {
             authorNameElem.style.transition = "opacity 0.5s ease-in-out";
             authorNameElem.style.opacity = "0";
             setTimeout(() => {
@@ -1265,7 +1257,8 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
             lastAuthor = authorName;
         }
 
-        loadLyricsFor(songObject.songName, songObject.authorName);
+        // Load lyrics using original (uncleaned) title and author
+        loadLyricsFor(originalSongName, authorName);
     }
 
     clearTimeout(errorTimeout);
@@ -1442,7 +1435,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        document.querySelector("#nowPlaying .song-title").innerText = firstSongName;
+        updateSongTitle(firstSongName);
         document.querySelector("#nowPlaying .author-name").innerText = firstAuthorName;
     }
     setupMediaSession();
@@ -2581,7 +2574,7 @@ function importPlaylist(file) {
                     // Update UI
                     albumArtElem.src = firstSong.albumArt;
                     background.style.backgroundImage = `url('${firstSong.albumArt}')`;
-                    songTitleElem.innerText = firstSong.songName;
+                    updateSongTitle(firstSong.songName);
                     authorNameElem.innerText = firstSong.authorName;
 
                     // Highlight in playlist
@@ -5421,6 +5414,105 @@ function formatCacheAge(timestamp) {
     if (minutes > 0) return `${minutes}m ago`;
     return 'Just now';
 }
+
+const SLIDE_DURATION = 5;   // seconds for one slide
+const PAUSE_DURATION = 2;   // seconds pause after each full cycle
+
+const titleContainer = document.querySelector("#nowPlaying .song-title");
+const titleInner = document.querySelector("#nowPlaying .song-title-inner");
+let titleAnimationTimeout = null;
+let titleAnimationRunning = false;
+
+function updateSongTitle(text) {
+    if (!titleInner) return;
+    titleInner.textContent = text || " ";
+    stopTitleAnimation();
+    // After DOM update, start animation if needed
+    requestAnimationFrame(() => {
+        startTitleAnimation();
+    });
+}
+
+function stopTitleAnimation() {
+    if (titleAnimationTimeout) {
+        clearTimeout(titleAnimationTimeout);
+        titleAnimationTimeout = null;
+    }
+    titleAnimationRunning = false;
+    if (titleInner) {
+        titleInner.style.transition = 'none';
+        titleInner.style.transform = 'translateX(0)';
+        // Force reflow to reset
+        void titleInner.offsetWidth;
+        titleInner.style.transition = '';
+    }
+}
+
+function startTitleAnimation() {
+    if (!titleInner || !titleContainer) return;
+    const text = titleInner.textContent.trim();
+    if (!text || text === "No Song") {
+        titleInner.style.transform = 'translateX(0)';
+        return;
+    }
+
+    const containerWidth = titleContainer.offsetWidth;
+    const textWidth = titleInner.scrollWidth;
+    if (textWidth <= containerWidth) {
+        // No overflow – keep at original position
+        titleInner.style.transform = 'translateX(0)';
+        return;
+    }
+
+    if (titleAnimationRunning) return;
+    titleAnimationRunning = true;
+
+    // Distance to slide left: full text width (so it exits completely)
+    const leftDistance = textWidth;
+
+    function animateCycle() {
+        // 1. Pause at original position for PAUSE_DURATION
+        titleAnimationTimeout = setTimeout(() => {
+            // 2. Slide left (exit left)
+            titleInner.style.transition = `transform ${SLIDE_DURATION}s ease-in-out`;
+            titleInner.style.transform = `translateX(-${leftDistance}px)`;
+
+            // 3. When slide left finishes, jump to right and slide right
+            titleAnimationTimeout = setTimeout(() => {
+                // Jump to right side (no transition)
+                titleInner.style.transition = 'none';
+                titleInner.style.transform = `translateX(${containerWidth}px)`;
+                void titleInner.offsetWidth; // force reflow
+
+                // Slide right (in from right to original)
+                titleInner.style.transition = `transform ${SLIDE_DURATION}s ease-in-out`;
+                titleInner.style.transform = 'translateX(0)';
+
+                // 4. When slide right finishes, repeat the cycle
+                titleAnimationTimeout = setTimeout(() => {
+                    if (titleAnimationRunning) {
+                        animateCycle(); // repeat (will pause again)
+                    }
+                }, SLIDE_DURATION * 1000);
+            }, SLIDE_DURATION * 1000);
+        }, PAUSE_DURATION * 1000);
+    }
+
+    animateCycle();
+}
+
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        if (titleInner) {
+            stopTitleAnimation();
+            requestAnimationFrame(() => {
+                startTitleAnimation();
+            });
+        }
+    }, 300);
+});
 
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', function() {

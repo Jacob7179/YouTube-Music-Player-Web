@@ -958,20 +958,22 @@ body:not(.dark-mode) #songList .list-group-item.selected .author-column {
 }
 
 #nowPlaying .song-title {
-    transition: color 0.8s ease-in-out; /* Smooth transition */
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
-
-    /* Fix descender cutoff issue */
-    line-height: 1.0; /* Ensure enough space for descenders */
-    padding-bottom: 2px; /* Prevent letters like "g, j, y" from being cut off */
-    display: inline-block; /* Ensure proper text alignment */
-    
+    line-height: 1.0;
+    padding-bottom: 2px;
+    display: block;
     font-size: 18px;
     font-weight: bold;
-    display: block;
-    margin-bottom: 2px; /* Reduce space below Song Name */
+    margin-bottom: 2px;
+    width: 100%;
+}
+
+.song-title-inner {
+    display: inline-block;
+    white-space: nowrap;
+    will-change: transform;
+    transition: transform 0s; /* duration set via JavaScript */
 }
 
 /* Smooth transition for song title and author name */
