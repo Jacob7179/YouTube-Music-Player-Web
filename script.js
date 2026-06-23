@@ -5415,34 +5415,46 @@ function formatCacheAge(timestamp) {
     return 'Just now';
 }
 
-const SLIDE_DURATION = 5;   // seconds for one slide
-const PAUSE_DURATION = 2;   // seconds pause after each full cycle
+// ========== TITLE SCROLL ANIMATION ==========
+
+const SLIDE_DURATION = 5;   // seconds for original title to fully exit
+const PAUSE_DURATION = 2;   // seconds to pause after each cycle
+const GAP_FRACTION = 0.5;   // gap between titles = 50% of container width (capped)
 
 const titleContainer = document.querySelector("#nowPlaying .song-title");
 const titleInner = document.querySelector("#nowPlaying .song-title-inner");
-let titleAnimationTimeout = null;
 let titleAnimationRunning = false;
 
 function updateSongTitle(text) {
     if (!titleInner) return;
-    titleInner.textContent = text || " ";
+    const safeText = text || " ";
+    titleInner.innerHTML = '';
+    const span1 = document.createElement('span');
+    span1.className = 'title-copy first-copy';
+    span1.textContent = safeText;
+    titleInner.appendChild(span1);
+    const span2 = document.createElement('span');
+    span2.className = 'title-copy second-copy';
+    span2.textContent = safeText;
+    // margin-left will be set in startTitleAnimation after measuring
+    titleInner.appendChild(span2);
+
     stopTitleAnimation();
-    // After DOM update, start animation if needed
     requestAnimationFrame(() => {
         startTitleAnimation();
     });
 }
 
 function stopTitleAnimation() {
-    if (titleAnimationTimeout) {
-        clearTimeout(titleAnimationTimeout);
-        titleAnimationTimeout = null;
-    }
     titleAnimationRunning = false;
     if (titleInner) {
         titleInner.style.transition = 'none';
         titleInner.style.transform = 'translateX(0)';
-        // Force reflow to reset
+        // Reset second copy's margin (will be recalculated on next start)
+        const secondCopy = titleInner.querySelector('.second-copy');
+        if (secondCopy) {
+            secondCopy.style.marginLeft = '0';
+        }
         void titleInner.offsetWidth;
         titleInner.style.transition = '';
     }
@@ -5450,55 +5462,81 @@ function stopTitleAnimation() {
 
 function startTitleAnimation() {
     if (!titleInner || !titleContainer) return;
-    const text = titleInner.textContent.trim();
-    if (!text || text === "No Song") {
+    const copies = titleInner.querySelectorAll('.title-copy');
+    if (copies.length < 2) return;
+
+    const firstCopy = copies[0];
+    const secondCopy = copies[1];
+    const text = firstCopy.textContent.trim();
+    if (!text) {
         titleInner.style.transform = 'translateX(0)';
         return;
     }
 
     const containerWidth = titleContainer.offsetWidth;
-    const textWidth = titleInner.scrollWidth;
-    if (textWidth <= containerWidth) {
-        // No overflow – keep at original position
+    firstCopy.style.whiteSpace = 'nowrap';
+    const oneCopyWidth = firstCopy.offsetWidth;
+
+    if (oneCopyWidth <= containerWidth) {
+        secondCopy.style.display = 'none';
         titleInner.style.transform = 'translateX(0)';
         return;
     }
 
+    secondCopy.style.display = 'inline-block';
+    const gap = Math.max(10, Math.min(containerWidth * GAP_FRACTION, oneCopyWidth * 0.5));
+    secondCopy.style.marginLeft = gap + 'px';
+
+    const V = oneCopyWidth / SLIDE_DURATION;
+    const totalSlideDistance = oneCopyWidth + gap;
+    const totalSlideDuration = totalSlideDistance / V;
+
     if (titleAnimationRunning) return;
     titleAnimationRunning = true;
 
-    // Distance to slide left: full text width (so it exits completely)
-    const leftDistance = textWidth;
+    let startTime = null;
+    let phase = 'initialPause';   // Changed
+    let pauseStartTime = null;
 
-    function animateCycle() {
-        // 1. Pause at original position for PAUSE_DURATION
-        titleAnimationTimeout = setTimeout(() => {
-            // 2. Slide left (exit left)
-            titleInner.style.transition = `transform ${SLIDE_DURATION}s ease-in-out`;
-            titleInner.style.transform = `translateX(-${leftDistance}px)`;
+    function animate(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = (timestamp - startTime) / 1000;
 
-            // 3. When slide left finishes, jump to right and slide right
-            titleAnimationTimeout = setTimeout(() => {
-                // Jump to right side (no transition)
+        if (phase === 'initialPause') {
+            if (elapsed >= SLIDE_DURATION) {
+                phase = 'slide';
+                startTime = timestamp;
+            }
+            titleInner.style.transform = 'translateX(0)';
+        }
+        else if (phase === 'slide') {
+            const progress = Math.min(elapsed / totalSlideDuration, 1);
+            const translateX = -progress * totalSlideDistance;
+            titleInner.style.transform = `translateX(${translateX}px)`;
+
+            if (progress >= 1) {
+                phase = 'pause';
+                pauseStartTime = timestamp;
+            }
+        }
+        else if (phase === 'pause') {
+            const pauseElapsed = (timestamp - pauseStartTime) / 1000;
+            if (pauseElapsed >= PAUSE_DURATION) {
                 titleInner.style.transition = 'none';
-                titleInner.style.transform = `translateX(${containerWidth}px)`;
-                void titleInner.offsetWidth; // force reflow
-
-                // Slide right (in from right to original)
-                titleInner.style.transition = `transform ${SLIDE_DURATION}s ease-in-out`;
                 titleInner.style.transform = 'translateX(0)';
+                void titleInner.offsetWidth;
+                titleInner.style.transition = '';
+                startTime = timestamp;
+                phase = 'slide';
+            }
+        }
 
-                // 4. When slide right finishes, repeat the cycle
-                titleAnimationTimeout = setTimeout(() => {
-                    if (titleAnimationRunning) {
-                        animateCycle(); // repeat (will pause again)
-                    }
-                }, SLIDE_DURATION * 1000);
-            }, SLIDE_DURATION * 1000);
-        }, PAUSE_DURATION * 1000);
+        if (titleAnimationRunning) {
+            requestAnimationFrame(animate);
+        }
     }
 
-    animateCycle();
+    requestAnimationFrame(animate);
 }
 
 let resizeTimeout;
