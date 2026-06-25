@@ -870,7 +870,6 @@ async function handleAddSongFromURL() {
     // Avoid duplicates
     if (playlist.some(s => s.videoId === videoId)) {
         alert(t.duplicateSong);
-        console.log("Song already exists in playlist");
 
         // 🧹 Clear URL even if duplicate
         const newUrl = new URL(window.location.href);
@@ -898,7 +897,6 @@ async function handleAddSongFromURL() {
                     title = snippet.title || title;
                     author = snippet.channelTitle || author;
                     albumArt = snippet.thumbnails?.high?.url || albumArt;
-                    console.log("YouTube API success:", title, "by", author);
                 }
             } else {
                 console.warn("YouTube API failed:", res.status, res.statusText);
@@ -963,8 +961,6 @@ async function handleAddSongFromURL() {
     renderPlaylist(playlist);
 
     alert(t.addedSong(title, author));
-
-    console.log(`✅ Added: ${title} — ${author}`);
 
     // 🧹 Immediately clear URL
     const newUrl = new URL(window.location.href);
@@ -2754,9 +2750,7 @@ async function fetchLyrics(title, artist) {
   
   // ✅ Check local storage first
   const cachedLyrics = localStorage.getItem(cacheKey);
-  if (cachedLyrics) {
-    console.log("Using cached lyrics for:", artist, "-", title);
-    
+  if (cachedLyrics) {    
     try {
       const json = JSON.parse(cachedLyrics);
       const lyrics = json.syncedLyrics || json.plainLyrics;
@@ -2773,13 +2767,13 @@ async function fetchLyrics(title, artist) {
           const parsed = parseLrc(lyrics);
           lyricsData = { isLrc: true, lrcLines: parsed };
           renderLrcLines(parsed);
-          meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title} ${t.cached}`;
+          meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}`;
           lyricsState.status = "synced";
         } else {
           lyricsData = { isLrc: false, plain: lyrics };
           const lines = lyrics.split(/\r?\n/).filter(l => l.trim().length > 0);
           textEl.innerHTML = lines.map(line => `<div class="plain-line">${line}</div>`).join("");
-          meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title} ${t.cached}`;
+          meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}`;
           lyricsState.status = "plain";
         }
         
@@ -2818,7 +2812,6 @@ async function fetchLyrics(title, artist) {
       // ✅ Cache the response in local storage
       if (data.syncedLyrics || data.plainLyrics) {
         localStorage.setItem(cacheKey, JSON.stringify(data));
-        console.log("Lyrics cached for:", artistName, "-", trackName);
         
         // Set expiry timestamp (7 days from now)
         const expiryKey = `${cacheKey}_expiry`;
@@ -2858,9 +2851,7 @@ async function fetchLyrics(title, artist) {
     }
 
     const lyrics = json.syncedLyrics || json.plainLyrics;
-    if (!lyrics) {
-      console.log("No lyrics found for:", artist, "-", title);
-      
+    if (!lyrics) {      
       // ✅ Cache the "no lyrics" result to avoid repeated API calls
       const noLyricsData = { noLyrics: true, timestamp: Date.now() };
       localStorage.setItem(cacheKey, JSON.stringify(noLyricsData));
@@ -2992,7 +2983,6 @@ function cleanTitleAndArtist(rawTitle, rawArtist) {
 
 function loadLyricsFor(title, artist) {
   const { artist: cleanArtist, track: cleanTrack } = cleanTitleAndArtist(title, artist);
-  console.log("🎵 Cleaned song:", cleanArtist, "-", cleanTrack);
 
   fetchLyrics(cleanTrack, cleanArtist);
   startLyricsSync();
@@ -3173,7 +3163,6 @@ const translations = {
     enableLyricsTranslation: "Lyrics Translation",
     showOriginalFirstLabel: "Show Original First",
     noResultsFound: "No results found.",
-    cached: "(Cached)",
     searchCache: "Search Cache",
     lyricsCache: "Lyrics Cache",
     translationCache: "Translation Cache",
@@ -3339,7 +3328,6 @@ const translations = {
     enableLyricsTranslation: "歌词翻译",
     showOriginalFirstLabel: "原文优先显示",
     noResultsFound: "未找到结果。",
-    cached: "(已缓存)",
     searchCache: "搜索缓存",
     lyricsCache: "歌词缓存",
     translationCache: "翻译缓存",
@@ -3495,14 +3483,12 @@ function applyLanguage(lang) {
             // Show loading message for translation
             const meta = document.getElementById("lyricsMeta");
             const textEl = document.getElementById("lyricsText");
-            const translateStatus = lang === 'zh' ? '正在翻译...' : 'Translating...';
             
             if (lyricsState.status === "synced") {
-                meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title} (${translateStatus})`;
+                meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}`;
             } else if (lyricsState.status === "plain") {
-                meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title} (${translateStatus})`;
+                meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}`;
             }
-            textEl.textContent = translateStatus;
             
             // Fetch lyrics with translation to new language
             fetchLyricsWithTranslation(title, artist);
@@ -3960,7 +3946,6 @@ async function translateLyrics(text, sourceLang = 'auto', targetLang = currentLa
     const cached = translationCache[cacheKey];
     
     if (cached && (Date.now() - cached.timestamp < TRANSLATION_CACHE_EXPIRY)) {
-        console.log("Using cached translation");
         return cached.translation;
     }
     
@@ -4400,7 +4385,6 @@ document.addEventListener("DOMContentLoaded", function() {
 // Modified loadLyricsFor function with translation
 async function loadLyricsFor(title, artist) {
     const { artist: cleanArtist, track: cleanTrack } = cleanTitleAndArtist(title, artist);
-    console.log("🎵 Cleaned song:", cleanArtist, "-", cleanTrack);
 
     await fetchLyricsWithTranslation(cleanTrack, cleanArtist);
     startLyricsSync();
@@ -4422,11 +4406,9 @@ async function fetchLyricsWithTranslation(title, artist) {
         
         // Check if it's a valid lyrics response (not a "no lyrics" cache)
         if (json.syncedLyrics || json.plainLyrics) {
-            console.log("Using cached lyrics for:", artist, "-", title);
             useCachedLyrics = true;
         } else if (json.noLyrics) {
             // We've already determined no lyrics exist for this song
-            console.log("No lyrics cached for:", artist, "-", title);
             throw new Error("No lyrics (cached)");
         }
         } catch (e) {
@@ -4468,7 +4450,6 @@ async function fetchLyricsWithTranslation(title, artist) {
                 if (data.syncedLyrics || data.plainLyrics) {
                     data.timestamp = Date.now();
                     localStorage.setItem(lyricsCacheKey, JSON.stringify(data));
-                    console.log("Lyrics cached for:", artistName, "-", trackName);
                 } else {
                     // Cache "no lyrics" result
                     const noLyricsData = { noLyrics: true, timestamp: Date.now() };
@@ -4520,10 +4501,8 @@ async function fetchLyricsWithTranslation(title, artist) {
         const parsed = parseLrc(lyrics);
         lyricsData = { isLrc: true, lrcLines: parsed };
         
-        // Always show normal lyrics first
-        const cacheNote = useCachedLyrics ? ` ${t.cached}` : '';
         renderLrcLines(parsed);
-        meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}${cacheNote}`;
+        meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}`;
         lyricsState.status = "synced";
         
         // Then translate in background if enabled
@@ -4537,7 +4516,6 @@ async function fetchLyricsWithTranslation(title, artist) {
             try {
                 const translationData = JSON.parse(cachedTranslation);
                 if (translationData.translation && Date.now() - translationData.timestamp < TRANSLATION_CACHE_EXPIRY) {
-                console.log("Using cached translation");
                 translatedLyrics = translationData.translation;
                 useCachedTranslation = true;
                 showTranslatedView = true;
@@ -4548,9 +4526,7 @@ async function fetchLyricsWithTranslation(title, artist) {
             }
             
             if (!useCachedTranslation) {
-            // Show "translating..." message in meta
-            const translateStatus = currentLang === 'zh' ? '正在翻译...' : 'Translating...';
-            meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}${cacheNote} (${translateStatus})`;
+            meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}`;
             
             // Fetch translation in background
             setTimeout(async () => {
@@ -4570,18 +4546,17 @@ async function fetchLyricsWithTranslation(title, artist) {
                     translatedLyrics.some((line, i) => line !== parsed[i].text);
                 
                 if (hasTranslation) {
-                    const translationNote = currentLang === 'zh' ? '(已翻译)' : '(Translated)';
                     renderLrcLinesWithTranslation(parsed, translatedLyrics);
-                    meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}${cacheNote} ${translationNote}`;
+                    meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}`;
                     showTranslatedView = true;
                 } else {
                     // No translation available, keep normal view
-                    meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}${cacheNote}`;
+                    meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}`;
                 }
                 } catch (translationError) {
                 console.error("Translation failed:", translationError);
                 // Keep normal lyrics view
-                meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}${cacheNote}`;
+                meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}`;
                 } finally {
                 isTranslating = false;
                 }
@@ -4592,9 +4567,8 @@ async function fetchLyricsWithTranslation(title, artist) {
                 translatedLyrics.some((line, i) => line !== parsed[i].text);
             
             if (hasTranslation) {
-                const translationNote = currentLang === 'zh' ? '(已翻译)' : '(Translated)';
                 renderLrcLinesWithTranslation(parsed, translatedLyrics);
-                meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}${cacheNote} ${translationNote}`;
+                meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}`;
             }
             isTranslating = false;
             }
@@ -4603,11 +4577,9 @@ async function fetchLyricsWithTranslation(title, artist) {
         // Plain lyrics (non-synced)
         lyricsData = { isLrc: false, plain: lyrics };
         
-        // Always show normal lyrics first
-        const cacheNote = useCachedLyrics ? ` ${t.cached}` : '';
         const lines = lyrics.split(/\r?\n/).filter(l => l.trim().length > 0);
         textEl.innerHTML = lines.map(line => `<div class="plain-line">${line}</div>`).join("");
-        meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}${cacheNote}`;
+        meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}`;
         lyricsState.status = "plain";
         
         // Then translate in background if enabled
@@ -4619,15 +4591,12 @@ async function fetchLyricsWithTranslation(title, artist) {
             let useCachedTranslation = false;
             
             if (translationCache[cacheKey] && translationCache[cacheKey].translation) {
-            console.log("Using cached plain translation");
             translatedLyrics = translationCache[cacheKey].translation;
             useCachedTranslation = true;
             }
             
             if (!useCachedTranslation) {
-            // Show "translating..." message in meta
-            const translateStatus = currentLang === 'zh' ? '正在翻译...' : 'Translating...';
-            meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}${cacheNote} (${translateStatus})`;
+            meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}`;
             
             // Fetch translation in background
             setTimeout(async () => {
@@ -4677,18 +4646,17 @@ async function fetchLyricsWithTranslation(title, artist) {
                 const hasTranslation = translatedLyrics && translatedLyrics !== lyrics;
                 
                 if (hasTranslation) {
-                    const translationNote = currentLang === 'zh' ? '(已翻译)' : '(Translated)';
                     renderPlainLyricsWithTranslation(lyrics, translatedLyrics);
-                    meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}${cacheNote} ${translationNote}`;
+                    meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}`;
                     showTranslatedView = true;
                 } else {
                     // No translation available, keep normal view
-                    meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}${cacheNote}`;
+                    meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}`;
                 }
                 } catch (translationError) {
                 console.error("Translation failed:", translationError);
                 // Keep normal lyrics view
-                meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}${cacheNote}`;
+                meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}`;
                 } finally {
                 isTranslating = false;
                 }
@@ -4698,9 +4666,8 @@ async function fetchLyricsWithTranslation(title, artist) {
             const hasTranslation = translatedLyrics && translatedLyrics !== lyrics;
             
             if (hasTranslation) {
-                const translationNote = currentLang === 'zh' ? '(已翻译)' : '(Translated)';
                 renderPlainLyricsWithTranslation(lyrics, translatedLyrics);
-                meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}${cacheNote} ${translationNote}`;
+                meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}`;
                 showTranslatedView = true;
             }
             isTranslating = false;
