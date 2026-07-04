@@ -1,76 +1,108 @@
-# Deploy to GitHub Pages with API key injection
 name: Deploy YouTube Music Player to Pages
 
 on:
-  # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
 
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+# Ensures JavaScript-based GitHub Actions run with Node.js 24.
+# This avoids Node 20 deprecation warnings and compatibility issues.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  # Build and deploy job
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout source
+        uses: actions/checkout@v5
 
-      - name: Replace API key in script.js
+      - name: Build Pages artifact and inject API key
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: |
-          echo "--- Debugging API Key Injection ---"
-          echo "Checking for YOUTUBE_API_KEY secret..."
-          if [ -z "${{ secrets.YOUTUBE_API_KEY }}" ]; then
-            echo "⚠️ Warning: YOUTUBE_API_KEY secret not found in repository secrets. YouTube search will not work."
-            echo "Please ensure it is added to Settings -> Secrets and variables -> Actions."
-            # Exit with success if API key is not critical for basic deployment, but warn
-            # For now, we'll let it proceed but the app will show the 'not configured' message.
-          else
-            echo "✅ YOUTUBE_API_KEY secret found."
-            echo "Content of script.js BEFORE replacement:"
-            cat script.js | grep "YOUTUBE_API_KEY"
+          set -euo pipefail
 
-            API_KEY="${{ secrets.YOUTUBE_API_KEY }}"
-            # Use perl for robust replacement and quote API_KEY for special characters
-            perl -pi -e "s|YOUR_YOUTUBE_API_KEY|\Q$API_KEY\E|g" script.js
-            
-            echo "Content of script.js AFTER replacement:"
-            cat script.js | grep "YOUTUBE_API_KEY"
+          SITE_DIR="$RUNNER_TEMP/youtube-music-player"
+          rm -rf "$SITE_DIR"
+          mkdir -p "$SITE_DIR"
 
-            if grep -q "YOUR_YOUTUBE_API_KEY" script.js; then
-              echo "❌ Error: API key placeholder 'YOUR_YOUTUBE_API_KEY' is still present in script.js after replacement attempt."
-              exit 1
-            else
-              echo "✅ API key replacement verified: Placeholder successfully replaced."
-            fi
-          fi
-          echo "-------------------------------------"
+          # Copy only deployable project files.
+          # The original script.js in the repository stays unchanged.
+          rsync -a \
+            --exclude=".git/" \
+            --exclude=".github/" \
+            --exclude="node_modules/" \
+            --exclude="dist/" \
+            ./ "$SITE_DIR/"
 
-      - name: Setup Pages
+          python3 - "$SITE_DIR/script.js" <<'PY'
+          from pathlib import Path
+          import os
+          import sys
+
+          api_key = os.environ.get("YOUTUBE_API_KEY", "")
+          script_path = Path(sys.argv[1])
+          placeholder = "YOUR_YOUTUBE_API_KEY"
+
+          if not api_key:
+              raise SystemExit(
+                  "::error::Missing YOUTUBE_API_KEY. "
+                  "Add it in Settings → Secrets and variables → Actions."
+              )
+
+          if not script_path.is_file():
+              raise SystemExit(
+                  "::error::script.js was not found in the deployment artifact."
+              )
+
+          content = script_path.read_text(encoding="utf-8")
+          placeholder_count = content.count(placeholder)
+
+          if placeholder_count == 0:
+              raise SystemExit(
+                  "::error::YOUR_YOUTUBE_API_KEY placeholder was not found in script.js."
+              )
+
+          # Replace every placeholder in the temporary deployment copy.
+          updated_content = content.replace(placeholder, api_key)
+
+          if placeholder in updated_content:
+              raise SystemExit(
+                  "::error::API key placeholder still exists after replacement."
+              )
+
+          script_path.write_text(updated_content, encoding="utf-8")
+
+          print(
+              f"::notice::YouTube API key injected into {placeholder_count} location(s) "
+              "in the deployment artifact."
+          )
+          PY
+
+      - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
         with:
-          # Upload entire repository
-          path: '.'
+          path: ${{ runner.temp }}/youtube-music-player
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
