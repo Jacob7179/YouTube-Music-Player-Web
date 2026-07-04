@@ -2375,6 +2375,7 @@ function exportPlaylist() {
             language: currentLang,
             translationEnabled: translationEnabled,
             showOriginalFirst: showOriginalFirst,
+            titleGapFraction: GAP_FRACTION,
             exportDate: new Date().toISOString(),
             version: "1.5"
         };
@@ -2422,6 +2423,7 @@ function importPlaylist(file) {
             let importLanguage = currentLang;
             let importTranslationEnabled = translationEnabled;
             let importShowOriginalFirst = showOriginalFirst;
+            let importTitleGapFraction = GAP_FRACTION;
             
             if (Array.isArray(importedData)) {
                 // Old format - just the playlist array
@@ -2433,6 +2435,13 @@ function importPlaylist(file) {
                 importLanguage = importedData.language || currentLang;
                 importTranslationEnabled = importedData.translationEnabled !== undefined ? importedData.translationEnabled : translationEnabled;
                 importShowOriginalFirst = importedData.showOriginalFirst !== undefined ? importedData.showOriginalFirst : showOriginalFirst;
+                if (Object.prototype.hasOwnProperty.call(importedData, "titleGapFraction")) {
+                    const importedGapFraction = Number(importedData.titleGapFraction);
+
+                    if (Number.isFinite(importedGapFraction)) {
+                        importTitleGapFraction = importedGapFraction;
+                    }
+                }
             } else {
                 throw new Error("Invalid playlist format");
             }
@@ -2559,6 +2568,8 @@ function importPlaylist(file) {
                     showOriginalFirst = importedData.showOriginalFirst;
                     localStorage.setItem("showOriginalFirst", JSON.stringify(showOriginalFirst));
                 }
+
+                setTitleGapFraction(importTitleGapFraction);
                 
                 // ✅ Reset playing state
                 playing = false;
@@ -6073,7 +6084,51 @@ function formatCacheAge(timestamp) {
 
 const SLIDE_DURATION = 5;   // seconds for original title to fully exit
 const PAUSE_DURATION = 2;   // seconds to pause after each cycle
-const GAP_FRACTION = 0.5;   // gap between titles = 50% of container width (capped)
+
+const TITLE_GAP_FRACTION_KEY = "titleGapFraction";
+const DEFAULT_GAP_FRACTION = 0.3;
+
+let GAP_FRACTION;
+
+if (localStorage.getItem(TITLE_GAP_FRACTION_KEY) === null) {
+    GAP_FRACTION = DEFAULT_GAP_FRACTION;
+
+    localStorage.setItem(
+        TITLE_GAP_FRACTION_KEY,
+        String(GAP_FRACTION)
+    );
+} else {
+    GAP_FRACTION = Number(localStorage.getItem(TITLE_GAP_FRACTION_KEY));
+
+    // Repair an invalid saved value.
+    if (!Number.isFinite(GAP_FRACTION)) {
+        GAP_FRACTION = DEFAULT_GAP_FRACTION;
+        localStorage.setItem(
+            TITLE_GAP_FRACTION_KEY,
+            String(GAP_FRACTION)
+        );
+    }
+}
+
+function setTitleGapFraction(value) {
+    const parsedValue = Number(value);
+
+    if (!Number.isFinite(parsedValue)) return false;
+
+    // Allow 0% to 100% of the title container width.
+    GAP_FRACTION = Math.max(0, Math.min(1, parsedValue));
+
+    localStorage.setItem(
+        TITLE_GAP_FRACTION_KEY,
+        String(GAP_FRACTION)
+    );
+
+    // Apply the new gap immediately to a scrolling title.
+    stopTitleAnimation();
+    requestAnimationFrame(startTitleAnimation);
+
+    return true;
+}
 
 const titleContainer = document.querySelector("#nowPlaying .song-title");
 const titleInner = document.querySelector("#nowPlaying .song-title-inner");
