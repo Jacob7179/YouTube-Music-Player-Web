@@ -13,6 +13,32 @@ let albumArtSpinEnabled = albumArtDisplayMode === "spin";
 let isTranslating = false;
 let showTranslatedView = false;
 
+const LYRICS_TIME_OFFSET_KEY = "lyricsTimeOffsetSeconds";
+
+let lyricsTimeOffsetSeconds = Number(
+    localStorage.getItem(LYRICS_TIME_OFFSET_KEY)
+);
+
+if (!Number.isFinite(lyricsTimeOffsetSeconds)) {
+    lyricsTimeOffsetSeconds = 0;
+}
+
+function setLyricsTimeOffset(seconds) {
+    const value = Number(seconds);
+
+    if (!Number.isFinite(value)) return false;
+
+    // Limit to -30 to +30 seconds
+    lyricsTimeOffsetSeconds = Math.max(-30, Math.min(30, value));
+
+    localStorage.setItem(
+        LYRICS_TIME_OFFSET_KEY,
+        String(lyricsTimeOffsetSeconds)
+    );
+
+    return true;
+}
+
 // YOUTUBE_API_KEY is now loaded from config.js or Vercel API endpoint
 const VERCEL_API_KEY_ENDPOINT = '/api/getApiKey';
 let cachedApiKey = null;
@@ -2375,6 +2401,7 @@ function exportPlaylist() {
             language: currentLang,
             translationEnabled: translationEnabled,
             showOriginalFirst: showOriginalFirst,
+            lyricsTimeOffsetSeconds: lyricsTimeOffsetSeconds,
             exportDate: new Date().toISOString(),
             version: "1.5"
         };
@@ -2421,6 +2448,7 @@ function importPlaylist(file) {
             let importDarkMode = false;
             let importLanguage = currentLang;
             let importTranslationEnabled = translationEnabled;
+            let importLyricsTimeOffsetSeconds = lyricsTimeOffsetSeconds;
             let importShowOriginalFirst = showOriginalFirst;
             
             if (Array.isArray(importedData)) {
@@ -2432,6 +2460,13 @@ function importPlaylist(file) {
                 importDarkMode = importedData.darkMode === true;
                 importLanguage = importedData.language || currentLang;
                 importTranslationEnabled = importedData.translationEnabled !== undefined ? importedData.translationEnabled : translationEnabled;
+                if (Object.prototype.hasOwnProperty.call(importedData, "lyricsTimeOffsetSeconds")) {
+                    const importedOffset = Number(importedData.lyricsTimeOffsetSeconds);
+
+                    if (Number.isFinite(importedOffset)) {
+                        importLyricsTimeOffsetSeconds = importedOffset;
+                    }
+                }
                 importShowOriginalFirst = importedData.showOriginalFirst !== undefined ? importedData.showOriginalFirst : showOriginalFirst;
             } else {
                 throw new Error("Invalid playlist format");
@@ -2554,6 +2589,7 @@ function importPlaylist(file) {
                     }
                 }
                 
+                setLyricsTimeOffset(importLyricsTimeOffsetSeconds);
                 // Apply translation order setting if included in export
                 if (importedData.showOriginalFirst !== undefined) {
                     showOriginalFirst = importedData.showOriginalFirst;
@@ -2732,19 +2768,27 @@ function parseLrc(text) {
 }
 
 function renderLrcLines(lines) {
-  const el = document.getElementById("lyricsText");
-  el.innerHTML = lines
-    .map((l, i) => {
-      const m = Math.floor(l.time / 60);
-      const s = Math.floor(l.time % 60);
-      const formattedTime = `${m}:${s < 10 ? "0" + s : s}`;
-      return `
-        <div class="lrc-line" data-index="${i}" data-time="${l.time}" data-formatted-time="${formattedTime}">
-          <span class="lrc-time">[${formattedTime}]</span>
-          <span class="lrc-text">${l.text}</span>
-        </div>`;
-    })
-    .join("");
+    const el = document.getElementById("lyricsText");
+
+    el.innerHTML = lines.map((line, index) => {
+        const lyric = (line.text || "").trim();
+
+        // Remove timestamp rows that contain no lyric text.
+        if (!lyric) return "";
+
+        const minutes = Math.floor(line.time / 60);
+        const seconds = Math.floor(line.time % 60);
+        const formattedTime = `${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
+
+        return `
+            <div class="lrc-line"
+                 data-index="${index}"
+                 data-time="${line.time}"
+                 data-formatted-time="${formattedTime}">
+                <span class="lrc-text">${lyric}</span>
+            </div>
+        `;
+    }).join("");
 }
 
 let lyricsState = {
@@ -3728,168 +3772,178 @@ const translations = {
     "zh-TW": "번체 중국어",
     ja: "일본어",
     ko: "한국어",
-  }
-};
-
-function toTraditionalChineseText(text) {
-    if (typeof text !== "string") return text;
-
-    const map = {
-        "简": "簡", "体": "體", "汉": "漢", "语": "語", "译": "譯",
-        "显": "顯", "示": "示", "设": "設", "置": "置", "载": "載",
-        "导": "導", "入": "入", "出": "出", "数": "數", "据": "據",
-        "复": "複", "制": "製", "删": "刪", "除": "除", "项": "項",
-        "选": "選", "择": "擇", "启": "啟", "关": "關", "闭": "閉",
-        "开": "開", "发": "發", "现": "現", "结": "結", "果": "果",
-        "搜": "搜", "索": "索", "歌": "歌", "词": "詞", "单": "單",
-        "频": "頻", "乐": "樂", "览": "覽", "错": "錯", "误": "誤",
-        "请": "請", "连": "連", "网": "網", "络": "絡", "试": "試",
-        "间": "間", "钟": "鐘", "后": "後", "时": "時", "过": "過",
-        "画": "畫", "面": "面", "实": "實", "验": "驗", "稳": "穩",
-        "险": "險", "钥": "鑰", "读": "讀", "写": "寫", "欢": "歡",
-        "应": "應", "统": "統", "计": "計", "总": "總", "类": "類",
-        "临": "臨", "时": "時", "项": "項", "内": "內", "容": "容",
-        "变": "變", "声": "聲", "认": "認", "为": "為", "这": "這",
-        "个": "個", "会": "會", "无": "無", "与": "與", "专": "專",
-        "业": "業", "东": "東", "两": "兩", "严": "嚴", "丧": "喪",
-        "丰": "豐", "丽": "麗", "举": "舉", "么": "麼", "义": "義",
-        "乌": "烏", "乔": "喬", "习": "習", "乡": "鄉", "书": "書",
-        "买": "買", "乱": "亂", "争": "爭", "于": "於", "亏": "虧",
-        "云": "雲", "亚": "亞", "产": "產", "亩": "畝", "亲": "親",
-        "亿": "億", "仅": "僅", "从": "從", "仓": "倉", "仪": "儀",
-        "们": "們", "价": "價", "众": "眾", "优": "優", "传": "傳",
-        "伤": "傷", "伦": "倫", "伪": "偽", "伟": "偉", "侧": "側",
-        "侦": "偵", "侠": "俠", "侥": "僥", "侨": "僑", "侩": "儈",
-        "侪": "儕", "侬": "儂", "俣": "俁", "俦": "儔", "俨": "儼",
-        "俩": "倆", "俪": "儷", "俭": "儉", "债": "債", "倾": "傾",
-        "偬": "傯", "偻": "僂", "偿": "償", "傥": "儻", "储": "儲",
-        "儿": "兒", "兑": "兌", "党": "黨", "兰": "蘭", "兴": "興",
-        "养": "養", "兽": "獸", "内": "內", "冈": "岡", "册": "冊",
-        "写": "寫", "军": "軍", "农": "農", "冲": "衝", "决": "決",
-        "况": "況", "冻": "凍", "净": "淨", "凉": "涼", "减": "減",
-        "凑": "湊", "凤": "鳳", "凭": "憑", "凯": "凱", "击": "擊",
-        "凿": "鑿", "刍": "芻", "划": "劃", "刘": "劉", "则": "則",
-        "刚": "剛", "创": "創", "删": "刪", "别": "別", "刬": "剗",
-        "刭": "剄", "剂": "劑", "剐": "剮", "剑": "劍", "剧": "劇",
-        "劝": "勸", "办": "辦", "务": "務", "动": "動", "励": "勵",
-        "劲": "勁", "劳": "勞", "势": "勢", "勋": "勳", "匀": "勻",
-        "区": "區", "医": "醫", "华": "華", "协": "協", "单": "單",
-        "卖": "賣", "卢": "盧", "卫": "衛", "却": "卻", "厂": "廠",
-        "厅": "廳", "历": "歷", "压": "壓", "厌": "厭", "厉": "厲",
-        "厕": "廁", "厦": "廈", "厨": "廚", "厩": "廄", "县": "縣",
-        "叁": "參", "参": "參", "双": "雙", "变": "變", "叙": "敘",
-        "叠": "疊", "叶": "葉", "号": "號", "叹": "嘆", "叽": "嘰",
-        "吁": "籲", "后": "後", "听": "聽", "启": "啟", "吴": "吳",
-        "呐": "吶", "员": "員", "呗": "唄", "呙": "咼", "呛": "嗆",
-        "呜": "嗚", "咏": "詠", "咙": "嚨", "咛": "嚀", "咝": "噝",
-        "咤": "吒", "响": "響", "哑": "啞", "哒": "噠", "哓": "嘵",
-        "哔": "嗶", "哕": "噦", "哗": "嘩", "哙": "噲", "哜": "嚌",
-        "哝": "噥", "哟": "喲", "唤": "喚", "啧": "嘖", "啬": "嗇",
-        "啭": "囀", "啮": "嚙", "啰": "囉", "啸": "嘯", "喷": "噴",
-        "喽": "嘍", "喾": "嚳", "嗫": "囁", "嗳": "噯", "嘘": "噓",
-        "嘤": "嚶", "嘱": "囑", "噜": "嚕", "嚣": "囂", "团": "團",
-        "园": "園", "围": "圍", "图": "圖", "圆": "圓", "圣": "聖",
-        "场": "場", "坏": "壞", "块": "塊", "坚": "堅", "坛": "壇",
-        "坝": "壩", "坞": "塢", "坟": "墳", "坠": "墜", "垄": "壟",
-        "垅": "壟", "垆": "壚", "垒": "壘", "垦": "墾", "垩": "堊",
-        "垫": "墊", "垭": "埡", "垯": "墶", "垱": "壋", "垲": "塏",
-        "垴": "堖", "埘": "塒", "埙": "塤", "埚": "堝", "埯": "垵",
-        "堑": "塹", "堕": "墮", "墙": "牆", "壮": "壯", "声": "聲",
-        "壳": "殼", "壶": "壺", "处": "處", "备": "備", "复": "復",
-        "够": "夠", "头": "頭", "夹": "夾", "夺": "奪", "奁": "奩",
-        "奂": "奐", "奋": "奮", "奖": "獎", "奥": "奧", "妆": "妝",
-        "妇": "婦", "妈": "媽", "妩": "嫵", "妪": "嫗", "妫": "媯",
-        "姗": "姍", "姜": "薑", "娄": "婁", "娅": "婭", "娆": "嬈",
-        "娇": "嬌", "娈": "孌", "娱": "娛", "娲": "媧", "娴": "嫻",
-        "婳": "嫿", "婴": "嬰", "婵": "嬋", "婶": "嬸", "孙": "孫",
-        "学": "學", "孪": "孿", "宁": "寧", "宝": "寶", "实": "實",
-        "宠": "寵", "审": "審", "宪": "憲", "宫": "宮", "宽": "寬",
-        "宾": "賓", "寝": "寢", "对": "對", "寻": "尋", "导": "導",
-        "寿": "壽", "将": "將", "尔": "爾", "尘": "塵", "尝": "嘗",
-        "尧": "堯", "尴": "尷", "尸": "屍", "尽": "盡", "层": "層",
-        "屃": "屭", "屉": "屜", "届": "屆", "属": "屬", "屡": "屢",
-        "岁": "歲", "岂": "豈", "岖": "嶇", "岗": "崗", "岘": "峴",
-        "岙": "嶴", "岚": "嵐", "岛": "島", "岭": "嶺", "岳": "嶽",
-        "岽": "崬", "岿": "巋", "峃": "嶨", "峄": "嶧", "峡": "峽",
-        "峣": "嶢", "峤": "嶠", "峥": "崢", "峦": "巒", "崂": "嶗",
-        "崃": "崍", "崄": "嶮", "崭": "嶄", "嵘": "嶸", "嵚": "嶔",
-        "巅": "巔"
-    };
-
-    return text.replace(/[^\x00-\x7F]/g, char => map[char] || char);
-}
-
-function createTraditionalChineseTranslations(source) {
-    const result = {};
-
-    Object.entries(source).forEach(([key, value]) => {
-        result[key] = toTraditionalChineseText(value);
-    });
-
-    return result;
-}
-
-translations["zh-TW"] = {
-    ...createTraditionalChineseTranslations(translations.zh),
-
-    // Language names
-    en: "英文",
-    zh: "簡體中文",
-    "zh-TW": "繁體中文",
-    ja: "日文",
-    ko: "韓文",
-
-    // Better wording overrides
+  },
+  "zh-TW": {
     playerTitle: "YouTube 音樂播放器",
+    autoPlay: "自動播放",
+    repeat: "重複播放",
     lyrics: "歌詞",
     lyricsNoLoad: "尚未載入歌詞",
     lyricsSyncedFound: "已找到同步歌詞：",
-    lyricsPlainFound: "已找到普通歌詞：",
-    lyricsNotFound: "未找到歌詞。",
+    lyricsPlainFound: "已找到純文字歌詞：",
+    lyricsNotFound: "找不到歌詞。",
     lyricsError: "取得歌詞時發生錯誤。",
     lyricsFetching: "正在載入歌詞...",
+    autoSyncOn: "自動同步：開啟",
+    autoSyncOff: "自動同步：關閉",
+    refresh: "重新整理",
+    raw: "原始資料",
     showPlaylist: "我的播放清單",
     searchPlaylist: "搜尋你的播放清單...",
     clearSearch: "清除搜尋",
     searchPlaylistPlaceholder: "搜尋你的播放清單...",
     songName: "歌曲名稱",
     authorName: "作者名稱",
+    dragToReorder: "拖曳以重新排序",
+    numberHeader: "編號",
     actionHeader: "操作",
+    songUnavailable: "此歌曲無法播放。將在",
+    seconds: "秒後跳過",
     youtubeSearchTitle: "搜尋 YouTube",
     youtubeSearchPlaceholder: "在 YouTube 搜尋要加入的歌曲...",
     youtubeSearchBtn: "搜尋",
     searchResultsTitle: "搜尋結果：",
     youtubeSearching: "正在搜尋 YouTube...",
-    youtubeSearchError: "無法搜尋 YouTube。請檢查網路連線後再試。",
+    youtubeSearchError: "無法搜尋 YouTube。請檢查你的網路連線後再試。",
+    youtubeApiKeyError: "尚未設定 YouTube API 金鑰。請確認已載入 config.js，並已設定金鑰。",
+    removeSongTitle: "移除歌曲",
     settingsTitle: "設定",
+    searchYouTubeTitle: "搜尋 YouTube",
+    exportTitle: "匯出播放清單與資料",
+    importTitle: "匯入播放清單與資料",
     exportPlaylist: "匯出播放清單與資料",
     importPlaylist: "匯入播放清單與資料",
     clearCache: "快取管理",
+    albumArtSpin: "專輯封面旋轉",
+    showLyrics: "歌詞",
     darkMode: "深色模式",
-    enableLyricsTranslation: "歌詞翻譯",
-    settingsAbout: "關於",
-    language: "語言",
+    toggleLyricsTooltip: "切換顯示或隱藏歌詞",
+    goTop: "回到頂端",
+    creatorTitle: "原始創作者",
+    creatorDesc: "此 YouTube 音樂播放器專案的原始創作者。",
+    creatorBtn: "原始創作者",
+    visitRepo: "前往儲存庫",
+    maintainerTitle: "分支維護者",
+    maintainerDesc: "維護具備強化功能的<a href='https://github.com/Farwalker3/YouTube-Music-Player-Web' target='_blank'>此分支版本</a>。",
+    maintainerBtn: "分支維護者",
+    experimentalWindowTitle: "實驗性專案",
+    experimentalWindowWarning: "⚠ 警告：此專案可能不穩定且存在風險，請自行承擔使用風險。",
+    readExcelTitle: "讀取 Excel 檔案方法",
+    readApiKeyTitle: "讀取 API 金鑰方法",
+    viewBetaBtn: "查看 Beta 測試專案",
+    viewAlphaBtn: "查看 Alpha 測試專案",
+    viewBetaTooltip: "查看 Beta 測試專案",
+    viewAlphaTooltip: "查看 Alpha 測試專案",
+    attributionText: "原始專案由",
+    attributionEnhanced: "強化版本由",
+    attributionRepo: "原始儲存庫",
+    languageLabel: "語言",
+    songAlreadyExists: "此歌曲已在你的播放清單中！",
+    songAdded: " 已加入你的播放清單！",
+    importFileTypeError: "請選擇包含 JSON 資料的 JSON 或 TXT 檔案。",
+    cacheCleared: "搜尋快取已清除！新的搜尋將取得最新結果。",
+    exportError: "匯出播放清單時發生錯誤，請再試一次。",
+    importError: "匯入播放清單時發生錯誤：",
+    fileReadError: "讀取檔案時發生錯誤，請再試一次。",
+    noLyricsLoaded: "尚未載入歌詞。",
+    clearCacheConfirm: "確定要清除搜尋快取嗎？這將移除所有已儲存的搜尋結果。",
+    importConfirm: "要匯入 ${count} 首歌曲嗎？這將取代你目前的播放清單。",
+    importSuccess: "已成功匯入 ${count} 首歌曲！",
+    darkModeStatus: "深色模式已${status}。",
+    albumArtSpinStatus: "專輯封面旋轉已${status}。",
+    lyricsPanelStatus: "歌詞面板已${status}。",
+    languageSet: "語言已設定為 ${language}。",
+    enabled: "啟用",
+    disabled: "停用",
+    chinese: "簡體中文",
+    english: "英文",
+    addToPlaylist: "加入播放清單",
+    add: "加入",
+    invalidLink: "⚠ 提供的 YouTube 連結無效。",
+    duplicateSong: "⚠ 此歌曲已在你的播放清單中！",
+    addedSong: (title, author) => `✅ 已將「${title}」－${author} 加入你的播放清單！`,
+    aboutTitle: "關於 YouTube 音樂播放器",
+    aboutDescription: "一個功能豐富的網頁音樂播放器，以 YouTube 作為音樂來源。你可以透過簡潔直覺的介面播放、管理和整理喜愛的音樂。",
+    featuresTitle: "功能",
+    feature1: "YouTube 音樂播放",
+    feature2: "支援拖放排序的播放清單管理",
+    feature3: "支援自動同步的歌詞顯示",
+    feature4: "歌詞翻譯",
+    feature5: "深色/淺色模式",
+    feature6: "匯出/匯入播放清單",
+    feature7: "音量控制與進度列",
+    feature8: "多語言支援（{languages}）",
+    feature9: "自動播放與重複播放模式",
+    originalProjectTitle: "原始專案",
+    originalCreator: "原始創作者",
+    contributorsTitle: "貢獻者",
+    forkMaintainer: "分支維護者",
+    linksTitle: "連結",
+    originalRepository: "原始儲存庫",
+    versionInfoTitle: "版本資訊",
+    version: "版本：",
+    lastUpdated: "最後更新：",
     languages: "語言：",
-    translation: "翻譯",
-    original: "原文",
+    experimentalFeatures: "實驗性功能",
+    settingsAboutTitle: "關於此專案",
+    settingsAbout: "關於",
+    albumArtDisplay: "專輯封面顯示：",
+    spin: "旋轉",
+    none: "無",
+    video: "影片",
+    youtubeApi403Error: "YouTube API 錯誤：403 - 已超過配額。此 API 金鑰已達到每日限制。請明天再試，或使用其他 API 金鑰。",
+    translationStatus: "歌詞翻譯已${status}。",
+    enableLyricsTranslation: "歌詞翻譯",
+    showOriginalFirstLabel: "優先顯示原文",
+    noResultsFound: "找不到結果。",
+    searchCache: "搜尋快取",
+    lyricsCache: "歌詞快取",
+    translationCache: "翻譯快取",
+    unknown: "未知",
+    viewDetails: "查看詳細資料",
+    delete: "刪除",
+    noCacheItems: "找不到快取項目",
+    totalItems: "項目總數",
+    totalSize: "總大小",
+    selectAll: "全選",
+    clearSelected: "清除已選項目",
+    clearAll: "清除所有快取",
+    cacheManagerTitle: "快取管理員",
+    cacheItems: "快取項目",
+    cacheKey: "快取金鑰",
+    cacheType: "類型",
+    cacheSize: "大小",
+    cacheAge: "快取時間",
+    actions: "操作",
+    confirmDeleteSelected: "要刪除已選取的 {count} 個項目嗎？",
+    confirmDeleteItem: "要刪除此快取項目嗎？",
+    confirmClearAllCache: "確定要清除所有快取嗎？此操作無法復原。",
+    noItemsSelected: "尚未選取任何項目",
+    copiedToClipboard: "已複製到剪貼簿！",
+    cacheItemDetails: "快取詳細資料",
+    cacheContent: "內容",
+    copyContent: "複製內容",
+    deleteItem: "刪除項目",
     close: "關閉",
     search: "搜尋",
-    refresh: "重新整理",
-    raw: "原始資料",
-    feature8: "多語言支援（{languages}）",
+    translation: "翻譯",
+    all: "全部",
+    itemsSelected: "已選取 {count} 個項目",
+    cacheStats: "快取統計資料",
+    expiresIn: "到期時間",
+    never: "永不",
+    expired: "已過期",
+    valid: "有效",
+    invalid: "無效",
+    en: "英文",
+    zh: "簡體中文",
+    "zh-TW": "繁體中文",
+    ja: "日文",
+    ko: "韓文",
+  }
 };
 
-// Add Traditional Chinese name to existing languages
-translations.en["zh-TW"] = "Traditional Chinese";
-translations.zh["zh-TW"] = "繁體中文";
-translations.ja["zh-TW"] = "繁体字中国語";
-translations.ko["zh-TW"] = "번체 중국어";
-
 let currentLang = localStorage.getItem("language");
-
-if (currentLang === "zhTW" || currentLang === "zh-Hant") {
-    currentLang = "zh-TW";
-}
 
 if (!translations[currentLang]) {
     const browserLang = navigator.language.toLowerCase();
@@ -4800,15 +4854,22 @@ async function translateLyricsLines(lines, targetLang) {
     // Translate in chunks to avoid overwhelming the API
     for (let i = 0; i < lines.length; i += 5) {
         const chunk = lines.slice(i, i + 5);
-        const chunkText = chunk.map(l => l.text).join('\n');
-        
-        // Skip translation if chunk is empty
-        if (!chunkText.trim()) {
-            for (let j = 0; j < chunk.length; j++) {
-                translatedLines.push(chunk[j].text);
-            }
+        const nonEmptyItems = chunk
+            .map((line, index) => ({
+                index,
+                text: (line.text || "").trim()
+            }))
+            .filter(item => item.text !== "");
+
+        // All rows are empty: keep them empty and skip the API request.
+        if (nonEmptyItems.length === 0) {
+            translatedLines.push(...chunk.map(() => ""));
             continue;
         }
+
+        const chunkText = nonEmptyItems
+            .map(item => item.text)
+            .join("\n");
         
         try {
             let translatedChunk;
@@ -4829,17 +4890,15 @@ async function translateLyricsLines(lines, targetLang) {
                 translatedChunk = await translateLyrics(chunkText, sourceLang, targetLang);
             }
             
-            const translatedLinesChunk = translatedChunk.split('\n');
-            
-            // Ensure we have the same number of lines
-            for (let j = 0; j < chunk.length; j++) {
-                // Preserve empty lines as empty
-                if (chunk[j].text.trim() === '') {
-                    translatedLines.push('');
-                } else {
-                    translatedLines.push(translatedLinesChunk[j] || chunk[j].text);
-                }
-            }
+            const translatedLinesChunk = translatedChunk.split("\n");
+            const chunkResult = Array(chunk.length).fill("");
+
+            nonEmptyItems.forEach((item, translationIndex) => {
+                chunkResult[item.index] =
+                    (translatedLinesChunk[translationIndex] || item.text).trim();
+            });
+
+            translatedLines.push(...chunkResult);
         } catch (error) {
             // If translation fails, use original text for this chunk
             for (let j = 0; j < chunk.length; j++) {
@@ -4859,44 +4918,64 @@ function renderLrcLinesWithTranslation(lines, translatedLines = []) {
     const labels = getLyricsLabels();
 
     el.innerHTML = lines.map((line, index) => {
+        const original = (line.text || "").trim();
+        const translation = (translatedLines[index] || "").trim();
+
+        // Remove a row only when both original and translation are empty.
+        if (!original && !translation) return "";
+
         const minutes = Math.floor(line.time / 60);
         const seconds = Math.floor(line.time % 60);
         const formattedTime = `${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
 
-        const translation = translatedLines[index];
-        const hasTranslation =
-            typeof translation === "string" &&
-            translation.trim() !== "" &&
-            translation !== line.text;
+        // Only one usable text: show one section only.
+        const hasBothTexts =
+            original !== "" &&
+            translation !== "" &&
+            original !== translation;
 
-        // Do not show an empty translation area.
-        const firstIsOriginal = showOriginalFirst || !hasTranslation;
+        if (!hasBothTexts) {
+            const text = original || translation;
+            const className = original ? "original-lyric" : "translated-lyric";
+            const label = original ? labels.original : labels.translation;
 
-        const firstText = firstIsOriginal ? line.text : translation;
+            return `
+                <div class="lrc-line"
+                     data-index="${index}"
+                     data-time="${line.time}"
+                     data-formatted-time="${formattedTime}">
+                    <div class="lyrics-pair">
+                        <div class="${className}" data-label="${label}">
+                            ${text}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        const firstIsOriginal = showOriginalFirst;
+        const firstText = firstIsOriginal ? original : translation;
         const firstClass = firstIsOriginal ? "original-lyric" : "translated-lyric";
         const firstLabel = firstIsOriginal ? labels.original : labels.translation;
 
-        const secondHtml = hasTranslation
-            ? `
-                <div class="${firstIsOriginal ? "translated-lyric" : "original-lyric"}"
-                     data-label="${firstIsOriginal ? labels.translation : labels.original}">
-                    ${firstIsOriginal ? translation : line.text}
-                </div>
-              `
-            : "";
+        const secondText = firstIsOriginal ? translation : original;
+        const secondClass = firstIsOriginal ? "translated-lyric" : "original-lyric";
+        const secondLabel = firstIsOriginal ? labels.translation : labels.original;
 
         return `
             <div class="lrc-line"
                  data-index="${index}"
                  data-time="${line.time}"
                  data-formatted-time="${formattedTime}">
-                <span class="lrc-time">[${formattedTime}]</span>
 
                 <div class="lyrics-pair">
                     <div class="${firstClass}" data-label="${firstLabel}">
                         ${firstText}
                     </div>
-                    ${secondHtml}
+
+                    <div class="${secondClass}" data-label="${secondLabel}">
+                        ${secondText}
+                    </div>
                 </div>
             </div>
         `;
@@ -4907,41 +4986,59 @@ function renderPlainLyricsWithTranslation(plainText, translatedText = "") {
     const el = document.getElementById("lyricsText");
     const labels = getLyricsLabels();
 
-    // Keep blank lines in both arrays so translation stays in the correct row.
     const originalLines = plainText.split(/\r?\n/);
     const translatedLines = translatedText
         ? translatedText.split(/\r?\n/)
         : [];
 
     el.innerHTML = originalLines.map((line, index) => {
-        const translation = translatedLines[index] || "";
+        const original = (line || "").trim();
+        const translation = (translatedLines[index] || "").trim();
 
-        const hasTranslation =
-            translation.trim() !== "" &&
-            translation !== line;
+        // Do not create a blank lyric section.
+        if (!original && !translation) return "";
 
-        const firstIsOriginal = showOriginalFirst || !hasTranslation;
+        const hasBothTexts =
+            original !== "" &&
+            translation !== "" &&
+            original !== translation;
 
-        const firstText = firstIsOriginal ? line : translation;
+        // Show only one section when only original or translation exists.
+        if (!hasBothTexts) {
+            const text = original || translation;
+            const className = original ? "original-lyric" : "translated-lyric";
+            const label = original ? labels.original : labels.translation;
+
+            return `
+                <div class="plain-line">
+                    <div class="lyrics-pair">
+                        <div class="${className}" data-label="${label}">
+                            ${text}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        const firstIsOriginal = showOriginalFirst;
+        const firstText = firstIsOriginal ? original : translation;
         const firstClass = firstIsOriginal ? "original-lyric" : "translated-lyric";
         const firstLabel = firstIsOriginal ? labels.original : labels.translation;
 
-        const secondHtml = hasTranslation
-            ? `
-                <div class="${firstIsOriginal ? "translated-lyric" : "original-lyric"}"
-                     data-label="${firstIsOriginal ? labels.translation : labels.original}">
-                    ${firstIsOriginal ? translation : line}
-                </div>
-              `
-            : "";
+        const secondText = firstIsOriginal ? translation : original;
+        const secondClass = firstIsOriginal ? "translated-lyric" : "original-lyric";
+        const secondLabel = firstIsOriginal ? labels.translation : labels.original;
 
         return `
             <div class="plain-line">
                 <div class="lyrics-pair">
                     <div class="${firstClass}" data-label="${firstLabel}">
-                        ${firstText || " "}
+                        ${firstText}
                     </div>
-                    ${secondHtml}
+
+                    <div class="${secondClass}" data-label="${secondLabel}">
+                        ${secondText}
+                    </div>
                 </div>
             </div>
         `;
@@ -5355,6 +5452,7 @@ document.head.appendChild(style);
 // Update sync function to handle translation display
 function syncLyricsToTime(currentTime) {
     if (!lyricsData || !lyricsData.isLrc) return;
+    currentTime = Math.max(0, currentTime + lyricsTimeOffsetSeconds);
     const lines = lyricsData.lrcLines;
     if (!lines || lines.length === 0) return;
 
