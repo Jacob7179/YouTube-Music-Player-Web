@@ -255,12 +255,15 @@
                             <button type="button" class="btn btn-sm btn-outline-primary" data-mode="video">Video</button>
                         </div>
                     </div>
-                    <div class="d-flex flex-column align-items-start w-100" role="group" aria-label="Language toggle">
-                        <span id="languageLabel" class="fw-bold mb-1">Language:</span>
-                        <div class="btn-group w-100" role="group">
-                            <button id="lang-en" class="btn btn-sm btn-outline-primary flex-fill active">English</button>
-                            <button id="lang-zh" class="btn btn-sm btn-outline-primary flex-fill">中文</button>
-                        </div>
+                    <div class="d-flex flex-column align-items-start w-100 mb-2" aria-label="Language select">
+                        <label id="languageLabel" for="languageSelect" class="fw-bold mb-1">Language:</label>
+                        <select id="languageSelect" class="form-select form-select-sm w-100">
+                            <option value="en">English</option>
+                            <option value="zh">简体中文</option>
+                            <option value="zh-TW">繁體中文</option>
+                            <option value="ja">日本語</option>
+                            <option value="ko">한국어</option>
+                        </select>
                     </div>
                     <button id="settingsAboutBtn" class="btn btn-primary btn-sm w-100 mb-2" data-translate-title="settingsAboutTitle" title="About this Project">
                         <i class='bx bx-info-circle'></i> <span data-translate="settingsAbout">About</span>
@@ -340,7 +343,7 @@
                         <h6><i class="bx bx-info-circle"></i> <span data-translate="versionInfoTitle">Version Information</span></h6>
                         <small data-translate="version">Version: </small><small>1.5</small><br>
                         <small data-translate="lastUpdated">Last Updated: </small><small id="formattedDate" data-original-date="{{BUILD_DATE}}">{{BUILD_DATE}}</small><br>
-                        <small data-translate="languages">Languages: </small><small>English & 中文</small>
+                        <small data-translate="languages">Languages: </small><small id="supportedLanguages"></small>
                     </div>
                 </div>
             </div>

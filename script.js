@@ -2327,8 +2327,17 @@ document.addEventListener("DOMContentLoaded", function() {
     });
     
     // Close menu when clicking outside
-    document.addEventListener("click", function(event) {
-        if (!event.target.closest(".floating-settings") && settingsMenu.classList.contains("show")) {
+    document.addEventListener("click", function (event) {
+        const clickedInsideSettings = event.target.closest(".floating-settings");
+        const clickedInsideCacheManager = event.target.closest(
+            "#cacheManagerWindow, #cacheManagerOverlay, #cacheItemDetailsModal"
+        );
+
+        if (
+            !clickedInsideSettings &&
+            !clickedInsideCacheManager &&
+            settingsMenu.classList.contains("show")
+        ) {
             closeSettingsMenu();
         }
     });
@@ -3122,7 +3131,7 @@ const translations = {
     languageSet: "Language set to ${language}.",
     enabled: "enabled",
     disabled: "disabled",
-    chinese: "Chinese",
+    chinese: "Simplified Chinese",
     english: "English",
     addToPlaylist: "Add to Playlist",
     add: "Add",
@@ -3139,7 +3148,7 @@ const translations = {
     feature5: "Dark/Light mode",
     feature6: "Export/Import playlists",
     feature7: "Volume control & progress bar",
-    feature8: "Multi-language support (English/中文)",
+    feature8: "Multi-language support ({languages})",
     feature9: "Auto-play & repeat modes",
     originalProjectTitle: "Original Project",
     originalCreator: "Original creator",
@@ -3204,6 +3213,11 @@ const translations = {
     expired: "Expired",
     valid: "Valid",
     invalid: "Invalid",
+    en: "English",
+    zh: "Simplified Chinese",
+    "zh-TW": "Traditional Chinese",
+    ja: "Japanese",
+    ko: "Korean",
   },
   zh: {
     playerTitle: "YouTube 音乐播放器",
@@ -3287,7 +3301,7 @@ const translations = {
     languageSet: "语言设置为${language}。",
     enabled: "启用",
     disabled: "关闭",
-    chinese: "中文",
+    chinese: "简体中文",
     english: "英文",
     addToPlaylist: "添加到播放列表",
     add: "添加",
@@ -3304,7 +3318,7 @@ const translations = {
     feature5: "深色/浅色模式",
     feature6: "导入/导出播放列表",
     feature7: "音量控制与进度条",
-    feature8: "多语言支持 (英文/中文)",
+    feature8: "多语言支持（{languages}）",
     feature9: "自动播放和重复模式",
     originalProjectTitle: "原始项目",
     originalCreator: "原始创作者",
@@ -3369,54 +3383,605 @@ const translations = {
     expired: "已过期",
     valid: "有效",
     invalid: "无效",
+    en: "英文",
+    zh: "简体中文",
+    "zh-TW": "繁體中文",
+    ja: "日文",
+    ko: "韩文",
+  },
+  ja: {
+    playerTitle: "YouTube Music Player",
+    autoPlay: "自動再生",
+    repeat: "リピート",
+    lyrics: "歌詞",
+    lyricsNoLoad: "歌詞が読み込まれていません",
+    lyricsSyncedFound: "同期歌詞が見つかりました：",
+    lyricsPlainFound: "歌詞が見つかりました：",
+    lyricsNotFound: "歌詞が見つかりません。",
+    lyricsError: "歌詞の取得中にエラーが発生しました。",
+    lyricsFetching: "歌詞を取得中...",
+    autoSyncOn: "自動同期：オン",
+    autoSyncOff: "自動同期：オフ",
+    refresh: "更新",
+    raw: "生データ",
+    showPlaylist: "マイプレイリスト",
+    searchPlaylist: "プレイリストを検索...",
+    clearSearch: "検索をクリア",
+    searchPlaylistPlaceholder: "プレイリストを検索...",
+    songName: "曲名",
+    authorName: "アーティスト名",
+    dragToReorder: "ドラッグして並べ替え",
+    numberHeader: "番号",
+    actionHeader: "操作",
+    songUnavailable: "この曲は利用できません。",
+    seconds: "秒後にスキップします",
+    youtubeSearchTitle: "YouTube を検索",
+    youtubeSearchPlaceholder: "追加する曲を YouTube で検索...",
+    youtubeSearchBtn: "検索",
+    searchResultsTitle: "検索結果：",
+    youtubeSearching: "YouTube を検索中...",
+    youtubeSearchError: "YouTube を検索できません。インターネット接続を確認して、もう一度お試しください。",
+    youtubeApiKeyError: "YouTube API キーが設定されていません。config.js が読み込まれており、キーが設定されていることを確認してください。",
+    removeSongTitle: "曲を削除",
+    settingsTitle: "設定",
+    searchYouTubeTitle: "YouTube を検索",
+    exportTitle: "プレイリストとデータをエクスポート",
+    importTitle: "プレイリストとデータをインポート",
+    exportPlaylist: "プレイリストとデータをエクスポート",
+    importPlaylist: "プレイリストとデータをインポート",
+    clearCache: "キャッシュ管理",
+    albumArtSpin: "アルバムアートを回転",
+    showLyrics: "歌詞",
+    darkMode: "ダークモード",
+    toggleLyricsTooltip: "歌詞の表示／非表示を切り替える",
+    goTop: "先頭へ戻る",
+    creatorTitle: "オリジナル制作者",
+    creatorDesc: "この YouTube Music Player プロジェクトのオリジナル制作者です。",
+    creatorBtn: "オリジナル制作者",
+    visitRepo: "リポジトリを表示",
+    maintainerTitle: "フォーク版メンテナー",
+    maintainerDesc: "機能が強化された<a href='https://github.com/Farwalker3/YouTube-Music-Player-Web' target='_blank'>このフォーク版</a>のメンテナーです。",
+    maintainerBtn: "フォーク版メンテナー",
+    experimentalWindowTitle: "実験的プロジェクト",
+    experimentalWindowWarning: "⚠ 警告：このプロジェクトは不安定または安全でない可能性があります。自己責任でご利用ください。",
+    readExcelTitle: "Excel ファイルの読み込み方法",
+    readApiKeyTitle: "API キーの読み込み方法",
+    viewBetaBtn: "ベータテスト版を表示",
+    viewAlphaBtn: "アルファテスト版を表示",
+    viewBetaTooltip: "ベータテスト版を表示",
+    viewAlphaTooltip: "アルファテスト版を表示",
+    attributionText: "オリジナルプロジェクト：",
+    attributionEnhanced: "機能強化版：",
+    attributionRepo: "オリジナルリポジトリ",
+    languageLabel: "言語",
+    songAlreadyExists: "この曲はすでにプレイリストにあります！",
+    songAdded: " をプレイリストに追加しました！",
+    importFileTypeError: "JSON データを含む JSON ファイルまたは TXT ファイルを選択してください。",
+    cacheCleared: "検索キャッシュを削除しました！次回の検索では新しい結果を取得します。",
+    exportError: "プレイリストのエクスポート中にエラーが発生しました。もう一度お試しください。",
+    importError: "プレイリストのインポート中にエラーが発生しました：",
+    fileReadError: "ファイルの読み込み中にエラーが発生しました。もう一度お試しください。",
+    noLyricsLoaded: "歌詞が読み込まれていません。",
+    clearCacheConfirm: "検索キャッシュを削除してもよろしいですか？保存されている検索結果がすべて削除されます。",
+    importConfirm: "${count} 曲をインポートしますか？現在のプレイリストは置き換えられます。",
+    importSuccess: "${count} 曲を正常にインポートしました！",
+    darkModeStatus: "ダークモードを${status}にしました。",
+    albumArtSpinStatus: "アルバムアートの回転を${status}にしました。",
+    lyricsPanelStatus: "歌詞パネルを${status}にしました。",
+    languageSet: "言語を${language}に設定しました。",
+    enabled: "有効",
+    disabled: "無効",
+    chinese: "中国語",
+    english: "英語",
+    japanese: "日本語",
+    addToPlaylist: "プレイリストに追加",
+    add: "追加",
+    invalidLink: "⚠ 無効な YouTube リンクです。",
+    duplicateSong: "⚠ この曲はすでにプレイリストにあります！",
+    addedSong: (title, author) => `✅ 「${title}」- ${author} をプレイリストに追加しました！`,
+    aboutTitle: "YouTube Music Player について",
+    aboutDescription: "YouTube を音楽ソースとして使用する、多機能なウェブベースの音楽プレーヤーです。お気に入りの音楽をすっきりとした直感的な画面で再生、管理、整理できます。",
+    featuresTitle: "機能",
+    feature1: "YouTube 音楽再生",
+    feature2: "ドラッグ＆ドロップによるプレイリスト管理",
+    feature3: "自動同期対応の歌詞表示",
+    feature4: "歌詞翻訳",
+    feature5: "ダーク／ライトモード",
+    feature6: "プレイリストのエクスポート／インポート",
+    feature7: "音量調整と再生進行バー",
+    feature8: "多言語対応（{languages}）",
+    feature9: "自動再生とリピートモード",
+    originalProjectTitle: "オリジナルプロジェクト",
+    originalCreator: "オリジナル制作者",
+    contributorsTitle: "貢献者",
+    forkMaintainer: "フォーク版メンテナー",
+    linksTitle: "リンク",
+    originalRepository: "オリジナルリポジトリ",
+    versionInfoTitle: "バージョン情報",
+    version: "バージョン：",
+    lastUpdated: "最終更新：",
+    languages: "対応言語：",
+    experimentalFeatures: "実験的機能",
+    settingsAboutTitle: "このプロジェクトについて",
+    settingsAbout: "概要",
+    albumArtDisplay: "アルバムアート表示：",
+    spin: "回転",
+    none: "なし",
+    video: "ビデオ",
+    youtubeApi403Error: "YouTube API エラー：403 - 割り当て上限を超えました。API キーが1日の利用上限に達しています。明日もう一度お試しいただくか、別の API キーを使用してください。",
+    translationStatus: "歌詞翻訳を${status}にしました。",
+    enableLyricsTranslation: "歌詞翻訳",
+    showOriginalFirstLabel: "原文を先に表示",
+    noResultsFound: "結果が見つかりません。",
+    searchCache: "検索キャッシュ",
+    lyricsCache: "歌詞キャッシュ",
+    translationCache: "翻訳キャッシュ",
+    unknown: "不明",
+    viewDetails: "詳細を表示",
+    delete: "削除",
+    noCacheItems: "キャッシュ項目が見つかりません",
+    totalItems: "合計項目数",
+    totalSize: "合計サイズ",
+    selectAll: "すべて選択",
+    clearSelected: "選択項目を削除",
+    clearAll: "すべてのキャッシュを削除",
+    cacheManagerTitle: "キャッシュ管理",
+    cacheItems: "キャッシュ項目",
+    cacheKey: "キャッシュキー",
+    cacheType: "種類",
+    cacheSize: "サイズ",
+    cacheAge: "経過時間",
+    actions: "操作",
+    confirmDeleteSelected: "選択した {count} 件の項目を削除しますか？",
+    confirmDeleteItem: "このキャッシュ項目を削除しますか？",
+    confirmClearAllCache: "すべてのキャッシュを削除してもよろしいですか？この操作は元に戻せません。",
+    noItemsSelected: "項目が選択されていません",
+    copiedToClipboard: "クリップボードにコピーしました！",
+    cacheItemDetails: "キャッシュの詳細",
+    cacheContent: "内容",
+    copyContent: "内容をコピー",
+    deleteItem: "項目を削除",
+    close: "閉じる",
+    search: "検索",
+    translation: "翻訳",
+    all: "すべて",
+    itemsSelected: "{count} 件選択中",
+    cacheStats: "キャッシュ統計",
+    expiresIn: "有効期限まで",
+    never: "なし",
+    expired: "期限切れ",
+    valid: "有効",
+    invalid: "無効",
+    en: "英語",
+    zh: "中国語",
+    "zh-TW": "繁体字中国語",
+    ja: "日本語",
+    ko: "韓国語",
+  },
+  ko: {
+    playerTitle: "YouTube Music Player",
+    autoPlay: "자동 재생",
+    repeat: "반복",
+    lyrics: "가사",
+    lyricsNoLoad: "불러온 가사가 없습니다",
+    lyricsSyncedFound: "동기화된 가사를 찾았습니다:",
+    lyricsPlainFound: "가사를 찾았습니다:",
+    lyricsNotFound: "가사를 찾을 수 없습니다.",
+    lyricsError: "가사를 가져오는 중 오류가 발생했습니다.",
+    lyricsFetching: "가사를 불러오는 중...",
+    autoSyncOn: "자동 동기화: 켜짐",
+    autoSyncOff: "자동 동기화: 꺼짐",
+    refresh: "새로고침",
+    raw: "원본 데이터",
+    showPlaylist: "내 플레이리스트",
+    searchPlaylist: "플레이리스트 검색...",
+    clearSearch: "검색 지우기",
+    searchPlaylistPlaceholder: "플레이리스트 검색...",
+    songName: "곡명",
+    authorName: "아티스트명",
+    dragToReorder: "드래그하여 순서 변경",
+    numberHeader: "번호",
+    actionHeader: "작업",
+    songUnavailable: "이 곡은 사용할 수 없습니다. 다음 시간 후 건너뜁니다:",
+    seconds: "초",
+    youtubeSearchTitle: "YouTube 검색",
+    youtubeSearchPlaceholder: "추가할 노래를 YouTube에서 검색...",
+    youtubeSearchBtn: "검색",
+    searchResultsTitle: "검색 결과:",
+    youtubeSearching: "YouTube 검색 중...",
+    youtubeSearchError: "YouTube를 검색할 수 없습니다. 인터넷 연결을 확인한 후 다시 시도하세요.",
+    youtubeApiKeyError: "YouTube API 키가 설정되지 않았습니다. config.js가 로드되었고 키가 설정되어 있는지 확인하세요.",
+    removeSongTitle: "곡 삭제",
+    settingsTitle: "설정",
+    searchYouTubeTitle: "YouTube 검색",
+    exportTitle: "플레이리스트 및 데이터 내보내기",
+    importTitle: "플레이리스트 및 데이터 가져오기",
+    exportPlaylist: "플레이리스트 및 데이터 내보내기",
+    importPlaylist: "플레이리스트 및 데이터 가져오기",
+    clearCache: "캐시 관리자",
+    albumArtSpin: "앨범 아트 회전",
+    showLyrics: "가사",
+    darkMode: "다크 모드",
+    toggleLyricsTooltip: "가사 표시 또는 숨기기",
+    goTop: "맨 위로",
+    creatorTitle: "원작자",
+    creatorDesc: "이 YouTube Music Player 프로젝트의 원작자입니다.",
+    creatorBtn: "원작자",
+    visitRepo: "리포지토리 방문",
+    maintainerTitle: "포크 버전 관리자",
+    maintainerDesc: "향상된 기능이 포함된 <a href='https://github.com/Farwalker3/YouTube-Music-Player-Web' target='_blank'>이 포크 버전</a>의 관리자입니다.",
+    maintainerBtn: "포크 버전 관리자",
+    experimentalWindowTitle: "실험적 프로젝트",
+    experimentalWindowWarning: "⚠ 경고: 이 프로젝트는 불안정하거나 안전하지 않을 수 있습니다. 사용에 주의하세요.",
+    readExcelTitle: "Excel 파일 읽기 방법",
+    readApiKeyTitle: "API 키 읽기 방법",
+    viewBetaBtn: "베타 테스트 프로젝트 보기",
+    viewAlphaBtn: "알파 테스트 프로젝트 보기",
+    viewBetaTooltip: "베타 테스트 프로젝트 보기",
+    viewAlphaTooltip: "알파 테스트 프로젝트 보기",
+    attributionText: "원본 프로젝트:",
+    attributionEnhanced: "향상된 버전:",
+    attributionRepo: "원본 리포지토리",
+    languageLabel: "언어",
+    songAlreadyExists: "이 곡은 이미 플레이리스트에 있습니다!",
+    songAdded: "을(를) 플레이리스트에 추가했습니다!",
+    importFileTypeError: "JSON 데이터가 포함된 JSON 파일 또는 TXT 파일을 선택하세요.",
+    cacheCleared: "검색 캐시가 삭제되었습니다! 새 검색에서는 최신 결과를 가져옵니다.",
+    exportError: "플레이리스트를 내보내는 중 오류가 발생했습니다. 다시 시도하세요.",
+    importError: "플레이리스트를 가져오는 중 오류가 발생했습니다: ",
+    fileReadError: "파일을 읽는 중 오류가 발생했습니다. 다시 시도하세요.",
+    noLyricsLoaded: "불러온 가사가 없습니다.",
+    clearCacheConfirm: "검색 캐시를 삭제하시겠습니까? 저장된 모든 검색 결과가 삭제됩니다.",
+    importConfirm: "${count}곡을 가져오시겠습니까? 현재 플레이리스트가 교체됩니다.",
+    importSuccess: "${count}곡을 성공적으로 가져왔습니다!",
+    darkModeStatus: "다크 모드가 ${status}되었습니다.",
+    albumArtSpinStatus: "앨범 아트 회전이 ${status}되었습니다.",
+    lyricsPanelStatus: "가사 패널이 ${status}되었습니다.",
+    languageSet: "언어가 ${language}로 설정되었습니다.",
+    enabled: "활성화",
+    disabled: "비활성화",
+    chinese: "중국어",
+    english: "영어",
+    korean: "한국어",
+    addToPlaylist: "플레이리스트에 추가",
+    add: "추가",
+    invalidLink: "⚠ 잘못된 YouTube 링크입니다.",
+    duplicateSong: "⚠ 이 곡은 이미 플레이리스트에 있습니다!",
+    addedSong: (title, author) => `✅ "${title}" - ${author}을(를) 플레이리스트에 추가했습니다!`,
+    aboutTitle: "YouTube Music Player 정보",
+    aboutDescription: "YouTube를 음악 소스로 사용하는 기능이 풍부한 웹 기반 음악 플레이어입니다. 깔끔하고 직관적인 인터페이스에서 좋아하는 음악을 재생, 관리 및 정리할 수 있습니다.",
+    featuresTitle: "기능",
+    feature1: "YouTube 음악 재생",
+    feature2: "드래그 앤 드롭 플레이리스트 관리",
+    feature3: "자동 동기화 가사 표시",
+    feature4: "가사 번역",
+    feature5: "다크/라이트 모드",
+    feature6: "플레이리스트 내보내기/가져오기",
+    feature7: "볼륨 조절 및 재생 진행 바",
+    feature8: "다국어 지원 ({languages})",
+    feature9: "자동 재생 및 반복 모드",
+    originalProjectTitle: "원본 프로젝트",
+    originalCreator: "원작자",
+    contributorsTitle: "기여자",
+    forkMaintainer: "포크 버전 관리자",
+    linksTitle: "링크",
+    originalRepository: "원본 리포지토리",
+    versionInfoTitle: "버전 정보",
+    version: "버전: ",
+    lastUpdated: "마지막 업데이트: ",
+    languages: "지원 언어: ",
+    experimentalFeatures: "실험적 기능",
+    settingsAboutTitle: "이 프로젝트 정보",
+    settingsAbout: "정보",
+    albumArtDisplay: "앨범 아트 표시:",
+    spin: "회전",
+    none: "없음",
+    video: "비디오",
+    youtubeApi403Error: "YouTube API 오류: 403 - 할당량 초과. API 키가 일일 한도에 도달했습니다. 내일 다시 시도하거나 다른 API 키를 사용하세요.",
+    translationStatus: "가사 번역이 ${status}되었습니다.",
+    enableLyricsTranslation: "가사 번역",
+    showOriginalFirstLabel: "원문 먼저 표시",
+    noResultsFound: "검색 결과가 없습니다.",
+    searchCache: "검색 캐시",
+    lyricsCache: "가사 캐시",
+    translationCache: "번역 캐시",
+    unknown: "알 수 없음",
+    viewDetails: "세부 정보 보기",
+    delete: "삭제",
+    noCacheItems: "캐시 항목이 없습니다",
+    totalItems: "총 항목 수",
+    totalSize: "총 크기",
+    selectAll: "모두 선택",
+    clearSelected: "선택 항목 삭제",
+    refresh: "새로고침",
+    clearAll: "모든 캐시 삭제",
+    cacheManagerTitle: "캐시 관리자",
+    cacheItems: "캐시 항목",
+    cacheKey: "캐시 키",
+    cacheType: "유형",
+    cacheSize: "크기",
+    cacheAge: "경과 시간",
+    actions: "작업",
+    confirmDeleteSelected: "선택한 {count}개 항목을 삭제하시겠습니까?",
+    confirmDeleteItem: "이 캐시 항목을 삭제하시겠습니까?",
+    confirmClearAllCache: "모든 캐시를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+    noItemsSelected: "선택된 항목이 없습니다",
+    copiedToClipboard: "클립보드에 복사되었습니다!",
+    cacheItemDetails: "캐시 세부 정보",
+    cacheContent: "내용",
+    copyContent: "내용 복사",
+    deleteItem: "항목 삭제",
+    close: "닫기",
+    search: "검색",
+    lyrics: "가사",
+    translation: "번역",
+    all: "전체",
+    itemsSelected: "{count}개 항목 선택됨",
+    cacheStats: "캐시 통계",
+    expiresIn: "만료까지",
+    never: "없음",
+    expired: "만료됨",
+    valid: "유효",
+    invalid: "유효하지 않음",
+    en: "영어",
+    zh: "중국어",
+    "zh-TW": "번체 중국어",
+    ja: "일본어",
+    ko: "한국어",
   }
 };
 
+function toTraditionalChineseText(text) {
+    if (typeof text !== "string") return text;
+
+    const map = {
+        "简": "簡", "体": "體", "汉": "漢", "语": "語", "译": "譯",
+        "显": "顯", "示": "示", "设": "設", "置": "置", "载": "載",
+        "导": "導", "入": "入", "出": "出", "数": "數", "据": "據",
+        "复": "複", "制": "製", "删": "刪", "除": "除", "项": "項",
+        "选": "選", "择": "擇", "启": "啟", "关": "關", "闭": "閉",
+        "开": "開", "发": "發", "现": "現", "结": "結", "果": "果",
+        "搜": "搜", "索": "索", "歌": "歌", "词": "詞", "单": "單",
+        "频": "頻", "乐": "樂", "览": "覽", "错": "錯", "误": "誤",
+        "请": "請", "连": "連", "网": "網", "络": "絡", "试": "試",
+        "间": "間", "钟": "鐘", "后": "後", "时": "時", "过": "過",
+        "画": "畫", "面": "面", "实": "實", "验": "驗", "稳": "穩",
+        "险": "險", "钥": "鑰", "读": "讀", "写": "寫", "欢": "歡",
+        "应": "應", "统": "統", "计": "計", "总": "總", "类": "類",
+        "临": "臨", "时": "時", "项": "項", "内": "內", "容": "容",
+        "变": "變", "声": "聲", "认": "認", "为": "為", "这": "這",
+        "个": "個", "会": "會", "无": "無", "与": "與", "专": "專",
+        "业": "業", "东": "東", "两": "兩", "严": "嚴", "丧": "喪",
+        "丰": "豐", "丽": "麗", "举": "舉", "么": "麼", "义": "義",
+        "乌": "烏", "乔": "喬", "习": "習", "乡": "鄉", "书": "書",
+        "买": "買", "乱": "亂", "争": "爭", "于": "於", "亏": "虧",
+        "云": "雲", "亚": "亞", "产": "產", "亩": "畝", "亲": "親",
+        "亿": "億", "仅": "僅", "从": "從", "仓": "倉", "仪": "儀",
+        "们": "們", "价": "價", "众": "眾", "优": "優", "传": "傳",
+        "伤": "傷", "伦": "倫", "伪": "偽", "伟": "偉", "侧": "側",
+        "侦": "偵", "侠": "俠", "侥": "僥", "侨": "僑", "侩": "儈",
+        "侪": "儕", "侬": "儂", "俣": "俁", "俦": "儔", "俨": "儼",
+        "俩": "倆", "俪": "儷", "俭": "儉", "债": "債", "倾": "傾",
+        "偬": "傯", "偻": "僂", "偿": "償", "傥": "儻", "储": "儲",
+        "儿": "兒", "兑": "兌", "党": "黨", "兰": "蘭", "兴": "興",
+        "养": "養", "兽": "獸", "内": "內", "冈": "岡", "册": "冊",
+        "写": "寫", "军": "軍", "农": "農", "冲": "衝", "决": "決",
+        "况": "況", "冻": "凍", "净": "淨", "凉": "涼", "减": "減",
+        "凑": "湊", "凤": "鳳", "凭": "憑", "凯": "凱", "击": "擊",
+        "凿": "鑿", "刍": "芻", "划": "劃", "刘": "劉", "则": "則",
+        "刚": "剛", "创": "創", "删": "刪", "别": "別", "刬": "剗",
+        "刭": "剄", "剂": "劑", "剐": "剮", "剑": "劍", "剧": "劇",
+        "劝": "勸", "办": "辦", "务": "務", "动": "動", "励": "勵",
+        "劲": "勁", "劳": "勞", "势": "勢", "勋": "勳", "匀": "勻",
+        "区": "區", "医": "醫", "华": "華", "协": "協", "单": "單",
+        "卖": "賣", "卢": "盧", "卫": "衛", "却": "卻", "厂": "廠",
+        "厅": "廳", "历": "歷", "压": "壓", "厌": "厭", "厉": "厲",
+        "厕": "廁", "厦": "廈", "厨": "廚", "厩": "廄", "县": "縣",
+        "叁": "參", "参": "參", "双": "雙", "变": "變", "叙": "敘",
+        "叠": "疊", "叶": "葉", "号": "號", "叹": "嘆", "叽": "嘰",
+        "吁": "籲", "后": "後", "听": "聽", "启": "啟", "吴": "吳",
+        "呐": "吶", "员": "員", "呗": "唄", "呙": "咼", "呛": "嗆",
+        "呜": "嗚", "咏": "詠", "咙": "嚨", "咛": "嚀", "咝": "噝",
+        "咤": "吒", "响": "響", "哑": "啞", "哒": "噠", "哓": "嘵",
+        "哔": "嗶", "哕": "噦", "哗": "嘩", "哙": "噲", "哜": "嚌",
+        "哝": "噥", "哟": "喲", "唤": "喚", "啧": "嘖", "啬": "嗇",
+        "啭": "囀", "啮": "嚙", "啰": "囉", "啸": "嘯", "喷": "噴",
+        "喽": "嘍", "喾": "嚳", "嗫": "囁", "嗳": "噯", "嘘": "噓",
+        "嘤": "嚶", "嘱": "囑", "噜": "嚕", "嚣": "囂", "团": "團",
+        "园": "園", "围": "圍", "图": "圖", "圆": "圓", "圣": "聖",
+        "场": "場", "坏": "壞", "块": "塊", "坚": "堅", "坛": "壇",
+        "坝": "壩", "坞": "塢", "坟": "墳", "坠": "墜", "垄": "壟",
+        "垅": "壟", "垆": "壚", "垒": "壘", "垦": "墾", "垩": "堊",
+        "垫": "墊", "垭": "埡", "垯": "墶", "垱": "壋", "垲": "塏",
+        "垴": "堖", "埘": "塒", "埙": "塤", "埚": "堝", "埯": "垵",
+        "堑": "塹", "堕": "墮", "墙": "牆", "壮": "壯", "声": "聲",
+        "壳": "殼", "壶": "壺", "处": "處", "备": "備", "复": "復",
+        "够": "夠", "头": "頭", "夹": "夾", "夺": "奪", "奁": "奩",
+        "奂": "奐", "奋": "奮", "奖": "獎", "奥": "奧", "妆": "妝",
+        "妇": "婦", "妈": "媽", "妩": "嫵", "妪": "嫗", "妫": "媯",
+        "姗": "姍", "姜": "薑", "娄": "婁", "娅": "婭", "娆": "嬈",
+        "娇": "嬌", "娈": "孌", "娱": "娛", "娲": "媧", "娴": "嫻",
+        "婳": "嫿", "婴": "嬰", "婵": "嬋", "婶": "嬸", "孙": "孫",
+        "学": "學", "孪": "孿", "宁": "寧", "宝": "寶", "实": "實",
+        "宠": "寵", "审": "審", "宪": "憲", "宫": "宮", "宽": "寬",
+        "宾": "賓", "寝": "寢", "对": "對", "寻": "尋", "导": "導",
+        "寿": "壽", "将": "將", "尔": "爾", "尘": "塵", "尝": "嘗",
+        "尧": "堯", "尴": "尷", "尸": "屍", "尽": "盡", "层": "層",
+        "屃": "屭", "屉": "屜", "届": "屆", "属": "屬", "屡": "屢",
+        "岁": "歲", "岂": "豈", "岖": "嶇", "岗": "崗", "岘": "峴",
+        "岙": "嶴", "岚": "嵐", "岛": "島", "岭": "嶺", "岳": "嶽",
+        "岽": "崬", "岿": "巋", "峃": "嶨", "峄": "嶧", "峡": "峽",
+        "峣": "嶢", "峤": "嶠", "峥": "崢", "峦": "巒", "崂": "嶗",
+        "崃": "崍", "崄": "嶮", "崭": "嶄", "嵘": "嶸", "嵚": "嶔",
+        "巅": "巔"
+    };
+
+    return text.replace(/[^\x00-\x7F]/g, char => map[char] || char);
+}
+
+function createTraditionalChineseTranslations(source) {
+    const result = {};
+
+    Object.entries(source).forEach(([key, value]) => {
+        result[key] = toTraditionalChineseText(value);
+    });
+
+    return result;
+}
+
+translations["zh-TW"] = {
+    ...createTraditionalChineseTranslations(translations.zh),
+
+    // Language names
+    en: "英文",
+    zh: "簡體中文",
+    "zh-TW": "繁體中文",
+    ja: "日文",
+    ko: "韓文",
+
+    // Better wording overrides
+    playerTitle: "YouTube 音樂播放器",
+    lyrics: "歌詞",
+    lyricsNoLoad: "尚未載入歌詞",
+    lyricsSyncedFound: "已找到同步歌詞：",
+    lyricsPlainFound: "已找到普通歌詞：",
+    lyricsNotFound: "未找到歌詞。",
+    lyricsError: "取得歌詞時發生錯誤。",
+    lyricsFetching: "正在載入歌詞...",
+    showPlaylist: "我的播放清單",
+    searchPlaylist: "搜尋你的播放清單...",
+    clearSearch: "清除搜尋",
+    searchPlaylistPlaceholder: "搜尋你的播放清單...",
+    songName: "歌曲名稱",
+    authorName: "作者名稱",
+    actionHeader: "操作",
+    youtubeSearchTitle: "搜尋 YouTube",
+    youtubeSearchPlaceholder: "在 YouTube 搜尋要加入的歌曲...",
+    youtubeSearchBtn: "搜尋",
+    searchResultsTitle: "搜尋結果：",
+    youtubeSearching: "正在搜尋 YouTube...",
+    youtubeSearchError: "無法搜尋 YouTube。請檢查網路連線後再試。",
+    settingsTitle: "設定",
+    exportPlaylist: "匯出播放清單與資料",
+    importPlaylist: "匯入播放清單與資料",
+    clearCache: "快取管理",
+    darkMode: "深色模式",
+    enableLyricsTranslation: "歌詞翻譯",
+    settingsAbout: "關於",
+    language: "語言",
+    languages: "語言：",
+    translation: "翻譯",
+    original: "原文",
+    close: "關閉",
+    search: "搜尋",
+    refresh: "重新整理",
+    raw: "原始資料",
+    feature8: "多語言支援（{languages}）",
+};
+
+// Add Traditional Chinese name to existing languages
+translations.en["zh-TW"] = "Traditional Chinese";
+translations.zh["zh-TW"] = "繁體中文";
+translations.ja["zh-TW"] = "繁体字中国語";
+translations.ko["zh-TW"] = "번체 중국어";
+
 let currentLang = localStorage.getItem("language");
 
-if (!currentLang) {
-  const browserLang = navigator.language.toLowerCase();
-  if (browserLang.includes("zh")) {
-    currentLang = "zh";
-    localStorage.setItem("language", "zh");
-  } else {
-    currentLang = "en";
-    localStorage.setItem("language", "en");
-  }
+if (currentLang === "zhTW" || currentLang === "zh-Hant") {
+    currentLang = "zh-TW";
+}
+
+if (!translations[currentLang]) {
+    const browserLang = navigator.language.toLowerCase();
+
+    if (
+        browserLang.includes("zh-tw") ||
+        browserLang.includes("zh-hk") ||
+        browserLang.includes("zh-mo") ||
+        browserLang.includes("hant")
+    ) {
+        currentLang = "zh-TW";
+    } else if (browserLang.includes("zh")) {
+        currentLang = "zh";
+    } else if (browserLang.includes("ja")) {
+        currentLang = "ja";
+    } else if (browserLang.includes("ko")) {
+        currentLang = "ko";
+    } else {
+        currentLang = "en";
+    }
+
+    localStorage.setItem("language", currentLang);
 }
 
 function updateLanguageButtons() {
-  const enBtn = document.getElementById("lang-en");
-  const zhBtn = document.getElementById("lang-zh");
+    const languageSelect = document.getElementById("languageSelect");
+    if (!languageSelect) return;
 
-  if (!enBtn || !zhBtn) return;
+    const t = translations[currentLang] || translations.en;
 
-  if (currentLang === "en") {
-    enBtn.classList.add("active");
-    zhBtn.classList.remove("active");
-  } else {
-    zhBtn.classList.add("active");
-    enBtn.classList.remove("active");
-  }
+    // Show the currently selected language
+    languageSelect.value = currentLang;
 }
 
-document.getElementById("lang-en").addEventListener("click", () => {
-  currentLang = "en";
-  localStorage.setItem("language", "en");
-  applyLanguage();
-});
+function updateSupportedLanguages() {
+    const languageSelect = document.getElementById("languageSelect");
+    const supportedLanguages = document.getElementById("supportedLanguages");
 
-document.getElementById("lang-zh").addEventListener("click", () => {
-  currentLang = "zh";
-  localStorage.setItem("language", "zh");
-  applyLanguage();
-});
+    if (!languageSelect || !supportedLanguages) return;
 
-function applyLanguage(lang) {
+    const t = translations[currentLang] || translations.en;
+
+    const languages = Array.from(languageSelect.options)
+        .map(option => t[option.value] || option.value);
+
+    supportedLanguages.textContent = languages.length > 1
+        ? `${languages.slice(0, -1).join(", ")} & ${languages.at(-1)}`
+        : languages[0] || "";
+}
+
+function getFeatureLanguageSeparator(lang = currentLang) {
+    const separators = {
+        en: " / ",
+        zh: "/",
+        "zh-TW": "/",
+        ja: "／",
+        ko: " / "
+    };
+
+    return separators[lang] || " / ";
+}
+
+function getFeatureLanguageList() {
+    const languageSelect = document.getElementById("languageSelect");
+    const t = translations[currentLang] || translations.en;
+
+    if (!languageSelect) return "";
+
+    return Array.from(languageSelect.options)
+        .map(option => t[option.value] || option.textContent)
+        .join(getFeatureLanguageSeparator());
+}
+
+function updateFeature8() {
+    const feature8Element = document.querySelector('[data-translate="feature8"]');
+    const t = translations[currentLang] || translations.en;
+
+    if (!feature8Element || !t.feature8) return;
+
+    feature8Element.textContent = t.feature8.replace(
+        "{languages}",
+        getFeatureLanguageList()
+    );
+}
+
+function applyLanguage(lang = currentLang) {
+    currentLang = translations[lang] ? lang : "en";
+    localStorage.setItem("language", currentLang);
+
+    const t = translations[currentLang];
     updateLanguageButtons();
-    currentLang = lang;
-    localStorage.setItem("language", lang);
-    const t = translations[lang];
+    updateSupportedLanguages();
 
     // 🎧 Player & Labels
     document.querySelector("h5.card-title i.bxs-music")?.nextSibling?.nodeValue && 
@@ -3706,19 +4271,13 @@ function applyLanguage(lang) {
             el.textContent = t[key];
         }
     });
+
+    refreshBuildDateLanguage();
+    updateFeature8();
 }
 
-// 🌐 Language switch event
-document.getElementById("lang-en")?.addEventListener("click", () => {
-  applyLanguage("en");
-  document.getElementById("lang-en").classList.add("active");
-  document.getElementById("lang-zh").classList.remove("active");
-});
-
-document.getElementById("lang-zh")?.addEventListener("click", () => {
-  applyLanguage("zh");
-  document.getElementById("lang-zh").classList.add("active");
-  document.getElementById("lang-en").classList.remove("active");
+document.getElementById("languageSelect")?.addEventListener("change", function () {
+  applyLanguage(this.value);
 });
 
 // Apply saved language on page load
@@ -3851,6 +4410,37 @@ function formatDateForLanguage(lang, dateString) {
 }
 
 // ========== AUTO BUILD DATE ==========
+function formatBuildDateByLanguage(date, lang = currentLang) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return "";
+
+    const localeMap = {
+        en: "en-US",
+        zh: "zh-CN",
+        "zh-TW": "zh-TW",
+        ja: "ja-JP",
+        ko: "ko-KR"
+    };
+
+    const locale = localeMap[lang] || "en-US";
+
+    return new Intl.DateTimeFormat(locale, {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+    }).format(date);
+}
+
+function refreshBuildDateLanguage() {
+    const dateElement = document.getElementById("formattedDate");
+    if (!dateElement) return;
+
+    const isoDate = dateElement.getAttribute("data-build-date");
+    if (!isoDate) return;
+
+    const date = new Date(isoDate);
+    dateElement.textContent = formatBuildDateByLanguage(date, currentLang);
+}
+
 async function updateBuildDate() {
     const dateElement = document.getElementById('formattedDate');
     if (!dateElement) return;
@@ -3908,22 +4498,24 @@ async function updateBuildDate() {
         console.warn("Could not fetch file dates, using document.lastModified fallback", error);
     }
 
-    // Update the data attribute with the determined date
     if (latestDate) {
+        dateElement.setAttribute("data-build-date", latestDate.toISOString());
+
+        // Keep old format also, in case your other code still uses data-original-date
         const day = latestDate.getDate();
-        const month = latestDate.getMonth() + 1; // months are 0-indexed
+        const month = latestDate.getMonth() + 1;
         const year = latestDate.getFullYear();
-        const dateString = `${day}d ${month}m ${year}y`;
-        dateElement.setAttribute('data-original-date', dateString);
+        dateElement.setAttribute("data-original-date", `${day}d ${month}m ${year}y`);
     } else {
-        // Ultimate fallback (keep the existing attribute or set default)
-        if (!dateElement.getAttribute('data-original-date')) {
-            dateElement.setAttribute('data-original-date', '19d 6m 2026y');
+        if (!dateElement.getAttribute("data-build-date")) {
+            const fallbackDate = new Date(2026, 5, 19); // 19 June 2026
+            dateElement.setAttribute("data-build-date", fallbackDate.toISOString());
+            dateElement.setAttribute("data-original-date", "19d 6m 2026y");
         }
     }
 
-    // Re-apply current language formatting to update the displayed date
-    applyLanguage(currentLang);
+    // Update date text using current selected language
+    refreshBuildDateLanguage();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -3939,8 +4531,25 @@ let showOriginalFirst = true; // true: original first, false: translated first
 // Cache for translations to minimize API calls
 const translationCache = JSON.parse(localStorage.getItem('lyricsTranslationCache') || '{}');
 const TRANSLATION_CACHE_EXPIRY = 86400000; // 24 hours in milliseconds
+function getLyricsTargetLanguage() {
+    return ["en", "zh", "zh-TW", "ja", "ko"].includes(currentLang)
+        ? currentLang
+        : "en";
+}
 
-async function translateLyrics(text, sourceLang = 'auto', targetLang = currentLang === 'zh' ? 'zh' : 'en') {
+function getLyricsLabels() {
+    const labels = {
+        en: { original: "Original", translation: "Translation" },
+        zh: { original: "原文", translation: "译文" },
+        "zh-TW": { original: "原文", translation: "譯文" },
+        ja: { original: "原文", translation: "翻訳" },
+        ko: { original: "원문", translation: "번역" }
+    };
+
+    return labels[getLyricsTargetLanguage()] || labels.en;
+}
+
+async function translateLyrics(text, sourceLang = "auto", targetLang = getLyricsTargetLanguage()) {
     // Check cache first
     const cacheKey = `${sourceLang}-${targetLang}-${text.substring(0, 100)}`;
     const cached = translationCache[cacheKey];
@@ -4007,6 +4616,7 @@ async function translateSingleLine(text, sourceLang, targetLang, cacheKey = null
                 const libreCodes = {
                     'en': 'en',
                     'zh': 'zh',
+                    'zh-TW': 'zh-TW',
                     'ja': 'ja',
                     'ko': 'ko'
                 };
@@ -4053,13 +4663,15 @@ async function translateSingleLine(text, sourceLang, targetLang, cacheKey = null
         async (text, source, target) => {
             try {
                 // MyMemory API uses language codes like "en" for English, "zh-CN" for Chinese
-                const myMemorySource = source === 'zh' ? 'zh-CN' : 
-                                     source === 'ja' ? 'ja' :
-                                     source === 'ko' ? 'ko' : source;
-                
+                const myMemorySource = source === 'zh' ? 'zh-CN' :
+                                    source === 'zh-TW' ? 'zh-TW' :
+                                    source === 'ja' ? 'ja' :
+                                    source === 'ko' ? 'ko' : source;
+
                 const myMemoryTarget = target === 'zh' ? 'zh-CN' :
-                                     target === 'ja' ? 'ja' :
-                                     target === 'ko' ? 'ko' : target;
+                                    target === 'zh-TW' ? 'zh-TW' :
+                                    target === 'ja' ? 'ja' :
+                                    target === 'ko' ? 'ko' : target;
                 
                 const response = await fetch(
                     `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${myMemorySource}|${myMemoryTarget}`
@@ -4081,6 +4693,7 @@ async function translateSingleLine(text, sourceLang, targetLang, cacheKey = null
                 const googleLangCodes = {
                     'en': 'en',
                     'zh': 'zh-CN',
+                    'zh-TW': 'zh-TW',
                     'ja': 'ja',
                     'ko': 'ko'
                 };
@@ -4156,42 +4769,29 @@ function clearExpiredTranslationCache() {
 // Call this on startup
 clearExpiredTranslationCache();
 
-async function detectLanguage(text) {
-    // Simple language detection based on character analysis
-    const chinesePattern = /[\u4e00-\u9fff]/; // Chinese characters
-    const japanesePattern = /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff]/; // Japanese
-    const koreanPattern = /[\uac00-\ud7af]/; // Korean
-    
-    // Check character counts
-    let chineseCount = 0;
-    let japaneseCount = 0;
-    let koreanCount = 0;
-    let englishCount = 0;
-    
-    for (let char of text) {
-        if (chinesePattern.test(char)) chineseCount++;
-        if (japanesePattern.test(char)) japaneseCount++;
-        if (koreanPattern.test(char)) koreanCount++;
-        if (/[a-zA-Z]/.test(char)) englishCount++;
-    }
-    
-    // If there's a significant amount of CJK characters, use that language
-    if (chineseCount > japaneseCount && chineseCount > koreanCount) return 'zh';
-    if (japaneseCount > chineseCount && japaneseCount > koreanCount) return 'ja';
-    if (koreanCount > chineseCount && koreanCount > japaneseCount) return 'ko';
-    
-    // Fallback to English for Latin scripts or mixed content
-    return 'en';
+function detectLanguage(text = "") {
+    const japaneseKanaCount = (text.match(/[\u3040-\u309F\u30A0-\u30FF]/g) || []).length;
+    const koreanCount = (text.match(/[\uAC00-\uD7AF]/g) || []).length;
+
+    // Common Traditional-only Chinese characters
+    const traditionalChineseCount = (
+        text.match(/[體語漢譯樂詞載顯設數據導開關閉啟後時過畫實驗穩險鑰讀寫應統計總類為這個會無與專業東兩嚴喪豐麗舉麼義烏喬習鄉書買亂爭於虧雲亞產親億僅從倉儀們價眾優傳傷偉側偵俠僑儲兒兌黨蘭興養獸內岡冊軍農衝決況凍淨涼減湊鳳憑凱擊劃劉則剛創刪別劑劍劇勸辦務動勵勁勞勢區醫華協單賣衛卻廠廳歷壓厭厲廁廈廚縣參雙變敘疊葉號嘆聽吳員響啞嘩喚嘖嘯噴團園圍圖圓聖場壞塊堅壇壩墳墜壘墾墊墮牆壯聲殼壺處備復夠頭夾奪奮獎奧妝婦媽嬌娛孫學寧寶審宮寬賓對尋將爾塵嘗盡層屬歲豈島嶺峽巒]/g) || []
+    ).length;
+
+    const chineseHanCount = (text.match(/[\u4E00-\u9FFF]/g) || []).length;
+
+    if (japaneseKanaCount > 0) return "ja";
+    if (koreanCount > 0) return "ko";
+    if (traditionalChineseCount > 0) return "zh-TW";
+    if (chineseHanCount > 0) return "zh";
+
+    return "en";
 }
 
 async function translateLyricsLines(lines, targetLang) {
     const sourceLang = await detectLanguage(lines.map(l => l.text).join(' '));
     
-    // Don't translate if source and target are the same
-    if ((sourceLang === 'en' && targetLang === 'en') || 
-        (sourceLang === 'zh' && targetLang === 'zh') ||
-        (sourceLang === 'ja' && targetLang === 'ja') ||
-        (sourceLang === 'ko' && targetLang === 'ko')) {
+    if (sourceLang === targetLang) {
         return lines.map(line => line.text);
     }
     
@@ -4254,92 +4854,98 @@ async function translateLyricsLines(lines, targetLang) {
     return translatedLines;
 }
 
-function renderLrcLinesWithTranslation(lines, translations = []) {
+function renderLrcLinesWithTranslation(lines, translatedLines = []) {
     const el = document.getElementById("lyricsText");
-    const targetLang = currentLang === 'zh' ? 'zh' : 'en';
-    
-    el.innerHTML = lines
-        .map((l, i) => {
-            const m = Math.floor(l.time / 60);
-            const s = Math.floor(l.time % 60);
-            const formattedTime = `${m}:${s < 10 ? "0" + s : s}`;
-            
-            // Check if this line has translation
-            const hasTranslation = translations[i] !== undefined && translations[i] !== null && 
-                                 translations[i] !== '' && translations[i] !== l.text;
-            
-            // Get the translation text for this specific line
-            const translationText = hasTranslation ? translations[i] : '';
-            
-            // Determine display order based on setting
-            const firstText = showOriginalFirst ? l.text : translationText;
-            const secondText = showOriginalFirst ? translationText : l.text;
-            const firstLabel = showOriginalFirst ? 
-                (targetLang === 'zh' ? '原文' : 'Original') : 
-                (targetLang === 'zh' ? '译文' : 'Translation');
-            const secondLabel = showOriginalFirst ? 
-                (targetLang === 'zh' ? '译文' : 'Translation') : 
-                (targetLang === 'zh' ? '原文' : 'Original');
-            
-            // Only show translation container if we actually have a translation for THIS line
-            const shouldShowTranslation = hasTranslation && translationText.trim().length > 0;
-            
-            return `
-                <div class="lrc-line" data-index="${i}" data-time="${l.time}" data-formatted-time="${formattedTime}">
-                    <span class="lrc-time">[${formattedTime}]</span>
-                    <div class="lyrics-pair">
-                        <div class="original-lyric" data-label="${firstLabel}">
-                            ${firstText || l.text || ' '}
-                        </div>
-                        ${shouldShowTranslation ? `
-                        <div class="translated-lyric" data-label="${secondLabel}">
-                            ${secondText}
-                        </div>
-                        ` : ''}
+    const labels = getLyricsLabels();
+
+    el.innerHTML = lines.map((line, index) => {
+        const minutes = Math.floor(line.time / 60);
+        const seconds = Math.floor(line.time % 60);
+        const formattedTime = `${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
+
+        const translation = translatedLines[index];
+        const hasTranslation =
+            typeof translation === "string" &&
+            translation.trim() !== "" &&
+            translation !== line.text;
+
+        // Do not show an empty translation area.
+        const firstIsOriginal = showOriginalFirst || !hasTranslation;
+
+        const firstText = firstIsOriginal ? line.text : translation;
+        const firstClass = firstIsOriginal ? "original-lyric" : "translated-lyric";
+        const firstLabel = firstIsOriginal ? labels.original : labels.translation;
+
+        const secondHtml = hasTranslation
+            ? `
+                <div class="${firstIsOriginal ? "translated-lyric" : "original-lyric"}"
+                     data-label="${firstIsOriginal ? labels.translation : labels.original}">
+                    ${firstIsOriginal ? translation : line.text}
+                </div>
+              `
+            : "";
+
+        return `
+            <div class="lrc-line"
+                 data-index="${index}"
+                 data-time="${line.time}"
+                 data-formatted-time="${formattedTime}">
+                <span class="lrc-time">[${formattedTime}]</span>
+
+                <div class="lyrics-pair">
+                    <div class="${firstClass}" data-label="${firstLabel}">
+                        ${firstText}
                     </div>
-                </div>`;
-        })
-        .join("");
+                    ${secondHtml}
+                </div>
+            </div>
+        `;
+    }).join("");
 }
 
-function renderPlainLyricsWithTranslation(plainText, translation = '') {
+function renderPlainLyricsWithTranslation(plainText, translatedText = "") {
     const el = document.getElementById("lyricsText");
-    const targetLang = currentLang === 'zh' ? 'zh' : 'en';
-    const hasTranslation = translation && translation !== plainText;
-    
-    const lines = plainText.split(/\r?\n/).filter(l => l.trim().length > 0);
-    const translatedLines = hasTranslation ? translation.split(/\r?\n/) : [];
-    
-    // Ensure we have the same number of lines
-    while (translatedLines.length < lines.length) {
-        translatedLines.push('');
-    }
-    
-    // Determine display order based on setting
-    const firstLabel = showOriginalFirst ? 
-        (targetLang === 'zh' ? '原文' : 'Original') : 
-        (targetLang === 'zh' ? '译文' : 'Translation');
-    const secondLabel = showOriginalFirst ? 
-        (targetLang === 'zh' ? '译文' : 'Translation') : 
-        (targetLang === 'zh' ? '原文' : 'Original');
-    
-    el.innerHTML = lines
-        .map((line, i) => {
-        const firstText = showOriginalFirst ? line : (translatedLines[i] || '');
-        const secondText = showOriginalFirst ? (translatedLines[i] || '') : line;
-        const hasTranslatedLine = translatedLines[i] && translatedLines[i].trim().length > 0;
-        
+    const labels = getLyricsLabels();
+
+    // Keep blank lines in both arrays so translation stays in the correct row.
+    const originalLines = plainText.split(/\r?\n/);
+    const translatedLines = translatedText
+        ? translatedText.split(/\r?\n/)
+        : [];
+
+    el.innerHTML = originalLines.map((line, index) => {
+        const translation = translatedLines[index] || "";
+
+        const hasTranslation =
+            translation.trim() !== "" &&
+            translation !== line;
+
+        const firstIsOriginal = showOriginalFirst || !hasTranslation;
+
+        const firstText = firstIsOriginal ? line : translation;
+        const firstClass = firstIsOriginal ? "original-lyric" : "translated-lyric";
+        const firstLabel = firstIsOriginal ? labels.original : labels.translation;
+
+        const secondHtml = hasTranslation
+            ? `
+                <div class="${firstIsOriginal ? "translated-lyric" : "original-lyric"}"
+                     data-label="${firstIsOriginal ? labels.translation : labels.original}">
+                    ${firstIsOriginal ? translation : line}
+                </div>
+              `
+            : "";
+
         return `
             <div class="plain-line">
-            <div class="lyrics-pair">
-                <div class="original-lyric" data-label="${firstLabel}">${firstText}</div>
-                ${hasTranslatedLine ? `
-                <div class="translated-lyric" data-label="${secondLabel}">${secondText}</div>
-                ` : ''}
+                <div class="lyrics-pair">
+                    <div class="${firstClass}" data-label="${firstLabel}">
+                        ${firstText || " "}
+                    </div>
+                    ${secondHtml}
+                </div>
             </div>
-            </div>`;
-        })
-        .join("");
+        `;
+    }).join("");
 }
 
 function initLyricsClickToSeek() {
@@ -4419,7 +5025,7 @@ async function fetchLyricsWithTranslation(title, artist) {
     const meta = document.getElementById("lyricsMeta");
     const textEl = document.getElementById("lyricsText");
     const t = translations[currentLang];
-    const targetLang = currentLang === 'zh' ? 'zh' : 'en';
+    const targetLang = getLyricsTargetLanguage();
 
     lyricsState = { status: "loading", artist, title };
 
@@ -4494,6 +5100,14 @@ async function fetchLyricsWithTranslation(title, artist) {
         const lyrics = json.syncedLyrics || json.plainLyrics;
         if (!lyrics) throw new Error("No lyrics");
 
+        const sourceLang = detectLanguage(lyrics);
+        const shouldTranslate = translationEnabled && sourceLang !== targetLang;
+
+        // Clear old translation from the previous song or previous language.
+        translatedLyrics = null;
+        showTranslatedView = false;
+        isTranslating = false;
+
         const isLrc = /^\s*\[\d{1,2}:\d{2}/m.test(lyrics);
         
         // Show normal lyrics first (immediately)
@@ -4506,7 +5120,7 @@ async function fetchLyricsWithTranslation(title, artist) {
         lyricsState.status = "synced";
         
         // Then translate in background if enabled
-        if (translationEnabled && !isTranslating) {
+        if (shouldTranslate && !isTranslating) {
             isTranslating = true;
             
             // Check for cached translation
@@ -4859,9 +5473,21 @@ function initCacheManager() {
         openCacheManager();
     });
     
-    // Close cache manager
-    cacheManagerCloseBtn.addEventListener('click', closeCacheManager);
-    cacheManagerOverlay.addEventListener('click', closeCacheManager);
+    // Close cache manager without triggering the Settings outside-click handler
+    cacheManagerCloseBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        closeCacheManager();
+    });
+
+    cacheManagerOverlay.addEventListener("click", function (e) {
+        e.stopPropagation();
+        closeCacheManager();
+    });
+
+    // Prevent clicks inside Cache Manager from closing Settings
+    cacheManagerWindow.addEventListener("click", function (e) {
+        e.stopPropagation();
+    });
     
     // Escape key
     document.addEventListener('keydown', function(event) {

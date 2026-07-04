@@ -98,12 +98,12 @@ If you don't want to set up the YouTube API, you can still:
 10. **Language**: Languages available: English, 中文
 11. **Drag and Drop**: Drag songs to reorder your playlist
 12. **Secure API Key Management**: Uses GitHub Secrets for secure API key storage
-13. **Lyrics Translate**: Enable "Lyrics Translation" button on "Settings" to translate supported language (English & 中文)
+13. **Lyrics Translate**: Enable "Lyrics Translation" button on "Settings" to translate supported language (English, 简体中文, 繁體中文, 日本語 & 한국어)
 14. **Optimized Search**: Searched result will store in browser storage (No need to waste Quota for same results)
 15. **Import Playlist & Data**: Import playlist and data (Dark mode, Album Art spin settings & Lyrics settings) from JSON or TXT file
 16. **Export Playlist & Data**: Export playlist and data (Dark mode, Album Art spin settings & Lyrics settings) to TXT file
 17. **Album Art Display**: Select Album Art Display option to switch Spin, None or Video mode.
-18. **Cache Manager**: Delete cache from browser storage
+18. **Delete Search Cache**: Delete search cache from browser storage
 
 ## 🔧 GitHub Actions Workflow
 
