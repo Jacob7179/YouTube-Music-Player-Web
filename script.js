@@ -13,32 +13,6 @@ let albumArtSpinEnabled = albumArtDisplayMode === "spin";
 let isTranslating = false;
 let showTranslatedView = false;
 
-const LYRICS_TIME_OFFSET_KEY = "lyricsTimeOffsetSeconds";
-
-let lyricsTimeOffsetSeconds = Number(
-    localStorage.getItem(LYRICS_TIME_OFFSET_KEY)
-);
-
-if (!Number.isFinite(lyricsTimeOffsetSeconds)) {
-    lyricsTimeOffsetSeconds = 0;
-}
-
-function setLyricsTimeOffset(seconds) {
-    const value = Number(seconds);
-
-    if (!Number.isFinite(value)) return false;
-
-    // Limit to -30 to +30 seconds
-    lyricsTimeOffsetSeconds = Math.max(-30, Math.min(30, value));
-
-    localStorage.setItem(
-        LYRICS_TIME_OFFSET_KEY,
-        String(lyricsTimeOffsetSeconds)
-    );
-
-    return true;
-}
-
 // YOUTUBE_API_KEY is now loaded from config.js or Vercel API endpoint
 const VERCEL_API_KEY_ENDPOINT = '/api/getApiKey';
 let cachedApiKey = null;
@@ -2401,7 +2375,6 @@ function exportPlaylist() {
             language: currentLang,
             translationEnabled: translationEnabled,
             showOriginalFirst: showOriginalFirst,
-            lyricsTimeOffsetSeconds: lyricsTimeOffsetSeconds,
             exportDate: new Date().toISOString(),
             version: "1.5"
         };
@@ -2448,7 +2421,6 @@ function importPlaylist(file) {
             let importDarkMode = false;
             let importLanguage = currentLang;
             let importTranslationEnabled = translationEnabled;
-            let importLyricsTimeOffsetSeconds = lyricsTimeOffsetSeconds;
             let importShowOriginalFirst = showOriginalFirst;
             
             if (Array.isArray(importedData)) {
@@ -2460,13 +2432,6 @@ function importPlaylist(file) {
                 importDarkMode = importedData.darkMode === true;
                 importLanguage = importedData.language || currentLang;
                 importTranslationEnabled = importedData.translationEnabled !== undefined ? importedData.translationEnabled : translationEnabled;
-                if (Object.prototype.hasOwnProperty.call(importedData, "lyricsTimeOffsetSeconds")) {
-                    const importedOffset = Number(importedData.lyricsTimeOffsetSeconds);
-
-                    if (Number.isFinite(importedOffset)) {
-                        importLyricsTimeOffsetSeconds = importedOffset;
-                    }
-                }
                 importShowOriginalFirst = importedData.showOriginalFirst !== undefined ? importedData.showOriginalFirst : showOriginalFirst;
             } else {
                 throw new Error("Invalid playlist format");
@@ -2589,7 +2554,6 @@ function importPlaylist(file) {
                     }
                 }
                 
-                setLyricsTimeOffset(importLyricsTimeOffsetSeconds);
                 // Apply translation order setting if included in export
                 if (importedData.showOriginalFirst !== undefined) {
                     showOriginalFirst = importedData.showOriginalFirst;
@@ -5452,7 +5416,6 @@ document.head.appendChild(style);
 // Update sync function to handle translation display
 function syncLyricsToTime(currentTime) {
     if (!lyricsData || !lyricsData.isLrc) return;
-    currentTime = Math.max(0, currentTime + lyricsTimeOffsetSeconds);
     const lines = lyricsData.lrcLines;
     if (!lines || lines.length === 0) return;
 
