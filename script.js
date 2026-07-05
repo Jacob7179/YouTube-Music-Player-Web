@@ -1128,7 +1128,7 @@ function addSongFromSearch(event) {
 let lastSong = '';
 let lastAuthor = '';
 
-let currentVolume = parseInt(localStorage.getItem("volumeLevel")) || 80;
+let currentVolume = parseInt(localStorage.getItem("volumeLevel")) || 100;
 
 // Make onYouTubeIframeAPIReady globally accessible
 window.onYouTubeIframeAPIReady = function() {
@@ -1153,7 +1153,6 @@ window.onYouTubeIframeAPIReady = function() {
         },
         events: {
             'onReady': (event) => {
-                // Set volume to 80% to prevent loud start
                 event.target.setVolume(currentVolume);
                 updateVolumeUI(currentVolume);
             },
@@ -1480,8 +1479,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const volumeThumb = document.getElementById("volumeThumb");
     const volumeBarContainer = document.querySelector(".volume-bar-container");
 
-    // Load saved volume or default to 80 (to prevent loud start)
-    currentVolume = parseInt(localStorage.getItem("volumeLevel")) || 80;
     volumeControl.value = currentVolume;
     
     // Initialize UI
@@ -2414,7 +2411,7 @@ function exportPlaylist() {
             showOriginalFirst: showOriginalFirst,
             titleGapFraction: GAP_FRACTION,
             exportDate: new Date().toISOString(),
-            version: "1.5"
+            version: "1.6-alpha"
         };
         
         const playlistData = JSON.stringify(exportData, null, 2);

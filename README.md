@@ -63,10 +63,9 @@ For secure API key management, this project uses GitHub Secrets:
 For local development, you can still manually add the API key:
 
 1. **Clone the repository locally**
-2. **Create `config.js` files**
-3. **Insert**: `const YOUTUBE_API_KEY = 'YOUR_YOUTUBE_API_KEY';`
-4. **Replace** `'YOUR_YOUTUBE_API_KEY'` with your actual API key
-5. **Important**: Never commit this change to prevent exposing your API key
+2. **Find**: `const YOUTUBE_API_KEY = "YOUR_YOUTUBE_API_KEY";` **in script.js**
+3. **Replace** `YOUR_YOUTUBE_API_KEY` with your actual API key
+4. **Important**: Never commit this change to prevent exposing your API key
 
 ### API Usage Information
 
@@ -130,7 +129,7 @@ The workflow file is located at `.github/workflows/deploy.yml`.
 
 - **GitHub Secrets**: API keys are stored securely in GitHub Secrets
 - **No Key Exposure**: API keys are never committed to the repository
-- **Automatic Injection**: Keys are injected during deployment only (But you can found api keys declaration on website [config.js])
+- **Automatic Injection**: Keys are injected during deployment only
 - **Restricted API Keys**: Recommended to restrict API keys to specific services
 
 ## 🤝 Attribution
