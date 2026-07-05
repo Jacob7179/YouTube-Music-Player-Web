@@ -167,11 +167,13 @@ function loadPlaylist() {
     } else {
         // Default playlist if local storage is empty
         playlist = [
-            { videoId: '7OHstJwaKoU', songName: '何千キロの君へ', authorName: 'SHIN - Topic', albumArt: 'https://i.ytimg.com/vi/7OHstJwaKoU/hqdefault.jpg' },
-            { videoId: 'dh00du4hOGM', songName: '清夏', authorName: 'SHIN - Topic', albumArt: 'https://i.ytimg.com/vi/dh00du4hOGM/hqdefault.jpg' },
-            { videoId: 'eJpkUecGyMI', songName: '恋花', authorName: 'SHIN - Topic', albumArt: 'https://i.ytimg.com/vi/eJpkUecGyMI/hqdefault.jpg' },
-            { videoId: 'dzniwGFO79g', songName: 'ハルカスミ', authorName: 'SHIN - Topic', albumArt: 'https://i.ytimg.com/vi/dzniwGFO79g/hqdefault.jpg' },
+            { videoId: 'IBWxJxQxSHE', songName: '≠ME', authorName: 'NOT EQUAL ME - Topic', albumArt: 'https://i.ytimg.com/vi/IBWxJxQxSHE/hqdefault.jpg' },
+            { videoId: 'bi__z02xRgo', songName: 'チョコレートメランコリー', authorName: 'NOT EQUAL ME - Topic', albumArt: 'https://i.ytimg.com/vi/bi__z02xRgo/hqdefault.jpg' },
+            { videoId: '2RdTOBmz6jY', songName: '排他的ファイター', authorName: 'NOT EQUAL ME - Topic', albumArt: 'https://i.ytimg.com/vi/2RdTOBmz6jY/hqdefault.jpg' },
             { videoId: 'TQ8WlA2GXbk', songName: 'Official髭男dism - Pretender［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/TQ8WlA2GXbk/hqdefault.jpg' },
+            { videoId: '0sDmhAItwbI', songName: 'Official髭男dism - Pretender (Acoustic ver.)［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/0sDmhAItwbI/hqdefault.jpg', lyricsTimeOffset: 17.5 },
+            { videoId: '22mOCjkwQjM', songName: 'Official髭男dism - Stand By You［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/22mOCjkwQjM/hqdefault.jpg', lyricsTimeOffset: -2.0 },
+            { videoId: '1oYzKnVG1Vk', songName: 'Official髭男dism - Stand By You (Acoustic ver.)［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/1oYzKnVG1Vk/hqdefault.jpg', lyricsTimeOffset: -2.0 },
             { videoId: 'cqzyiJE4SQE', songName: '笑顔の待つ場所', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/cqzyiJE4SQE/hqdefault.jpg' },
             { videoId: 'iURMyl-jarE', songName: '明け方のゲッタウェイ (Live)', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/iURMyl-jarE/hqdefault.jpg' },
             { videoId: '86uTlHDIbAw', songName: 'ダッフルコートノアマイユメ_オリジナル', authorName: 'Satoshi Fujihara', albumArt: 'https://i.ytimg.com/vi/86uTlHDIbAw/hqdefault.jpg' },
@@ -179,12 +181,37 @@ function loadPlaylist() {
             { videoId: 'DuMqFknYHBs', songName: 'Official髭男dism - イエスタデイ［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/DuMqFknYHBs/hqdefault.jpg' },
             { videoId: 'aRtoPwe4ado', songName: 'Sanitizer', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/aRtoPwe4ado/hqdefault.jpg' },
             { videoId: 'l2nqfPAMrSo', songName: 'Chessboard', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/l2nqfPAMrSo/hqdefault.jpg' },
-            { videoId: 'SICzNfWhgn8', songName: 'みどりの雨避け', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/SICzNfWhgn8/hqdefault.jpg' },
-            { videoId: 'hJqYc62NCKo', songName: 'TheFatRat & Laura Brehm - We\'ll Meet Again', authorName: 'TheFatRat', albumArt: 'https://i.ytimg.com/vi/hJqYc62NCKo/hqdefault.jpg' },
-            { videoId: 'dpT-TeRYFvY', songName: 'All For Love', authorName: 'Tungevaag & Raaban - Topic', albumArt: 'https://i.ytimg.com/vi/dpT-TeRYFvY/hqdefault.jpg' },
+            { videoId: 'cqzyiJE4SQE', songName: '笑顔の待つ場所', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/cqzyiJE4SQE/hqdefault.jpg' },
+            { videoId: 'ajJKtzg--5g', songName: 'ラストソング［Studio Live Session］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/ajJKtzg--5g/hqdefault.jpg', lyricsTimeOffset: -9.0 },
         ];
     }
     renderPlaylist(playlist);
+}
+
+const MAX_LYRICS_TIME_OFFSET_SECONDS = 30;
+
+function getCurrentSongObject() {
+    const currentVideoId = actualSelectedVideoId || selectedVideoId;
+
+    if (!currentVideoId) return null;
+
+    return playlist.find(song => song.videoId === currentVideoId) || null;
+}
+
+function setCurrentSongLyricsTimeOffset(seconds) {
+    const song = getCurrentSongObject();
+    const offset = Number(seconds);
+
+    if (!song || !Number.isFinite(offset)) return false;
+
+    song.lyricsTimeOffset = Math.max(
+        -MAX_LYRICS_TIME_OFFSET_SECONDS,
+        Math.min(MAX_LYRICS_TIME_OFFSET_SECONDS, offset)
+    );
+
+    // Saves the updated song object to localStorage.
+    savePlaylist();
+    return true;
 }
 
 function savePlaylist() {
@@ -955,7 +982,7 @@ async function handleAddSongFromURL() {
         .trim();
 
     // Add to playlist
-    const newSong = { videoId, songName: title, authorName: author, albumArt };
+    const newSong = { videoId, songName: title, authorName: author, albumArt, lyricsTimeOffset: 0};
     playlist.push(newSong);
     savePlaylist();
     renderPlaylist(playlist);
@@ -1071,7 +1098,7 @@ function addSongFromSearch(event) {
         return;
     }
 
-    const newSong = { videoId, songName: songTitle, authorName, albumArt };
+    const newSong = { videoId, songName: songTitle, authorName, albumArt, lyricsTimeOffset: 0};
     playlist.push(newSong);
     savePlaylist();
     renderPlaylist(playlist);
@@ -2678,12 +2705,16 @@ function importPlaylist(file) {
 
 // Add these helper functions to validate playlist structure
 function isValidPlaylistItem(item) {
-    return item && 
-           typeof item === 'object' &&
-           typeof item.videoId === 'string' &&
-           typeof item.songName === 'string' &&
-           typeof item.authorName === 'string' &&
-           (typeof item.albumArt === 'string' || item.albumArt === undefined);
+    return item &&
+        typeof item === "object" &&
+        typeof item.videoId === "string" &&
+        typeof item.songName === "string" &&
+        typeof item.authorName === "string" &&
+        (typeof item.albumArt === "string" || item.albumArt === undefined) &&
+        (
+            item.lyricsTimeOffset === undefined ||
+            Number.isFinite(Number(item.lyricsTimeOffset))
+        );
 }
 
 function validatePlaylist(playlistData) {
@@ -5022,36 +5053,65 @@ function renderPlainLyricsWithTranslation(plainText, translatedText = "") {
 
 function initLyricsClickToSeek() {
     const lyricsContainer = document.getElementById("lyricsText");
-    
-    lyricsContainer.addEventListener("click", function(e) {
-        // Find the clicked lyrics line
+
+    lyricsContainer.addEventListener("click", function (e) {
         let target = e.target;
-        
-        // Traverse up to find the lrc-line element
-        while (target && !target.classList.contains("lrc-line") && target !== lyricsContainer) {
-        target = target.parentElement;
+
+        while (
+            target &&
+            !target.classList.contains("lrc-line") &&
+            target !== lyricsContainer
+        ) {
+            target = target.parentElement;
         }
-        
-        if (target && target.classList.contains("lrc-line") && lyricsData && lyricsData.isLrc) {
-        const time = parseFloat(target.getAttribute("data-time"));
-        
-        if (player && typeof player.seekTo === "function") {
-            player.seekTo(time, true);
-            
-            // Add visual feedback
-            target.classList.add("clicked");
-            setTimeout(() => {
+
+        if (
+            !target ||
+            !target.classList.contains("lrc-line") ||
+            !lyricsData ||
+            !lyricsData.isLrc ||
+            !player ||
+            typeof player.seekTo !== "function"
+        ) {
+            return;
+        }
+
+        // The LRC timestamp stored on the clicked lyric line.
+        const lyricTime = Number(target.getAttribute("data-time"));
+        if (!Number.isFinite(lyricTime)) return;
+
+        // Apply the same per-song offset logic used by auto-sync.
+        const currentSong = getCurrentSongObject();
+        const lyricsTimeOffset = Number(currentSong?.lyricsTimeOffset);
+        const safeOffset = Number.isFinite(lyricsTimeOffset)
+            ? lyricsTimeOffset
+            : 0;
+
+        // Auto-sync uses: playerTime + offset.
+        // Therefore, clicking an LRC line must seek to: lyricTime - offset.
+        const seekTime = Math.max(0, lyricTime - safeOffset);
+
+        player.seekTo(seekTime, true);
+
+        // Update the UI immediately.
+        target.classList.add("clicked");
+        setTimeout(() => {
             target.classList.remove("clicked");
-            }, 300);
-            
-            // Update progress bar immediately
-            if (player.getDuration() > 0) {
-            let progressPercent = (time / player.getDuration()) * 100;
-            document.getElementById("progress").style.width = progressPercent + "%";
-            document.getElementById("currentTime").innerText = target.getAttribute("data-formatted-time");
-            }
+        }, 300);
+
+        const duration = player.getDuration();
+        if (duration > 0) {
+            const progressPercent = (seekTime / duration) * 100;
+
+            document.getElementById("progress").style.width =
+                `${progressPercent}%`;
+
+            document.getElementById("currentTime").innerText =
+                formatTime(seekTime);
         }
-        }
+
+        // Immediately update the lyric highlight.
+        syncLyricsToTime(seekTime);
     });
 }
 
@@ -5427,6 +5487,17 @@ document.head.appendChild(style);
 // Update sync function to handle translation display
 function syncLyricsToTime(currentTime) {
     if (!lyricsData || !lyricsData.isLrc) return;
+
+    const currentSong = getCurrentSongObject();
+
+    const lyricsTimeOffset = Number(currentSong?.lyricsTimeOffset);
+    const safeOffset = Number.isFinite(lyricsTimeOffset)
+        ? lyricsTimeOffset
+        : 0;
+
+    // Positive = lyrics display earlier.
+    // Negative = lyrics display later.
+    currentTime = Math.max(0, currentTime + safeOffset);
     const lines = lyricsData.lrcLines;
     if (!lines || lines.length === 0) return;
 

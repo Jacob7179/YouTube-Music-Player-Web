@@ -104,6 +104,7 @@ If you don't want to set up the YouTube API, you can still:
 16. **Export Playlist & Data**: Export playlist and data (Dark mode, Album Art spin settings & Lyrics settings) to TXT file
 17. **Album Art Display**: Select Album Art Display option to switch Spin, None or Video mode.
 18. **Delete Search Cache**: Delete search cache from browser storage
+19. **Set the Current Song’s Lyrics Time Offset**: In the browser console, run `setCurrentSongLyricsTimeOffset(0.75);` to adjust the current song’s lyric timing by 0.75 seconds.
 
 ## 🔧 GitHub Actions Workflow
 
