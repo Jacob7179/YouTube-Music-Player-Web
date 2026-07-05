@@ -182,8 +182,10 @@ function loadPlaylist() {
             { videoId: '0sDmhAItwbI', songName: 'Official髭男dism - Pretender (Acoustic ver.)［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/0sDmhAItwbI/hqdefault.jpg', lyricsTimeOffset: 17.5 },
             { videoId: '22mOCjkwQjM', songName: 'Official髭男dism - Stand By You［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/22mOCjkwQjM/hqdefault.jpg', lyricsTimeOffset: -2.0 },
             { videoId: '1oYzKnVG1Vk', songName: 'Official髭男dism - Stand By You (Acoustic ver.)［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/1oYzKnVG1Vk/hqdefault.jpg', lyricsTimeOffset: -2.0 },
+            { videoId: 'pkoxFpmiCWo', songName: 'Official髭男dism - パラボラ［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/pkoxFpmiCWo/hqdefault.jpg' },
+            { videoId: 'ArjJj4cuOVo', songName: 'Laughter (ONLINE LIVE 2020 - Arena Travelers -)', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/ArjJj4cuOVo/hqdefault.jpg' },
             { videoId: 'cqzyiJE4SQE', songName: '笑顔の待つ場所', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/cqzyiJE4SQE/hqdefault.jpg' },
-            { videoId: 'iURMyl-jarE', songName: '明け方のゲッタウェイ (Live)', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/iURMyl-jarE/hqdefault.jpg' },
+            { videoId: 'P1iOKxg6JQk', songName: '明け方のゲッタウェイ (Live)', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/P1iOKxg6JQk/hqdefault.jpg' },
             { videoId: '86uTlHDIbAw', songName: 'ダッフルコートノアマイユメ_オリジナル', authorName: 'Satoshi Fujihara', albumArt: 'https://i.ytimg.com/vi/86uTlHDIbAw/hqdefault.jpg' },
             { videoId: 'sPAJ6mTxNCU', songName: 'ふりだす雨、ゴキゲンな君', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/sPAJ6mTxNCU/hqdefault.jpg' },
             { videoId: 'DuMqFknYHBs', songName: 'Official髭男dism - イエスタデイ［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/DuMqFknYHBs/hqdefault.jpg' },
@@ -388,7 +390,7 @@ function renderPlaylist(songsToRender) {
                 cleanSongName = cleanSongName.replace(new RegExp(`\\s*by\\s*${firstSongObj.authorName}$`, 'i'), '');
                 
                 updateSongTitle(cleanSongName);
-                document.querySelector("#nowPlaying .author-name").innerText = firstSongObj.authorName;
+                updateAuthorName(firstSongObj.authorName);
                 loadLyricsFor(firstSongObj.songName, firstSongObj.authorName);
 
                 // Only prepare player, don't autoplay
@@ -665,7 +667,7 @@ function removeSong(videoIdToRemove) {
             document.getElementById("playPauseBtn").innerHTML = ICON_PLAY;
             document.getElementById("albumArt").src = "https://via.placeholder.com/300";
             updateSongTitle("No Song");
-            document.querySelector("#nowPlaying .author-name").innerText = "";
+            updateAuthorName("");
             document.getElementById("progress").style.width = "0%";
             document.getElementById("currentTime").innerText = "0:00";
             document.getElementById("totalTime").innerText = "0:00";
@@ -1282,7 +1284,7 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
             authorNameElem.style.transition = "opacity 0.5s ease-in-out";
             authorNameElem.style.opacity = "0";
             setTimeout(() => {
-                authorNameElem.innerText = authorName;
+                updateAuthorName(authorName);
                 authorNameElem.style.opacity = "1";
             }, 500);
             lastAuthor = authorName;
@@ -1467,7 +1469,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         updateSongTitle(firstSongName);
-        document.querySelector("#nowPlaying .author-name").innerText = firstAuthorName;
+        updateAuthorName(firstAuthorName);
     }
     setupMediaSession();
 });
@@ -2626,7 +2628,7 @@ function importPlaylist(file) {
                     albumArtElem.src = firstSong.albumArt;
                     background.style.backgroundImage = `url('${firstSong.albumArt}')`;
                     updateSongTitle(firstSong.songName);
-                    authorNameElem.innerText = firstSong.authorName;
+                    updateAuthorName(firstSong.authorName);
 
                     // Highlight in playlist
                     document.querySelectorAll("#songList li").forEach(li => li.classList.remove("selected"));
@@ -6204,7 +6206,12 @@ function setTitleGapFraction(value) {
 
     // Apply the new gap immediately to a scrolling title.
     stopTitleAnimation();
-    requestAnimationFrame(startTitleAnimation);
+    stopAuthorAnimation();
+
+    requestAnimationFrame(() => {
+        startTitleAnimation();
+        startAuthorAnimation();
+    });
 
     return true;
 }
@@ -6328,15 +6335,147 @@ function startTitleAnimation() {
 }
 
 let resizeTimeout;
+const authorContainer = document.querySelector("#nowPlaying .author-name");
+const authorInner = document.querySelector("#nowPlaying .author-name-inner");
+
+let authorAnimationRunning = false;
+let authorAnimationToken = 0;
+
+function updateAuthorName(text) {
+    if (!authorContainer || !authorInner) return;
+
+    const safeText = text || "";
+
+    authorContainer.dataset.author = safeText;
+
+    stopAuthorAnimation();
+    authorInner.innerHTML = "";
+
+    if (!safeText) return;
+
+    const firstCopy = document.createElement("span");
+    firstCopy.className = "author-copy first-copy";
+    firstCopy.textContent = safeText;
+
+    const secondCopy = document.createElement("span");
+    secondCopy.className = "author-copy second-copy";
+    secondCopy.textContent = safeText;
+
+    authorInner.append(firstCopy, secondCopy);
+
+    requestAnimationFrame(startAuthorAnimation);
+}
+
+function stopAuthorAnimation() {
+    authorAnimationRunning = false;
+    authorAnimationToken++;
+
+    if (!authorInner) return;
+
+    authorInner.style.transition = "none";
+    authorInner.style.transform = "translateX(0)";
+
+    const secondCopy = authorInner.querySelector(".second-copy");
+    if (secondCopy) {
+        secondCopy.style.marginLeft = "0";
+    }
+
+    void authorInner.offsetWidth;
+    authorInner.style.transition = "";
+}
+
+function startAuthorAnimation() {
+    if (!authorContainer || !authorInner) return;
+
+    const copies = authorInner.querySelectorAll(".author-copy");
+    if (copies.length < 2) return;
+
+    const firstCopy = copies[0];
+    const secondCopy = copies[1];
+    const text = firstCopy.textContent.trim();
+
+    if (!text) return;
+
+    const containerWidth = authorContainer.offsetWidth;
+    const oneCopyWidth = firstCopy.offsetWidth;
+
+    if (oneCopyWidth <= containerWidth) {
+        secondCopy.style.display = "none";
+        authorInner.style.transform = "translateX(0)";
+        return;
+    }
+
+    secondCopy.style.display = "inline-block";
+
+    // Uses the same gap setting as the song title.
+    const gap = Math.max(
+        10,
+        Math.min(containerWidth * GAP_FRACTION, oneCopyWidth * 0.5)
+    );
+
+    secondCopy.style.marginLeft = `${gap}px`;
+
+    const speed = oneCopyWidth / SLIDE_DURATION;
+    const totalDistance = oneCopyWidth + gap;
+    const totalDuration = totalDistance / speed;
+
+    const token = ++authorAnimationToken;
+    authorAnimationRunning = true;
+
+    let startTime = null;
+    let phase = "initialPause";
+    let pauseStartTime = null;
+
+    function animate(timestamp) {
+        if (!authorAnimationRunning || token !== authorAnimationToken) return;
+
+        if (!startTime) startTime = timestamp;
+
+        const elapsed = (timestamp - startTime) / 1000;
+
+        if (phase === "initialPause") {
+            authorInner.style.transform = "translateX(0)";
+
+            if (elapsed >= SLIDE_DURATION) {
+                phase = "slide";
+                startTime = timestamp;
+            }
+        } else if (phase === "slide") {
+            const progress = Math.min(elapsed / totalDuration, 1);
+
+            authorInner.style.transform =
+                `translateX(${-progress * totalDistance}px)`;
+
+            if (progress >= 1) {
+                phase = "pause";
+                pauseStartTime = timestamp;
+            }
+        } else if (phase === "pause") {
+            const pauseElapsed = (timestamp - pauseStartTime) / 1000;
+
+            if (pauseElapsed >= PAUSE_DURATION) {
+                authorInner.style.transform = "translateX(0)";
+                startTime = timestamp;
+                phase = "slide";
+            }
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+}
+
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
-        if (titleInner) {
-            stopTitleAnimation();
-            requestAnimationFrame(() => {
-                startTitleAnimation();
-            });
-        }
+        stopTitleAnimation();
+        stopAuthorAnimation();
+
+        requestAnimationFrame(() => {
+            startTitleAnimation();
+            startAuthorAnimation();
+        });
     }, 300);
 });
 

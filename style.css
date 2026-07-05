@@ -1007,7 +1007,21 @@ body:not(.dark-mode) #nowPlaying .author-name {
     font-weight: normal;
     color: #666;
     display: block;
-}        
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+#nowPlaying .author-name-inner {
+    display: inline-block;
+    white-space: nowrap;
+    will-change: transform;
+}
+
+#nowPlaying .author-copy {
+    display: inline-block;
+    white-space: nowrap;
+}
 
 /* Default Light Mode */
 .author-name {
