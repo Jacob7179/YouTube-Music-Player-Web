@@ -13,7 +13,7 @@ let albumArtSpinEnabled = albumArtDisplayMode === "spin";
 let isTranslating = false;
 let showTranslatedView = false;
 
-// YOUTUBE_API_KEY is now loaded from config.js or Vercel API endpoint
+// YOUTUBE_API_KEY is now loaded from "YOUR_YOUTUBE_API_KEY" or Vercel API endpoint
 const YOUTUBE_API_KEY = "YOUR_YOUTUBE_API_KEY";
 const VERCEL_API_KEY_ENDPOINT = "/api/getApiKey";
 
@@ -746,7 +746,7 @@ async function searchYouTube() {
     }
 
     console.log("Attempting YouTube search...");
-    console.log("API Key present (from config.js): ", typeof apiKey !== 'undefined' && apiKey.length > 10);
+    console.log("API Key present (from 'YOUR_YOUTUBE_API_KEY'): ", typeof apiKey !== 'undefined' && apiKey.length > 10);
 
     const searchTerm = document.getElementById('youtubeSearchInput').value.trim();
     const searchResultsList = document.getElementById('searchResultsList');
@@ -3139,7 +3139,7 @@ const translations = {
     searchResultsTitle: "Search Results:",
     youtubeSearching: "Searching YouTube...",
     youtubeSearchError: "Unable to search YouTube. Please check your internet connection and try again.",
-    youtubeApiKeyError: "YouTube API Key is not configured. Please ensure config.js is loaded and the key is set.",
+    youtubeApiKeyError: "YouTube API Key is not configured. Please ensure the key is set.",
     removeSongTitle: "Remove song",
     settingsTitle: "Settings",
     searchYouTubeTitle: "Search YouTube",
@@ -3309,7 +3309,7 @@ const translations = {
     searchResultsTitle: "搜索结果：",
     youtubeSearching: "正在搜索 YouTube...",
     youtubeSearchError: "无法搜索 YouTube，请检查网络连接后重试。",
-    youtubeApiKeyError: "YouTube API 密钥未配置。请确保已加载 config.js 并设置密钥。",
+    youtubeApiKeyError: "YouTube API 密钥未配置。请确保已设置密钥。。",
     removeSongTitle: "移除歌曲",
     settingsTitle: "设置",
     searchYouTubeTitle: "搜索 YouTube",
@@ -3479,7 +3479,7 @@ const translations = {
     searchResultsTitle: "検索結果：",
     youtubeSearching: "YouTube を検索中...",
     youtubeSearchError: "YouTube を検索できません。インターネット接続を確認して、もう一度お試しください。",
-    youtubeApiKeyError: "YouTube API キーが設定されていません。config.js が読み込まれており、キーが設定されていることを確認してください。",
+    youtubeApiKeyError: "YouTube APIキーが設定されていません。キーが正しく設定されていることを確認してください。",
     removeSongTitle: "曲を削除",
     settingsTitle: "設定",
     searchYouTubeTitle: "YouTube を検索",
@@ -3648,7 +3648,7 @@ const translations = {
     searchResultsTitle: "검색 결과:",
     youtubeSearching: "YouTube 검색 중...",
     youtubeSearchError: "YouTube를 검색할 수 없습니다. 인터넷 연결을 확인한 후 다시 시도하세요.",
-    youtubeApiKeyError: "YouTube API 키가 설정되지 않았습니다. config.js가 로드되었고 키가 설정되어 있는지 확인하세요.",
+    youtubeApiKeyError: "YouTube API 키가 설정되어 있지 않습니다. API 키가 설정되어 있는지 확인하십시오.",
     removeSongTitle: "곡 삭제",
     settingsTitle: "설정",
     searchYouTubeTitle: "YouTube 검색",
@@ -3819,7 +3819,7 @@ const translations = {
     searchResultsTitle: "搜尋結果：",
     youtubeSearching: "正在搜尋 YouTube...",
     youtubeSearchError: "無法搜尋 YouTube。請檢查你的網路連線後再試。",
-    youtubeApiKeyError: "尚未設定 YouTube API 金鑰。請確認已載入 config.js，並已設定金鑰。",
+    youtubeApiKeyError: "YouTube API 金鑰未配置。請確保已設定密鑰。。",
     removeSongTitle: "移除歌曲",
     settingsTitle: "設定",
     searchYouTubeTitle: "搜尋 YouTube",
@@ -4200,7 +4200,7 @@ function applyLanguage(lang = currentLang) {
         if (currentErrorText.includes("403") || currentErrorText.includes("403") || currentErrorText.includes("daily limit")) {
             // This is a quota exceeded error - use the specific translation
             searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeApi403Error}`;
-        } else if (currentErrorText.includes("API Key is not configured") || currentErrorText.includes("config.js") || currentErrorText.includes("YOUR_YOUTUBE_API_KEY")) {
+        } else if (currentErrorText.includes("API Key is not configured") || currentErrorText.includes("YOUR_YOUTUBE_API_KEY")) {
             // This is an API key configuration error
             searchError.innerHTML = `<i class='bx bx-error'></i> ${t.youtubeApiKeyError}`;
         } else if (currentErrorText.includes("Unable to search") || currentErrorText.includes("internet connection")) {

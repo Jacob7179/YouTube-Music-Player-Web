@@ -53,12 +53,14 @@ jobs:
 
           python3 - "$SITE_DIR/script.js" <<'PY'
           from pathlib import Path
+          import json
           import os
           import sys
 
           api_key = os.environ.get("YOUTUBE_API_KEY", "")
           script_path = Path(sys.argv[1])
-          placeholder = YOUTUBE_API_KEY
+
+          source_line = 'const YOUTUBE_API_KEY = "YOUR_YOUTUBE_API_KEY";'
 
           if not api_key:
               raise SystemExit(
@@ -72,27 +74,18 @@ jobs:
               )
 
           content = script_path.read_text(encoding="utf-8")
-          placeholder_count = content.count(placeholder)
 
-          if placeholder_count == 0:
+          if source_line not in content:
               raise SystemExit(
-                  "::error::YOUR_YOUTUBE_API_KEY placeholder was not found in script.js."
+                  "::error::Could not find the YOUTUBE_API_KEY declaration in script.js."
               )
 
-          # Replace every placeholder in the temporary deployment copy.
-          updated_content = content.replace(placeholder, api_key)
-
-          if placeholder in updated_content:
-              raise SystemExit(
-                  "::error::API key placeholder still exists after replacement."
-              )
+          replacement_line = f"const YOUTUBE_API_KEY = {json.dumps(api_key)};"
+          updated_content = content.replace(source_line, replacement_line, 1)
 
           script_path.write_text(updated_content, encoding="utf-8")
 
-          print(
-              f"::notice::YouTube API key injected into {placeholder_count} location(s) "
-              "in the deployment artifact."
-          )
+          print("::notice::YouTube API key was injected into the deployment artifact.")
           PY
 
       - name: Configure GitHub Pages
