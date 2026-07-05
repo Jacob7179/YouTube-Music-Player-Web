@@ -58,7 +58,7 @@ jobs:
 
           api_key = os.environ.get("YOUTUBE_API_KEY", "")
           script_path = Path(sys.argv[1])
-          placeholder = "YOUR_YOUTUBE_API_KEY"
+          placeholder = YOUTUBE_API_KEY
 
           if not api_key:
               raise SystemExit(
