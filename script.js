@@ -14,21 +14,20 @@ let isTranslating = false;
 let showTranslatedView = false;
 
 // YOUTUBE_API_KEY is now loaded from config.js or Vercel API endpoint
-const VERCEL_API_KEY_ENDPOINT = '/api/getApiKey';
+const GITHUB_PAGES_API_KEY = "YOUR_YOUTUBE_API_KEY";
+const VERCEL_API_KEY_ENDPOINT = "/api/getApiKey";
 let cachedApiKey = null;
 
 async function getApiKey() {
     if (cachedApiKey) return cachedApiKey;
 
-    // 1. Try config.js (global variable)
-    if (typeof YOUTUBE_API_KEY !== 'undefined' && 
-        YOUTUBE_API_KEY && 
-        YOUTUBE_API_KEY !== 'YOUR_YOUTUBE_API_KEY') {
-        cachedApiKey = YOUTUBE_API_KEY;
+    // 1. GitHub Pages: key injected by deploy.yml
+    if (GITHUB_PAGES_API_KEY && GITHUB_PAGES_API_KEY !== "YOUR_YOUTUBE_API_KEY") {
+        cachedApiKey = GITHUB_PAGES_API_KEY;
         return cachedApiKey;
     }
 
-    // 2. Fallback: fetch from Vercel serverless function
+    // 2. Vercel: fallback to the serverless function
     try {
         const response = await fetch(VERCEL_API_KEY_ENDPOINT);
         if (!response.ok) {
@@ -38,12 +37,13 @@ async function getApiKey() {
         if (data.apiKey) {
             cachedApiKey = data.apiKey;
             return cachedApiKey;
-        } else {
-            throw new Error('No apiKey in response');
         }
+        throw new Error("No API key returned.");
     } catch (error) {
-        console.warn('Could not fetch API key from Vercel:', error);
-        throw new Error('No API key available. Please set YOUTUBE_API_KEY in config.js or Vercel environment.');
+        console.warn("Could not fetch API key from Vercel:", error);
+        throw new Error(
+            "No API key available. Add YOUTUBE_API_KEY to GitHub Actions secrets or Vercel environment variables."
+        );
     }
 }
 
