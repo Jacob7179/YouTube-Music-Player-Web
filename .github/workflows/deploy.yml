@@ -18,7 +18,7 @@ env:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -42,14 +42,24 @@ jobs:
           rm -rf "$SITE_DIR"
           mkdir -p "$SITE_DIR"
 
-          # Copy only deployable project files.
-          # The original script.js in the repository stays unchanged.
-          rsync -a \
-            --exclude=".git/" \
-            --exclude=".github/" \
-            --exclude="node_modules/" \
-            --exclude="dist/" \
-            ./ "$SITE_DIR/"
+          # Copy only static files needed by GitHub Pages.
+          cp -L index.html 404.html style.css script.js "$SITE_DIR/"
+
+          for folder in alpha beta resource; do
+            if [ -d "$folder" ]; then
+              cp -RL "$folder" "$SITE_DIR/$folder"
+            fi
+          done
+
+          # GitHub Pages artifacts must not contain symbolic links.
+          if find "$SITE_DIR" -type l -print -quit | grep -q .; then
+            echo "::error::Deployment artifact contains symbolic links."
+            exit 1
+          fi
+
+          # Use normal web-server permissions.
+          find "$SITE_DIR" -type d -exec chmod 755 {} +
+          find "$SITE_DIR" -type f -exec chmod 644 {} +
 
           python3 - "$SITE_DIR/script.js" <<'PY'
           from pathlib import Path
@@ -59,18 +69,12 @@ jobs:
 
           api_key = os.environ.get("YOUTUBE_API_KEY", "")
           script_path = Path(sys.argv[1])
-
           source_line = 'const YOUTUBE_API_KEY = "YOUR_YOUTUBE_API_KEY";'
 
           if not api_key:
               raise SystemExit(
                   "::error::Missing YOUTUBE_API_KEY. "
                   "Add it in Settings → Secrets and variables → Actions."
-              )
-
-          if not script_path.is_file():
-              raise SystemExit(
-                  "::error::script.js was not found in the deployment artifact."
               )
 
           content = script_path.read_text(encoding="utf-8")
@@ -80,12 +84,16 @@ jobs:
                   "::error::Could not find the YOUTUBE_API_KEY declaration in script.js."
               )
 
-          replacement_line = f"const YOUTUBE_API_KEY = {json.dumps(api_key)};"
-          updated_content = content.replace(source_line, replacement_line, 1)
+          script_path.write_text(
+              content.replace(
+                  source_line,
+                  f"const YOUTUBE_API_KEY = {json.dumps(api_key)};",
+                  1,
+              ),
+              encoding="utf-8",
+          )
 
-          script_path.write_text(updated_content, encoding="utf-8")
-
-          print("::notice::YouTube API key was injected into the deployment artifact.")
+          print("::notice::YouTube API key was injected successfully.")
           PY
 
       - name: Configure GitHub Pages
