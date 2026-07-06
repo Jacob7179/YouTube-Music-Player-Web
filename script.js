@@ -12,6 +12,8 @@ let albumArtDisplayMode = localStorage.getItem("albumArtDisplayMode") || "spin";
 let albumArtSpinEnabled = albumArtDisplayMode === "spin";
 let isTranslating = false;
 let showTranslatedView = false;
+let repeatSong = localStorage.getItem("repeatSong") === "true";
+let autoPlayEnabled = localStorage.getItem("autoPlay") !== "false";
 
 // YOUTUBE_API_KEY is now loaded from "YOUR_YOUTUBE_API_KEY" or Vercel API endpoint
 const YOUTUBE_API_KEY = "YOUR_YOUTUBE_API_KEY";
@@ -1128,7 +1130,216 @@ function addSongFromSearch(event) {
 let lastSong = '';
 let lastAuthor = '';
 
-let currentVolume = parseInt(localStorage.getItem("volumeLevel")) || 100;
+const savedVolume = Number(localStorage.getItem("volumeLevel"));
+
+let currentVolume = Number.isFinite(savedVolume)
+    ? Math.min(100, Math.max(0, savedVolume))
+    : 100;
+
+
+    function clampVolume(value) {
+    const numericValue = Number(value);
+
+    if (!Number.isFinite(numericValue)) {
+        return 100;
+    }
+
+    return Math.round(Math.min(100, Math.max(0, numericValue)));
+}
+
+function updateVolumeUI(volumeValue) {
+    const value = clampVolume(volumeValue);
+
+    const volumeControl = document.getElementById("volumeControl");
+    const volumeBarContainer = document.querySelector(".volume-bar-container");
+    const volumeProgress = document.getElementById("volumeProgress");
+    const volumeThumb = document.getElementById("volumeThumb");
+    const volumeValueOutput = document.getElementById("volumeValue");
+
+    if (volumeControl) {
+        volumeControl.value = value;
+        volumeControl.setAttribute("aria-valuenow", String(value));
+        volumeControl.setAttribute("aria-valuetext", `${value}%`);
+    }
+
+    if (volumeBarContainer) {
+        volumeBarContainer.setAttribute("aria-valuenow", String(value));
+        volumeBarContainer.setAttribute("aria-valuetext", `${value}%`);
+    }
+
+    if (volumeProgress) {
+        volumeProgress.style.width = `${value}%`;
+    }
+
+    if (volumeThumb) {
+        volumeThumb.style.left = `${value}%`;
+    }
+
+    if (volumeValueOutput) {
+        volumeValueOutput.value = `${value}%`;
+        volumeValueOutput.textContent = `${value}%`;
+    }
+}
+
+function setVolume(value, saveToStorage = true) {
+    currentVolume = clampVolume(value);
+
+    if (saveToStorage) {
+        localStorage.setItem("volumeLevel", String(currentVolume));
+    }
+
+    if (player && typeof player.setVolume === "function") {
+        player.setVolume(currentVolume);
+    }
+
+    updateVolumeUI(currentVolume);
+}
+
+function initVolumeControls() {
+    const volumeControl = document.getElementById("volumeControl");
+    const volumeBarContainer = document.querySelector(".volume-bar-container");
+
+    if (!volumeControl || !volumeBarContainer) {
+        return;
+    }
+
+    // Do not let the hidden range input receive touch/mouse dragging.
+    // The outer bar controls the drag position consistently.
+    volumeControl.tabIndex = -1;
+    volumeControl.setAttribute("aria-hidden", "true");
+
+    volumeBarContainer.tabIndex = 0;
+    volumeBarContainer.setAttribute("role", "slider");
+    volumeBarContainer.setAttribute("aria-label", "Player volume");
+    volumeBarContainer.setAttribute("aria-valuemin", "0");
+    volumeBarContainer.setAttribute("aria-valuemax", "100");
+
+    let activePointerId = null;
+
+    function setVolumeFromPointer(event) {
+        const rect = volumeBarContainer.getBoundingClientRect();
+
+        if (rect.width <= 0) {
+            return;
+        }
+
+        const percentage = ((event.clientX - rect.left) / rect.width) * 100;
+        setVolume(percentage);
+    }
+
+    function finishPointerDrag(event) {
+        if (activePointerId !== event.pointerId) {
+            return;
+        }
+
+        if (volumeBarContainer.hasPointerCapture?.(event.pointerId)) {
+            volumeBarContainer.releasePointerCapture(event.pointerId);
+        }
+
+        activePointerId = null;
+        volumeBarContainer.classList.remove("is-dragging");
+    }
+
+    volumeBarContainer.addEventListener("pointerdown", (event) => {
+        if (event.pointerType === "mouse" && event.button !== 0) {
+            return;
+        }
+
+        event.preventDefault();
+
+        activePointerId = event.pointerId;
+        volumeBarContainer.classList.add("is-dragging");
+
+        if (volumeBarContainer.setPointerCapture) {
+            volumeBarContainer.setPointerCapture(event.pointerId);
+        }
+
+        setVolumeFromPointer(event);
+
+        try {
+            volumeBarContainer.focus({ preventScroll: true });
+        } catch {
+            volumeBarContainer.focus();
+        }
+    });
+
+    volumeBarContainer.addEventListener("pointermove", (event) => {
+        if (activePointerId !== event.pointerId) {
+            return;
+        }
+
+        event.preventDefault();
+        setVolumeFromPointer(event);
+    });
+
+    volumeBarContainer.addEventListener("pointerup", finishPointerDrag);
+    volumeBarContainer.addEventListener("pointercancel", finishPointerDrag);
+
+    volumeBarContainer.addEventListener("lostpointercapture", () => {
+        activePointerId = null;
+        volumeBarContainer.classList.remove("is-dragging");
+    });
+
+    // Keyboard accessibility.
+    volumeBarContainer.addEventListener("keydown", (event) => {
+        const step = event.shiftKey ? 5 : 1;
+
+        switch (event.key) {
+            case "ArrowRight":
+            case "ArrowUp":
+                event.preventDefault();
+                setVolume(currentVolume + step);
+                break;
+
+            case "ArrowLeft":
+            case "ArrowDown":
+                event.preventDefault();
+                setVolume(currentVolume - step);
+                break;
+
+            case "PageUp":
+                event.preventDefault();
+                setVolume(currentVolume + 10);
+                break;
+
+            case "PageDown":
+                event.preventDefault();
+                setVolume(currentVolume - 10);
+                break;
+
+            case "Home":
+                event.preventDefault();
+                setVolume(0);
+                break;
+
+            case "End":
+                event.preventDefault();
+                setVolume(100);
+                break;
+        }
+    });
+
+    volumeBarContainer.addEventListener(
+        "wheel",
+        (event) => {
+            const desktopPointer = window.matchMedia(
+                "(hover: hover) and (pointer: fine)"
+            ).matches;
+
+            if (!desktopPointer) {
+                return;
+            }
+
+            event.preventDefault();
+            setVolume(currentVolume + (event.deltaY < 0 ? 5 : -5));
+        },
+        { passive: false }
+    );
+
+    updateVolumeUI(currentVolume);
+}
+
+document.addEventListener("DOMContentLoaded", initVolumeControls);
 
 // Create exactly one YouTube iframe player. It remains the audio source in
 // Spin/None mode and becomes the visible video in Video mode.
@@ -1476,84 +1687,6 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 document.addEventListener("DOMContentLoaded", function () {
-    const volumeControl = document.getElementById("volumeControl");
-    const volumeProgress = document.getElementById("volumeProgress");
-    const volumeThumb = document.getElementById("volumeThumb");
-    const volumeBarContainer = document.querySelector(".volume-bar-container");
-
-    volumeControl.value = currentVolume;
-    
-    // Initialize UI
-    updateVolumeUI(currentVolume);
-
-    function updateVolumeUI(volumeValue) {
-        if (!volumeBarContainer || !volumeThumb || !volumeProgress) return;
-        
-        const progressBarWidth = volumeBarContainer.offsetWidth;
-        const thumbPosition = (volumeValue / 100) * progressBarWidth;
-        
-        // Update progress bar
-        volumeProgress.style.width = `${volumeValue}%`;
-        
-        // Update thumb position
-        volumeThumb.style.left = `${thumbPosition}px`;
-    }
-
-    // Input event for smooth sliding
-    volumeControl.addEventListener("input", function () {
-        let volumeValue = parseInt(this.value);
-        currentVolume = volumeValue;
-        localStorage.setItem("volumeLevel", volumeValue);
-
-        if (player && player.setVolume) {
-            player.setVolume(volumeValue);
-        }
-        
-        updateVolumeUI(volumeValue);
-    });
-
-    // Click on volume bar to set volume
-    volumeBarContainer.addEventListener("click", function (event) {
-        if (event.target === volumeControl || event.target === volumeThumb) return;
-        
-        const rect = this.getBoundingClientRect();
-        const clickX = event.clientX - rect.left;
-        const percentage = Math.max(0, Math.min(100, Math.round((clickX / rect.width) * 100)));
-        
-        volumeControl.value = percentage;
-        currentVolume = percentage;
-        localStorage.setItem("volumeLevel", percentage);
-        
-        if (player && player.setVolume) {
-            player.setVolume(percentage);
-        }
-        
-        updateVolumeUI(percentage);
-        
-        // Trigger input event for consistency
-        volumeControl.dispatchEvent(new Event('input'));
-    });
-
-    // Adjust position on window resize
-    window.addEventListener("resize", () => {
-        updateVolumeUI(currentVolume);
-    });
-
-    // Initialize on page load
-    updateVolumeUI(currentVolume);
-    
-    // Fix for touch devices
-    volumeControl.addEventListener("touchstart", function (e) {
-        e.stopPropagation();
-    }, { passive: false });
-    
-    volumeControl.addEventListener("touchmove", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }, { passive: false });
-});
-
-document.addEventListener("DOMContentLoaded", function () {
     // Initialize album art display mode toggle
     const albumArtDisplayToggle = document.getElementById("albumArtDisplayToggle");
     if (albumArtDisplayToggle) {
@@ -1858,37 +1991,21 @@ function playNextSong() {
 
 function updateProgressBar() {
     clearInterval(progressInterval);
+
     progressInterval = setInterval(() => {
-        if (player && player.getCurrentTime && !isDragging) {
-            let currentTime = player.getCurrentTime();
-            let duration = player.getDuration();
+        if (!player || !player.getCurrentTime || isDragging) {
+            return;
+        }
 
-            if (duration > 0) {
-                let progressPercent = (currentTime / duration) * 100;
-                document.getElementById("progress").style.width = progressPercent + "%";
+        const currentTime = player.getCurrentTime();
+        const duration = player.getDuration();
 
-                // ✅ Update time display correctly
-                document.getElementById("currentTime").innerText = formatTime(currentTime);
-                document.getElementById("totalTime").innerText = formatTime(duration);
-            }
+        if (duration > 0) {
+            const progressPercent = (currentTime / duration) * 100;
 
-            // ✅ If video ends, handle accordingly
-            if (player.getPlayerState() === 0) { // 0 = ENDED
-                clearInterval(progressInterval);
-                let playPauseBtn = document.getElementById("playPauseBtn");
-                let autoPlayToggle = document.getElementById("autoPlayToggle").checked;
-
-                if (repeatSong) {
-                    player.seekTo(0); // Restart the current song
-                    player.playVideo(); // Always play again when Repeat is ON
-                } else if (autoPlay) {
-                    const autoPlay = document.getElementById("autoPlayToggle").classList.contains("active");
-                } else {
-                    // Show bx-revision when the song ends and Auto-Play is OFF
-                    playPauseBtn.innerHTML = ICON_REVISION; // Use constant
-                    playing = false;
-                }
-            }
+            document.getElementById("progress").style.width = `${progressPercent}%`;
+            document.getElementById("currentTime").innerText = formatTime(currentTime);
+            document.getElementById("totalTime").innerText = formatTime(duration);
         }
     }, 1000);
 }
@@ -1973,88 +2090,6 @@ tag.src = "https://www.youtube.com/iframe_api";
 let firstScriptTag = document.getElementsByTagName('script')[0];
 firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-let volumeBar = document.getElementById("volumeControl");
-let volumeProgress = document.getElementById("volumeProgress");
-let volumeThumb = document.getElementById("volumeThumb");
-let isAdjustingVolume = false;
-
-function updateVolumeUI(volumeValue) {
-    const volumeProgress = document.getElementById("volumeProgress");
-    const volumeThumb = document.getElementById("volumeThumb");
-    const volumeBarContainer = document.querySelector(".volume-bar-container");
-
-    if (!volumeProgress || !volumeThumb || !volumeBarContainer) return; // Ensure elements exist
-
-    const progressBarWidth = volumeBarContainer.offsetWidth;
-    const thumbWidth = volumeThumb.offsetWidth;
-    const thumbPosition = (volumeValue / 100) * (progressBarWidth - thumbWidth) + (thumbWidth / 2);
-
-    volumeProgress.style.width = `${volumeValue}%`;
-    volumeThumb.style.left = `${thumbPosition}px`;
-}
-
-// Handle touch start
-volumeBar.addEventListener("touchstart", function (event) {
-    isAdjustingVolume = true;
-    adjustVolume(event.touches[0]);
-    event.preventDefault(); // Prevent default scrolling
-});
-
-// Handle touch move
-volumeBar.addEventListener("touchmove", function (event) {
-    if (isAdjustingVolume) {
-        adjustVolume(event.touches[0]);
-        event.preventDefault();
-    }
-});
-
-// Handle touch end
-volumeBar.addEventListener("touchend", function () {
-    isAdjustingVolume = false;
-});
-
-function adjustVolume(event) {
-    let bar = document.querySelector(".volume-bar-container");
-    let barWidth = bar.offsetWidth;
-    let clientX = event.clientX || event.touches[0].clientX; // Handle both mouse and touch events
-    let touchX = clientX - bar.getBoundingClientRect().left;
-    let newVolume = Math.max(0, Math.min(100, (touchX / barWidth) * 100));
-
-    volumeBar.value = newVolume;
-    currentVolume = newVolume;
-    localStorage.setItem("volumeLevel", newVolume);
-
-    if (player) {
-        player.setVolume(newVolume);
-    }
-    updateVolumeUI(newVolume);
-}
-
-// Allow volume control using scroll
-document.getElementById("volumeControl").addEventListener("wheel", function (event) {
-    event.preventDefault(); // Prevent page scrolling
-
-    let step = event.deltaY < 0 ? 5 : -5; // Scroll up increases, scroll down decreases
-    let newValue = Math.min(100, Math.max(0, parseInt(this.value, 10) + step)); // Keep within range
-
-    this.value = newValue;
-    currentVolume = newValue;
-    localStorage.setItem("volumeLevel", newValue);
-
-    if (player) {
-        player.setVolume(newValue);
-    }
-
-    updateVolumeUI(newValue); // Ensure UI updates properly
-});
-
-let repeatSong = false; // Track repeat mode
-
-document.getElementById("repeatBtn").addEventListener("click", function () {
-    repeatSong = !repeatSong;
-    this.classList.toggle("active", repeatSong); // Toggle active class
-});
-
 function handlePlayerStateChange(event) {
     let albumArt = document.getElementById("albumArt");
     let playPauseBtn = document.getElementById("playPauseBtn");
@@ -2078,25 +2113,31 @@ function handlePlayerStateChange(event) {
         }
     }
 
-    if (event.data === 0) { // ✅ 0 means video ended
+    if (event.data === YT.PlayerState.ENDED) {
+        clearInterval(progressInterval);
         playing = false;
+
         if (albumArtSpinEnabled) {
             albumArt.classList.add("rotate-paused");
         }
 
+        // Repeat has priority over Auto-Play.
         if (repeatSong) {
-            player.seekTo(0); // ✅ Restart the current song
-            player.playVideo(); // ✅ Always play again when Repeat is ON
-        } else if (autoPlay) {
-            playNextSong(); // ✅ Play next song if Auto-Play is ON
-        } else {
-            // ✅ Show bx-revision when the song ends and Auto-Play is OFF
-            playPauseBtn.innerHTML = ICON_REVISION; // Use constant
+            player.seekTo(0, true);
+            player.playVideo();
+            updateProgressBar();
+            return;
         }
-        
-        // Update media session
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = 'none';
+
+        if (autoPlayEnabled && playlist.length > 1) {
+            playNextSong();
+            return;
+        }
+
+        playPauseBtn.innerHTML = ICON_REVISION;
+
+        if ("mediaSession" in navigator) {
+            navigator.mediaSession.playbackState = "none";
         }
     } else if (event.data === 2) { // ✅ 2 means PAUSED
         playPauseBtn.innerHTML = ICON_PLAY; // Use constant
@@ -2142,34 +2183,42 @@ function handlePlayerStateChange(event) {
 }
 
 // Initialize auto-play button
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", () => {
     const autoPlayToggle = document.getElementById("autoPlayToggle");
-    
-    // Load saved auto-play state
-    const savedAutoPlay = localStorage.getItem("autoPlay") !== "false"; // Default to true
-    if (savedAutoPlay) {
-        autoPlayToggle.classList.add("active");
+    const repeatBtn = document.getElementById("repeatBtn");
+
+    if (!autoPlayToggle || !repeatBtn) {
+        return;
     }
-    
-    // Toggle auto-play on click
-    autoPlayToggle.addEventListener("click", function() {
-        const isActive = this.classList.toggle("active");
-        localStorage.setItem("autoPlay", isActive);
-        
-        // Visual feedback
-        if (isActive) {
-            this.innerHTML = '<i class="bx bx-play-circle"></i>';
-        } else {
-            this.innerHTML = '<i class="bx bx-stop-circle"></i>';
-        }
+
+    function updatePlaybackModeButtons() {
+        autoPlayToggle.classList.toggle("active", autoPlayEnabled);
+        autoPlayToggle.setAttribute(
+            "aria-pressed",
+            String(autoPlayEnabled)
+        );
+
+        autoPlayToggle.innerHTML = autoPlayEnabled
+            ? '<i class="bx bx-play-circle"></i>'
+            : '<i class="bx bx-stop-circle"></i>';
+
+        repeatBtn.classList.toggle("active", repeatSong);
+        repeatBtn.setAttribute("aria-pressed", String(repeatSong));
+    }
+
+    autoPlayToggle.addEventListener("click", () => {
+        autoPlayEnabled = !autoPlayEnabled;
+        localStorage.setItem("autoPlay", String(autoPlayEnabled));
+        updatePlaybackModeButtons();
     });
-    
-    // Set initial icon
-    if (autoPlayToggle.classList.contains("active")) {
-        autoPlayToggle.innerHTML = '<i class="bx bx-play-circle"></i>';
-    } else {
-        autoPlayToggle.innerHTML = '<i class="bx bx-stop-circle"></i>';
-    }
+
+    repeatBtn.addEventListener("click", () => {
+        repeatSong = !repeatSong;
+        localStorage.setItem("repeatSong", String(repeatSong));
+        updatePlaybackModeButtons();
+    });
+
+    updatePlaybackModeButtons();
 });
 
 document.addEventListener("DOMContentLoaded", function () {

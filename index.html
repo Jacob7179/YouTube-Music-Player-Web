@@ -66,14 +66,29 @@
     
                         <div class="container">
                             <div class="row">
-                                <div class="col-12 d-flex align-items-center volume-container">
-                                    <box-icon name='volume-low' class="me-2"></box-icon>
-                                    <div class="volume-bar-container flex-grow-1 position-relative">
-                                        <div id="volumeProgress" class="volume-bar position-absolute"></div>
-                                        <div id="volumeThumb" class="volume-thumb position-absolute"></div>
-                                        <input type="range" id="volumeControl" class="form-range w-100" min="0" max="100" value="80">
+                                <div class="col-12 volume-container" aria-label="Volume controls">
+                                    <i class="bx bx-volume-low volume-icon" aria-hidden="true"></i>
+
+                                    <div class="volume-bar-container">
+                                        <div id="volumeProgress" class="volume-bar" aria-hidden="true"></div>
+                                        <div id="volumeThumb" class="volume-thumb" aria-hidden="true"></div>
+
+                                        <input
+                                            type="range"
+                                            id="volumeControl"
+                                            min="0"
+                                            max="100"
+                                            step="1"
+                                            value="100"
+                                            aria-label="Player volume"
+                                            aria-valuemin="0"
+                                            aria-valuemax="100"
+                                            aria-valuenow="100"
+                                        >
                                     </div>
-                                    <box-icon name='volume-full' class="ms-2"></box-icon>
+
+                                    <i class="bx bx-volume-full volume-icon" aria-hidden="true"></i>
+                                    <output id="volumeValue" class="visually-hidden" aria-live="polite">100%</output>
                                 </div>
                             </div>
                         </div>

@@ -1061,102 +1061,127 @@ body.dark-mode .text-muted a:hover {
     color: #fff !important;  /* hover = white */
 }
 
-/* Volume Control - Simplified */
+/* ===== Volume Control ===== */
 .volume-container {
-    display: flex;
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) 24px;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
     padding-top: 15px;
-    position: relative;
-    touch-action: none;
     margin: 0 auto;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .volume-icon {
-    font-size: 20px;
-    color: #007bff;
-    min-width: 24px;
+    color: #000;
+    font-size: 22px;
+    line-height: 1;
     transition: color 0.8s ease-in-out;
 }
 
 body.dark-mode .volume-icon {
-    color: #007bff;
+    color: #fff;
 }
 
 .volume-bar-container {
     position: relative;
+    display: flex;
+    align-items: center;
     width: 100%;
-    height: 8px;
-    background: #e9ecef;
-    border-radius: 10px;
-    overflow: visible;
-    cursor: pointer;
-    transition: background-color 0.8s ease-in-out;
+    height: 44px;
+    cursor: ew-resize;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
 }
 
-body.dark-mode .volume-bar-container {
+.volume-bar-container::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 8px;
+    border-radius: 999px;
+    background: #e9ecef;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+body.dark-mode .volume-bar-container::before {
     background: #444;
 }
 
 .volume-bar {
     position: absolute;
-    top: 0;
+    top: 50%;
     left: 0;
-    height: 100%;
+    height: 8px;
+    border-radius: 999px;
     background: #007bff;
-    border-radius: 10px;
-    transition: width 0.1s ease;
-    width: 70%; /* Default to 70% */
+    transform: translateY(-50%);
+    pointer-events: none;
+    transition: width 0.05s linear;
 }
 
 .volume-thumb {
     position: absolute;
     top: 50%;
-    width: 18px;
-    height: 18px;
-    background: #fff;
+    left: 100%;
+    width: 20px;
+    height: 20px;
     border: 2px solid #007bff;
     border-radius: 50%;
+    background: #fff;
     transform: translate(-50%, -50%);
-    transition: left 0.1s ease;
-    cursor: grab;
-    z-index: 2;
-    left: 70%; /* Default to 70% */
+    pointer-events: none;
+    transition: left 0.05s linear;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
 }
 
-.volume-thumb:active {
+/* Remove visual delay while the user is dragging. */
+.volume-bar-container.is-dragging {
     cursor: grabbing;
 }
 
+.volume-bar-container.is-dragging .volume-bar,
+.volume-bar-container.is-dragging .volume-thumb {
+    transition: none;
+}
+
+/* Keep the element only for saved value / accessibility data.
+   It must not receive its own touch or mouse drag. */
 #volumeControl {
-    -webkit-appearance: none;
-    width: 100%;
     position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    background: transparent;
-    z-index: 3;
-    cursor: pointer;
-    opacity: 0;
+    inset: 0;
+    width: 100%;
+    height: 44px;
     margin: 0;
     padding: 0;
-}
+    opacity: 0;
+    pointer-events: none;
+    z-index: 2;
 
-#volumeControl::-webkit-slider-thumb {
+    appearance: none;
     -webkit-appearance: none;
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
 }
 
-#volumeControl::-moz-range-thumb {
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
-    border: none;
-    background: transparent;
+.volume-bar-container:focus-visible .volume-thumb {
+    box-shadow:
+        0 0 0 4px rgba(0, 123, 255, 0.22),
+        0 1px 4px rgba(0, 0, 0, 0.22);
+}
+
+@media (max-width: 480px) {
+    .volume-container {
+        gap: 8px;
+    }
+
+    .volume-icon {
+        font-size: 20px;
+    }
 }
 
 #player {
