@@ -18,7 +18,7 @@ env:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -32,6 +32,9 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v5
 
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
       - name: Build Pages artifact and inject API key
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
@@ -42,7 +45,6 @@ jobs:
           rm -rf "$SITE_DIR"
           mkdir -p "$SITE_DIR"
 
-          # Copy only static files needed by GitHub Pages.
           cp -L index.html 404.html style.css script.js "$SITE_DIR/"
 
           for folder in alpha beta resource; do
@@ -51,13 +53,17 @@ jobs:
             fi
           done
 
-          # GitHub Pages artifacts must not contain symbolic links.
+          # Pages artifact must not contain symbolic or hard links.
           if find "$SITE_DIR" -type l -print -quit | grep -q .; then
             echo "::error::Deployment artifact contains symbolic links."
             exit 1
           fi
 
-          # Use normal web-server permissions.
+          if find "$SITE_DIR" -type f -links +1 -print -quit | grep -q .; then
+            echo "::error::Deployment artifact contains hard links."
+            exit 1
+          fi
+
           find "$SITE_DIR" -type d -exec chmod 755 {} +
           find "$SITE_DIR" -type f -exec chmod 644 {} +
 
@@ -88,16 +94,13 @@ jobs:
               content.replace(
                   source_line,
                   f"const YOUTUBE_API_KEY = {json.dumps(api_key)};",
-                  1,
+                  1
               ),
-              encoding="utf-8",
+              encoding="utf-8"
           )
 
           print("::notice::YouTube API key was injected successfully.")
           PY
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
