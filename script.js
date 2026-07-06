@@ -15,6 +15,20 @@ let showTranslatedView = false;
 let repeatSong = localStorage.getItem("repeatSong") === "true";
 let autoPlayEnabled = localStorage.getItem("autoPlay") !== "false";
 
+// Lyrics performance settings.
+// false = do not fetch/translate while the Playlist page is open.
+let allowLyricsFetchWhenHidden =
+    localStorage.getItem("allowLyricsFetchWhenHidden") === "true";
+
+let allowLyricsTranslationWhenHidden =
+    localStorage.getItem("allowLyricsTranslationWhenHidden") === "true";
+
+// Cancels old fetches/translations and blocks stale results from changing the UI.
+let lyricsRequestVersion = 0;
+let translationRequestVersion = 0;
+let lyricsFetchController = null;
+let lyricsTranslationController = null;
+
 // YOUTUBE_API_KEY is now loaded from "YOUR_YOUTUBE_API_KEY" or Vercel API endpoint
 const YOUTUBE_API_KEY = "YOUR_YOUTUBE_API_KEY";
 const VERCEL_API_KEY_ENDPOINT = "/api/getApiKey";
@@ -55,6 +69,128 @@ async function getApiKey() {
             "No API key available. Add YOUTUBE_API_KEY to GitHub Actions secrets or Vercel environment variables."
         );
     }
+}
+
+function isLyricsPageVisible() {
+    const lyricsContainer = document.getElementById("lyricsContainer");
+
+    return Boolean(
+        lyricsContainer &&
+        !lyricsContainer.classList.contains("d-none")
+    );
+}
+
+function shouldFetchLyricsNow(force = false) {
+    return force || isLyricsPageVisible() || allowLyricsFetchWhenHidden;
+}
+
+function shouldTranslateLyricsNow() {
+    return (
+        translationEnabled &&
+        (isLyricsPageVisible() || allowLyricsTranslationWhenHidden)
+    );
+}
+
+function isAbortError(error) {
+    return error?.name === "AbortError";
+}
+
+function throwIfLyricsAborted(signal) {
+    if (signal?.aborted) {
+        throw new DOMException("Lyrics task cancelled.", "AbortError");
+    }
+}
+
+function delayWithSignal(milliseconds, signal) {
+    return new Promise((resolve, reject) => {
+        if (signal?.aborted) {
+            reject(new DOMException("Lyrics task cancelled.", "AbortError"));
+            return;
+        }
+
+        const timer = setTimeout(resolve, milliseconds);
+
+        signal?.addEventListener(
+            "abort",
+            () => {
+                clearTimeout(timer);
+                reject(new DOMException("Lyrics task cancelled.", "AbortError"));
+            },
+            { once: true }
+        );
+    });
+}
+
+function cancelActiveTranslation() {
+    translationRequestVersion += 1;
+
+    if (lyricsTranslationController) {
+        lyricsTranslationController.abort();
+        lyricsTranslationController = null;
+    }
+
+    isTranslating = false;
+}
+
+function stopLyricsJobs({ clearLyrics = false } = {}) {
+    lyricsRequestVersion += 1;
+
+    if (lyricsFetchController) {
+        lyricsFetchController.abort();
+        lyricsFetchController = null;
+    }
+
+    cancelActiveTranslation();
+    clearInterval(syncInterval);
+
+    if (clearLyrics) {
+        lyricsData = null;
+        translatedLyrics = null;
+        showTranslatedView = false;
+
+        lyricsState = {
+            status: "idle",
+            artist: "",
+            title: "",
+            videoId: ""
+        };
+
+        if (isLyricsPageVisible()) {
+            document.getElementById("lyricsMeta").textContent =
+                translations[currentLang].lyricsNoLoad;
+
+            document.getElementById("lyricsText").textContent =
+                translations[currentLang].lyricsNoLoad;
+        }
+    }
+}
+
+function isCurrentLyricsJob(job) {
+    const currentVideoId = actualSelectedVideoId || selectedVideoId;
+
+    return Boolean(
+        job &&
+        !job.signal.aborted &&
+        job.version === lyricsRequestVersion &&
+        job.videoId === currentVideoId
+    );
+}
+
+function requestLyricsForCurrentSong({ force = false } = {}) {
+    const currentSong = getCurrentSongObject();
+
+    if (!currentSong || !isLyricsPageVisible()) {
+        return;
+    }
+
+    loadLyricsFor(
+        currentSong.songName,
+        currentSong.authorName,
+        {
+            force,
+            videoId: currentSong.videoId
+        }
+    );
 }
 
 // Search Cache to minimize API calls for repeated searches
@@ -133,6 +269,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function showSongListView() {
+        if (!allowLyricsFetchWhenHidden && typeof stopLyricsJobs === "function") {
+            stopLyricsJobs();
+        }
         // Show song list
         songListContainer.classList.remove('d-none');
         playlistSearchContainer.classList.remove('d-none');
@@ -166,6 +305,7 @@ document.addEventListener('DOMContentLoaded', function() {
         showSongListBtn.classList.remove('active');
         showSongListBtn.classList.remove('btn-primary');
         showSongListBtn.classList.add('btn-outline-primary');
+        requestLyricsForCurrentSong({ force: true });
     }
 });
 
@@ -1455,6 +1595,11 @@ function resetErrorState() {
 document.getElementById("songList").addEventListener("click", resetErrorState); // Example event listener
 
 function loadNewVideo(videoId, albumArtUrl, songObject = null) {
+    selectedVideoId = videoId;
+    actualSelectedVideoId = videoId;
+
+    stopLyricsJobs({ clearLyrics: true });
+
     if (player) {
         // If player exists, set volume to current value
         player.setVolume(currentVolume);
@@ -1528,7 +1673,7 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
         }
 
         // Load lyrics using original (uncleaned) title and author
-        loadLyricsFor(originalSongName, authorName);
+        loadLyricsFor(originalSongName, authorName, { videoId });
     }
 
     clearTimeout(errorTimeout);
@@ -1558,9 +1703,6 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
     if (albumArtDisplayMode === "video") {
         requestAnimationFrame(() => initializeVideoPlayerInAlbumArt());
     }
-
-    // Update selectedVideoId
-    selectedVideoId = videoId;
 
     // ✅ Update media session metadata
     if ('mediaSession' in navigator && songObject) {
@@ -2421,6 +2563,8 @@ function exportPlaylist() {
             translationEnabled: translationEnabled,
             showOriginalFirst: showOriginalFirst,
             titleGapFraction: GAP_FRACTION,
+            allowLyricsFetchWhenHidden: allowLyricsFetchWhenHidden,
+            allowLyricsTranslationWhenHidden: allowLyricsTranslationWhenHidden,
             exportDate: new Date().toISOString(),
             version: "1.6-alpha"
         };
@@ -2469,6 +2613,8 @@ function importPlaylist(file) {
             let importTranslationEnabled = translationEnabled;
             let importShowOriginalFirst = showOriginalFirst;
             let importTitleGapFraction = GAP_FRACTION;
+            let importAllowLyricsFetchWhenHidden = allowLyricsFetchWhenHidden;
+            let importAllowLyricsTranslationWhenHidden = allowLyricsTranslationWhenHidden;
             
             if (Array.isArray(importedData)) {
                 // Old format - just the playlist array
@@ -2486,6 +2632,15 @@ function importPlaylist(file) {
                     if (Number.isFinite(importedGapFraction)) {
                         importTitleGapFraction = importedGapFraction;
                     }
+                }
+                if (typeof importedData.allowLyricsFetchWhenHidden === "boolean") {
+                    importAllowLyricsFetchWhenHidden =
+                        importedData.allowLyricsFetchWhenHidden;
+                }
+
+                if (typeof importedData.allowLyricsTranslationWhenHidden === "boolean") {
+                    importAllowLyricsTranslationWhenHidden =
+                        importedData.allowLyricsTranslationWhenHidden;
                 }
             } else {
                 throw new Error("Invalid playlist format");
@@ -2607,6 +2762,12 @@ function importPlaylist(file) {
                         translationToggle.checked = translationEnabled;
                     }
                 }
+
+                allowLyricsFetchWhenHidden = importAllowLyricsFetchWhenHidden;
+                allowLyricsTranslationWhenHidden = importAllowLyricsTranslationWhenHidden;
+
+                localStorage.setItem("allowLyricsFetchWhenHidden", String(allowLyricsFetchWhenHidden));
+                localStorage.setItem("allowLyricsTranslationWhenHidden", String(allowLyricsTranslationWhenHidden));
                 
                 // Apply translation order setting if included in export
                 if (importedData.showOriginalFirst !== undefined) {
@@ -2845,13 +3006,23 @@ async function fetchLyrics(title, artist) {
           lyricsData = { isLrc: true, lrcLines: parsed };
           renderLrcLines(parsed);
           meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}`;
-          lyricsState.status = "synced";
+          lyricsState = {
+                status: "synced",
+                artist,
+                title,
+                videoId: job.videoId
+            };
         } else {
           lyricsData = { isLrc: false, plain: lyrics };
           const lines = lyrics.split(/\r?\n/).filter(l => l.trim().length > 0);
           textEl.innerHTML = lines.map(line => `<div class="plain-line">${line}</div>`).join("");
           meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}`;
-          lyricsState.status = "plain";
+          lyricsState = {
+                status: "plain",
+                artist,
+                title,
+                videoId: job.videoId
+            };
         }
         
         window.currentSongArtist = artist;
@@ -2914,6 +3085,9 @@ async function fetchLyrics(title, artist) {
   try {
     // ✅ Try full name first
     let json = await tryFetch(artist, title);
+    if (!isCurrent()) {
+        return;
+    }
 
     // ✅ If no lyrics found, try CJK-only artist
     if (!json.syncedLyrics && !json.plainLyrics) {
@@ -2921,6 +3095,7 @@ async function fetchLyrics(title, artist) {
       if (cjkOnlyArtist && cjkOnlyArtist !== artist) {
         console.log("Retrying with CJK only:", cjkOnlyArtist);
         json = await tryFetch(cjkOnlyArtist, title);
+        json = await tryFetch(artist, title);
         if (json.syncedLyrics || json.plainLyrics) {
           artist = cjkOnlyArtist; // ✅ Update to working version
         }
@@ -2948,7 +3123,12 @@ async function fetchLyrics(title, artist) {
       const lines = lyrics.split(/\r?\n/).filter(l => l.trim().length > 0);
       textEl.innerHTML = lines.map(line => `<div class="plain-line">${line}</div>`).join("");
       meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}`;
-      lyricsState.status = "plain";
+      lyricsState = {
+            status: "plain",
+            artist,
+            title,
+            videoId: job.videoId
+        };
     }
   } catch (e) {
     console.error("Lyrics fetch error:", e);
@@ -4119,7 +4299,7 @@ function applyLanguage(lang = currentLang) {
         textEl.textContent = t.lyricsNoLoad;
     }
 
-    if (translationEnabled && lyricsData && lyricsState.status !== "loading") {
+    if (shouldTranslateLyricsNow() && lyricsData && lyricsState.status !== "loading") {
         const title = lyricsState.title;
         const artist = lyricsState.artist;
         if (title && artist) {
@@ -4133,8 +4313,7 @@ function applyLanguage(lang = currentLang) {
                 meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}`;
             }
             
-            // Fetch lyrics with translation to new language
-            fetchLyricsWithTranslation(title, artist);
+            requestLyricsForCurrentSong({ force: true });
         }
     }
 
@@ -4627,7 +4806,8 @@ function getLyricsLabels() {
     return labels[getLyricsTargetLanguage()] || labels.en;
 }
 
-async function translateLyrics(text, sourceLang = "auto", targetLang = getLyricsTargetLanguage()) {
+async function translateLyrics(text, sourceLang = "auto", targetLang = getLyricsTargetLanguage(), signal = null ) {
+    throwIfLyricsAborted(signal);
     // Check cache first
     const cacheKey = `${sourceLang}-${targetLang}-${text.substring(0, 100)}`;
     const cached = translationCache[cacheKey];
@@ -4658,15 +4838,14 @@ async function translateLyrics(text, sourceLang = "auto", targetLang = getLyrics
             }
             
             try {
-                const translatedLine = await translateSingleLine(line, sourceLang, targetLang);
+                const translatedLine = await translateSingleLine(line, sourceLang, targetLang, null, signal);
                 translatedLines.push(translatedLine);
             } catch (error) {
                 console.log(`Failed to translate line: "${line}", using original`);
                 translatedLines.push(line);
             }
             
-            // Small delay between lines to avoid rate limiting
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await delayWithSignal(100, signal);
         }
         
         const result = translatedLines.join('\n');
@@ -4682,13 +4861,14 @@ async function translateLyrics(text, sourceLang = "auto", targetLang = getLyrics
     }
     
     // Try multiple translation services as fallback for shorter texts
-    return await translateSingleLine(text, sourceLang, targetLang, cacheKey);
+    return await translateSingleLine(text, sourceLang, targetLang, cacheKey, signal );
 }
 
-async function translateSingleLine(text, sourceLang, targetLang, cacheKey = null) {
+async function translateSingleLine(text, sourceLang, targetLang, cacheKey = null, signal = null ) {
+    throwIfLyricsAborted(signal);
     const translationServices = [
         // Service 1: LibreTranslate (primary)
-        async (text, source, target) => {
+        async (text, source, target, signal) => {
             try {
                 // LibreTranslate language codes mapping
                 const libreCodes = {
@@ -4719,6 +4899,7 @@ async function translateSingleLine(text, sourceLang, targetLang, cacheKey = null
                     headers: {
                         'Content-Type': 'application/json',
                     },
+                    signal,
                     body: JSON.stringify({
                         q: text,
                         source: libreSource,
@@ -4738,7 +4919,7 @@ async function translateSingleLine(text, sourceLang, targetLang, cacheKey = null
         },
         
         // Service 2: MyMemory (fallback 1) - better for CJK languages
-        async (text, source, target) => {
+        async (text, source, target, signal) => {
             try {
                 // MyMemory API uses language codes like "en" for English, "zh-CN" for Chinese
                 const myMemorySource = source === 'zh' ? 'zh-CN' :
@@ -4752,7 +4933,8 @@ async function translateSingleLine(text, sourceLang, targetLang, cacheKey = null
                                     target === 'ko' ? 'ko' : target;
                 
                 const response = await fetch(
-                    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${myMemorySource}|${myMemoryTarget}`
+                    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${myMemorySource}|${myMemoryTarget}`,
+                    { signal }
                 );
                 
                 if (!response.ok) throw new Error('MyMemory failed');
@@ -4766,7 +4948,7 @@ async function translateSingleLine(text, sourceLang, targetLang, cacheKey = null
         },
         
         // Service 3: Google Translate (unofficial API)
-        async (text, source, target) => {
+        async (text, source, target, signal) => {
             try {
                 const googleLangCodes = {
                     'en': 'en',
@@ -4781,7 +4963,8 @@ async function translateSingleLine(text, sourceLang, targetLang, cacheKey = null
                 
                 // Use a public Google Translate proxy
                 const response = await fetch(
-                    `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${googleSource}&tl=${googleTarget}&dt=t&q=${encodeURIComponent(text)}`
+                    `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${googleSource}&tl=${googleTarget}&dt=t&q=${encodeURIComponent(text)}`,
+                    { signal }
                 );
                 
                 if (!response.ok) throw new Error('Google Translate failed');
@@ -4801,7 +4984,7 @@ async function translateSingleLine(text, sourceLang, targetLang, cacheKey = null
     // Try each service in order
     for (let i = 0; i < translationServices.length; i++) {
         try {
-            const translatedText = await translationServices[i](text, sourceLang, targetLang);
+            const translatedText = await translationServices[i](text, sourceLang, targetLang, signal);
             
             // Validate that we got a translation
             if (translatedText && translatedText !== text) {
@@ -4866,18 +5049,24 @@ function detectLanguage(text = "") {
     return "en";
 }
 
-async function translateLyricsLines(lines, targetLang) {
-    const sourceLang = await detectLanguage(lines.map(l => l.text).join(' '));
-    
+async function translateLyricsLines(lines, targetLang, signal = null) {
+    throwIfLyricsAborted(signal);
+
+    const sourceLang = detectLanguage(
+        lines.map(line => line.text).join(" ")
+    );
+
     if (sourceLang === targetLang) {
         return lines.map(line => line.text);
     }
-    
+
     const translatedLines = [];
-    
-    // Translate in chunks to avoid overwhelming the API
+
     for (let i = 0; i < lines.length; i += 5) {
+        throwIfLyricsAborted(signal);
+
         const chunk = lines.slice(i, i + 5);
+
         const nonEmptyItems = chunk
             .map((line, index) => ({
                 index,
@@ -4885,7 +5074,6 @@ async function translateLyricsLines(lines, targetLang) {
             }))
             .filter(item => item.text !== "");
 
-        // All rows are empty: keep them empty and skip the API request.
         if (nonEmptyItems.length === 0) {
             translatedLines.push(...chunk.map(() => ""));
             continue;
@@ -4894,26 +5082,40 @@ async function translateLyricsLines(lines, targetLang) {
         const chunkText = nonEmptyItems
             .map(item => item.text)
             .join("\n");
-        
+
         try {
             let translatedChunk;
-            
-            // First, detect if we need English as an intermediate language
-            const sourceIsCJK = ['zh', 'ja', 'ko'].includes(sourceLang);
-            const targetIsCJK = ['zh', 'ja', 'ko'].includes(targetLang);
-            
+
+            const sourceIsCJK = ["zh", "ja", "ko"].includes(sourceLang);
+            const targetIsCJK = ["zh", "ja", "ko"].includes(targetLang);
+
             if (sourceIsCJK && targetIsCJK && sourceLang !== targetLang) {
-                // CJK-to-CJK translation: Try English as intermediate
-                // Step 1: Translate to English first
-                const englishChunk = await translateLyrics(chunkText, sourceLang, 'en');
-                
-                // Step 2: Translate from English to target language
-                translatedChunk = await translateLyrics(englishChunk, 'en', targetLang);
+                const englishChunk = await translateLyrics(
+                    chunkText,
+                    sourceLang,
+                    "en",
+                    signal
+                );
+
+                throwIfLyricsAborted(signal);
+
+                translatedChunk = await translateLyrics(
+                    englishChunk,
+                    "en",
+                    targetLang,
+                    signal
+                );
             } else {
-                // Direct translation
-                translatedChunk = await translateLyrics(chunkText, sourceLang, targetLang);
+                translatedChunk = await translateLyrics(
+                    chunkText,
+                    sourceLang,
+                    targetLang,
+                    signal
+                );
             }
-            
+
+            throwIfLyricsAborted(signal);
+
             const translatedLinesChunk = translatedChunk.split("\n");
             const chunkResult = Array(chunk.length).fill("");
 
@@ -4924,16 +5126,16 @@ async function translateLyricsLines(lines, targetLang) {
 
             translatedLines.push(...chunkResult);
         } catch (error) {
-            // If translation fails, use original text for this chunk
-            for (let j = 0; j < chunk.length; j++) {
-                translatedLines.push(chunk[j].text);
+            if (isAbortError(error)) {
+                throw error;
             }
+
+            translatedLines.push(...chunk.map(line => line.text));
         }
-        
-        // Small delay to be respectful to the API
-        await new Promise(resolve => setTimeout(resolve, 100));
+
+        await delayWithSignal(100, signal);
     }
-    
+
     return translatedLines;
 }
 
@@ -5138,15 +5340,79 @@ document.addEventListener("DOMContentLoaded", function() {
     initLyricsClickToSeek();
 });
 
-// Modified loadLyricsFor function with translation
-async function loadLyricsFor(title, artist) {
-    const { artist: cleanArtist, track: cleanTrack } = cleanTitleAndArtist(title, artist);
+async function loadLyricsFor(
+    title,
+    artist,
+    { force = false, videoId = actualSelectedVideoId || selectedVideoId } = {}
+) {
+    if (!videoId || !shouldFetchLyricsNow(force)) {
+        return;
+    }
 
-    await fetchLyricsWithTranslation(cleanTrack, cleanArtist);
-    startLyricsSync();
+    if (
+        !force &&
+        lyricsData &&
+        lyricsState.videoId === videoId
+    ) {
+        if (isLyricsPageVisible()) {
+            startLyricsSync();
+        }
+
+        return;
+    }
+
+    stopLyricsJobs();
+
+    lyricsFetchController = new AbortController();
+
+    const job = {
+        version: ++lyricsRequestVersion,
+        videoId,
+        signal: lyricsFetchController.signal
+    };
+
+    const cleaned = cleanTitleAndArtist(title, artist);
+
+    try {
+        await fetchLyricsWithTranslation(
+            cleaned.track,
+            cleaned.artist,
+            job
+        );
+
+        if (isCurrentLyricsJob(job) && isLyricsPageVisible()) {
+            startLyricsSync();
+        }
+    } catch (error) {
+        if (isAbortError(error) || !isCurrentLyricsJob(job)) {
+            return;
+        }
+
+        console.error("Lyrics loading error:", error);
+
+        lyricsData = null;
+        translatedLyrics = null;
+
+        lyricsState = {
+            status: "error",
+            artist: cleaned.artist,
+            title: cleaned.track,
+            videoId
+        };
+
+        document.getElementById("lyricsMeta").textContent =
+            translations[currentLang].lyricsError;
+
+        document.getElementById("lyricsText").textContent =
+            translations[currentLang].lyricsError;
+    } finally {
+        if (lyricsFetchController?.signal === job.signal) {
+            lyricsFetchController = null;
+        }
+    }
 }
 
-async function fetchLyricsWithTranslation(title, artist) {
+async function fetchLyricsWithTranslation(title, artist, job) {
     // ✅ Create cache keys
     const lyricsCacheKey = `lyrics_${encodeURIComponent(artist)}_${encodeURIComponent(title)}`;
     const translationCacheKey = `translation_${encodeURIComponent(artist)}_${encodeURIComponent(title)}_${currentLang}`;
@@ -5175,6 +5441,7 @@ async function fetchLyricsWithTranslation(title, artist) {
     const meta = document.getElementById("lyricsMeta");
     const textEl = document.getElementById("lyricsText");
     const t = translations[currentLang];
+    const isCurrent = () => isCurrentLyricsJob(job);
     const targetLang = getLyricsTargetLanguage();
 
     lyricsState = { status: "loading", artist, title };
@@ -5233,6 +5500,9 @@ async function fetchLyricsWithTranslation(title, artist) {
         if (!useCachedLyrics) {
         // Try full name first
         json = await tryFetch(artist, title);
+        if (!isCurrent()) {
+            return;
+        }
 
         // If no lyrics found, try CJK-only artist
         if (!json.syncedLyrics && !json.plainLyrics) {
@@ -5240,6 +5510,7 @@ async function fetchLyricsWithTranslation(title, artist) {
             if (cjkOnlyArtist && cjkOnlyArtist !== artist) {
             console.log("Retrying with CJK only:", cjkOnlyArtist);
             json = await tryFetch(cjkOnlyArtist, title);
+            json = await tryFetch(artist, title);
             if (json.syncedLyrics || json.plainLyrics) {
                 artist = cjkOnlyArtist; // Update to working version
             }
@@ -5251,7 +5522,7 @@ async function fetchLyricsWithTranslation(title, artist) {
         if (!lyrics) throw new Error("No lyrics");
 
         const sourceLang = detectLanguage(lyrics);
-        const shouldTranslate = translationEnabled && sourceLang !== targetLang;
+        const shouldTranslate = shouldTranslateLyricsNow() && sourceLang !== targetLang;
 
         // Clear old translation from the previous song or previous language.
         translatedLyrics = null;
@@ -5267,7 +5538,12 @@ async function fetchLyricsWithTranslation(title, artist) {
         
         renderLrcLines(parsed);
         meta.textContent = `${t.lyricsSyncedFound} ${artist} – ${title}`;
-        lyricsState.status = "synced";
+        lyricsState = {
+            status: "synced",
+            artist,
+            title,
+            videoId: job.videoId
+        };
         
         // Then translate in background if enabled
         if (shouldTranslate && !isTranslating) {
@@ -5344,10 +5620,15 @@ async function fetchLyricsWithTranslation(title, artist) {
         const lines = lyrics.split(/\r?\n/).filter(l => l.trim().length > 0);
         textEl.innerHTML = lines.map(line => `<div class="plain-line">${line}</div>`).join("");
         meta.textContent = `${t.lyricsPlainFound} ${artist} – ${title}`;
-        lyricsState.status = "plain";
+        lyricsState = {
+            status: "plain",
+            artist,
+            title,
+            videoId: job.videoId
+        };
         
         // Then translate in background if enabled
-        if (translationEnabled && !isTranslating) {
+        if (shouldTranslate && !isTranslating) {
             isTranslating = true;
             
             // Check for cached translation
@@ -5573,42 +5854,60 @@ function setTranslationOrder(order) {
     toggleTranslationOrder();
 }
 
-// Add to your settings initialization
-document.getElementById("translationToggle")?.addEventListener("change", function() {
-    translationEnabled = this.checked;
-    localStorage.setItem("translationEnabled", JSON.stringify(translationEnabled));
-    
-    // Refresh lyrics if a song is currently loaded
-    const title = (document.querySelector("#nowPlaying .song-title")?.innerText || "").trim();
-    const artist = (document.querySelector("#nowPlaying .author-name")?.innerText || "").trim();
-    if (title && lyricsData) {
-        loadLyricsFor(title, artist);
-    }
-});
-
 // Load translation setting on startup
 translationEnabled = JSON.parse(localStorage.getItem("translationEnabled") || "false");
 if (document.getElementById("translationToggle")) {
     document.getElementById("translationToggle").checked = translationEnabled;
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", () => {
     const translationToggle = document.getElementById("translationToggle");
-    if (translationToggle) {
-        translationToggle.checked = translationEnabled;
-        
-        translationToggle.addEventListener("change", function() {
-            translationEnabled = this.checked;
-            localStorage.setItem("translationEnabled", JSON.stringify(translationEnabled));
-            
-            // Refresh lyrics if a song is currently loaded
-            const title = (document.querySelector("#nowPlaying .song-title")?.innerText || "").trim();
-            const artist = (document.querySelector("#nowPlaying .author-name")?.innerText || "").trim();
-            if (title && lyricsData) {
-                loadLyricsFor(title, artist);
-            }
-        });
+
+    translationEnabled =
+        localStorage.getItem("translationEnabled") === "true";
+
+    if (!translationToggle) {
+        return;
     }
+
+    translationToggle.checked = translationEnabled;
+
+    translationToggle.addEventListener("change", function () {
+        translationEnabled = this.checked;
+
+        localStorage.setItem(
+            "translationEnabled",
+            String(translationEnabled)
+        );
+
+        cancelActiveTranslation();
+
+        // Show only original lyrics when translation is switched off.
+        if (!translationEnabled && lyricsData) {
+            translatedLyrics = null;
+            showTranslatedView = false;
+
+            if (lyricsData.isLrc) {
+                renderLrcLines(lyricsData.lrcLines);
+            } else {
+                const lines = lyricsData.plain
+                    .split(/\r?\n/)
+                    .filter(line => line.trim());
+
+                document.getElementById("lyricsText").innerHTML =
+                    lines.map(
+                        line => `<div class="plain-line">${line}</div>`
+                    ).join("");
+            }
+
+            return;
+        }
+
+        // Only start translation while the Lyrics page is visible.
+        if (translationEnabled && isLyricsPageVisible()) {
+            requestLyricsForCurrentSong({ force: true });
+        }
+    });
 });
 
 // ================ CACHE MANAGER ================
