@@ -1270,12 +1270,10 @@ function addSongFromSearch(event) {
 let lastSong = '';
 let lastAuthor = '';
 
-const savedVolume = Number(localStorage.getItem("volumeLevel"));
+const savedVolumeValue = localStorage.getItem("volumeLevel");
+const savedVolume = Number(savedVolumeValue);
 
-let currentVolume = Number.isFinite(savedVolume)
-    ? Math.min(100, Math.max(0, savedVolume))
-    : 100;
-
+let currentVolume = savedVolumeValue !== null && Number.isFinite(savedVolume) ? Math.min(100, Math.max(0, savedVolume)) : 100;
 
     function clampVolume(value) {
     const numericValue = Number(value);
