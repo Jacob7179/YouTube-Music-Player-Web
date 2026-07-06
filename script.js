@@ -1130,36 +1130,63 @@ let lastAuthor = '';
 
 let currentVolume = parseInt(localStorage.getItem("volumeLevel")) || 100;
 
-// Make onYouTubeIframeAPIReady globally accessible
-window.onYouTubeIframeAPIReady = function() {
-    console.log("YouTube IFrame API is ready!");
-    if (playlist.length > 0) {
-        selectedVideoId = playlist[0].videoId;
-    } else {
-        selectedVideoId = '';
+// Create exactly one YouTube iframe player. It remains the audio source in
+// Spin/None mode and becomes the visible video in Video mode.
+function createMainYouTubePlayer(videoId, autoplay = false) {
+    const videoContainer = document.getElementById("videoPlayerInAlbumArt");
+    if (!videoContainer || !window.YT || !YT.Player) return null;
+
+    if (!document.getElementById("player")) {
+        videoContainer.innerHTML = '<div id="player"></div>';
     }
 
     player = new YT.Player('player', {
-        videoId: selectedVideoId,
+        videoId,
         playerVars: {
-            autoplay: 0,
+            autoplay: autoplay ? 1 : 0,
             controls: 0,
             modestbranding: 1,
             showinfo: 0,
             rel: 0,
             fs: 0,
             iv_load_policy: 3,
+            playsinline: 1,
             start: 0
         },
         events: {
             'onReady': (event) => {
                 event.target.setVolume(currentVolume);
                 updateVolumeUI(currentVolume);
+
+                if (autoplay) {
+                    event.target.playVideo();
+                }
+
+                if (albumArtDisplayMode === "video") {
+                    initializeVideoPlayerInAlbumArt();
+                }
             },
-            'onStateChange': handlePlayerStateChange, 
+            'onStateChange': handlePlayerStateChange,
             'onError': handleVideoError
         }
     });
+
+    return player;
+}
+
+// Make onYouTubeIframeAPIReady globally accessible.
+window.onYouTubeIframeAPIReady = function() {
+    if (!window.YT || !YT.Player) return;
+    if (player && typeof player.loadVideoById === "function") return;
+
+    console.log("YouTube IFrame API is ready!");
+    const initialVideoId = actualSelectedVideoId || selectedVideoId ||
+        (playlist.length > 0 ? playlist[0].videoId : "");
+
+    if (initialVideoId) {
+        selectedVideoId = initialVideoId;
+        createMainYouTubePlayer(initialVideoId, false);
+    }
 };
 
 function handleVideoError(event) {
@@ -1300,55 +1327,25 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
     // ✅ Reset countdown interval if switching songs
     clearInterval(countdownInterval);
 
-    // ✅ Load and play the new video
-    if (typeof player === "undefined" || !player.loadVideoById) {
-        document.getElementById("playerContainer").innerHTML = `<div id="player"></div>`;
-        // Ensure the API is ready before creating a player
+    // Load and play the new video through the single main iframe player.
+    if (!player || typeof player.loadVideoById !== "function") {
+        selectedVideoId = videoId;
+
         if (window.YT && window.YT.Player) {
-            player = new YT.Player('player', {
-                videoId: videoId,
-                playerVars: {
-                    autoplay: 1,
-                    controls: 0,
-                    modestbranding: 1,
-                    showinfo: 0,
-                    rel: 0
-                },
-                events: {
-                    'onReady': (event) => {
-                        event.target.setVolume(currentVolume);
-                        updateVolumeUI(currentVolume);
-                        document.getElementById("volumeControl").value = currentVolume;
-                        event.target.playVideo();
-                        
-                        // Setup media session after player is ready
-                        setupMediaSession();
-                        
-                        // Initialize video player in album art position if in video mode
-                        if (albumArtDisplayMode === "video") {
-                            initializeVideoPlayerInAlbumArt(videoId);
-                        }
-                    },
-                    'onStateChange': handlePlayerStateChange, 
-                    'onError': handleVideoError
-                }
-            });
+            createMainYouTubePlayer(videoId, true);
         } else {
-            console.error("YouTube IFrame API not ready when trying to load new video.");
-            // Fallback or retry logic can be added here
+            // The iframe API callback will use selectedVideoId once it is ready.
+            console.warn("YouTube IFrame API is not ready yet; the selected song will load when it is available.");
         }
     } else {
         player.loadVideoById(videoId);
         player.setVolume(currentVolume);
         player.playVideo();
-        
-        // Setup media session
         setupMediaSession();
-        
-        // Initialize video player in album art position if in video mode
-        if (albumArtDisplayMode === "video") {
-            initializeVideoPlayerInAlbumArt(videoId);
-        }
+    }
+
+    if (albumArtDisplayMode === "video") {
+        requestAnimationFrame(() => initializeVideoPlayerInAlbumArt());
     }
 
     // Update selectedVideoId
@@ -1377,15 +1374,20 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
     updateProgressBar();
 }
 
-// Add this function to update video player when mode changes
+function getCurrentPlayerVideoId() {
+    try {
+        const data = player && typeof player.getVideoData === "function"
+            ? player.getVideoData()
+            : null;
+        return (data && data.video_id) || actualSelectedVideoId || selectedVideoId || "";
+    } catch (error) {
+        return actualSelectedVideoId || selectedVideoId || "";
+    }
+}
+
 function updateVideoPlayerOnModeChange() {
-    const currentVideoId = player ? player.getVideoData().video_id : selectedVideoId;
-    
-    if (albumArtDisplayMode === "video" && currentVideoId) {
-        // Delay slightly to ensure DOM is updated
-        setTimeout(() => {
-            initializeVideoPlayerInAlbumArt(currentVideoId);
-        }, 50);
+    if (albumArtDisplayMode === "video" && getCurrentPlayerVideoId()) {
+        requestAnimationFrame(() => initializeVideoPlayerInAlbumArt());
     }
 }
 
@@ -1606,7 +1608,7 @@ function applyAlbumArtDisplayMode() {
     if (!albumArt || !videoPlayerContainer) return;
     
     // Get current video ID and album art
-    const currentVideoId = player ? player.getVideoData().video_id : selectedVideoId;
+    const currentVideoId = getCurrentPlayerVideoId();
     const currentSong = playlist.find(song => song.videoId === currentVideoId);
     const currentAlbumArtUrl = currentSong ? currentSong.albumArt : albumArt.src;
     
@@ -1665,7 +1667,7 @@ function applyAlbumArtDisplayMode() {
             albumArt.classList.remove("rotate", "rotate-paused");
 
             // Initialize video player in the album art position if needed
-            initializeVideoPlayerInAlbumArt(currentVideoId);
+            initializeVideoPlayerInAlbumArt();
             break;
     }
     
@@ -1674,68 +1676,28 @@ function applyAlbumArtDisplayMode() {
     localStorage.setItem("albumArtSpin", JSON.stringify(albumArtSpinEnabled));
 }
 
-// New function to initialize video player in album art position
-function initializeVideoPlayerInAlbumArt(videoId) {
+// The visible video and audio playback must use the same iframe player.
+// Never create a second player here.
+function initializeVideoPlayerInAlbumArt() {
     const videoContainer = document.getElementById("videoPlayerInAlbumArt");
-    if (!videoContainer || !videoId) return;
-    
-    // Check if YouTube API is ready
-    if (typeof YT !== 'undefined' && YT.Player) {
-        // If player already exists in the video container, update it
-        const existingPlayer = videoContainer.querySelector('#player');
-        if (existingPlayer && existingPlayer.id && window[existingPlayer.id]) {
-            // Player already exists, just update the video
-            const videoPlayer = window[existingPlayer.id];
-            if (videoPlayer.loadVideoById) {
-                videoPlayer.loadVideoById(videoId);
-                videoPlayer.setVolume(currentVolume);
-            }
-        } else {
-            // Create new player in the album art position
-            createVideoPlayerInAlbumArt(videoId);
-        }
-    } else {
-        // Wait for YouTube API to load
-        setTimeout(() => initializeVideoPlayerInAlbumArt(videoId), 100);
-    }
-}
+    if (!videoContainer || !player || typeof player.getIframe !== "function") return;
 
-// Function to create video player in album art position
-function createVideoPlayerInAlbumArt(videoId) {
-    const videoContainer = document.getElementById("videoPlayerInAlbumArt");
-    if (!videoContainer) return;
-    
-    // Clear existing content
-    videoContainer.innerHTML = '<div id="playerInAlbumArt"></div>';
-    
-    // Create new player
-    const playerId = 'playerInAlbumArt';
-    const videoPlayer = new YT.Player(playerId, {
-        videoId: videoId,
-        playerVars: {
-            autoplay: playing ? 1 : 0,
-            controls: 0,
-            modestbranding: 1,
-            showinfo: 0,
-            rel: 0,
-            playsinline: 1 // Important for mobile
-        },
-        events: {
-            'onReady': function(event) {
-                event.target.setVolume(currentVolume);
-                event.target.playVideo();
-            },
-            'onStateChange': function(event) {
-                // Handle video state changes if needed
-                if (event.data === YT.PlayerState.PLAYING && albumArtDisplayMode === "video") {
-                    // Video is playing in album art mode
-                }
-            }
+    requestAnimationFrame(() => {
+        const width = Math.max(1, Math.round(videoContainer.clientWidth || 250));
+        const height = width;
+
+        if (typeof player.setSize === "function") {
+            player.setSize(width, height);
+        }
+
+        const iframe = player.getIframe();
+        if (iframe) {
+            iframe.style.width = "100%";
+            iframe.style.height = "100%";
+            iframe.style.display = "block";
+            iframe.style.border = "0";
         }
     });
-    
-    // Store reference to this player
-    window[playerId] = videoPlayer;
 }
 
 window.onload = function () {

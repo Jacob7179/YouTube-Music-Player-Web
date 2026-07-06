@@ -94,7 +94,7 @@ If you don't want to set up the YouTube API, you can still:
 7. **Controls**: Use play/pause, next/previous, volume, and repeat controls
 8. **Dark Mode**: Toggle dark mode for better viewing experience
 9. **Lyrics**: Toggle to view the song’s lyrics
-10. **Language**: Languages available: English, 中文
+10. **Language**: Languages available: English, 简体中文, 繁體中文, 日本語 & 한국어
 11. **Drag and Drop**: Drag songs to reorder your playlist
 12. **Secure API Key Management**: Uses GitHub Secrets for secure API key storage
 13. **Lyrics Translate**: Enable "Lyrics Translation" button on "Settings" to translate supported language (English, 简体中文, 繁體中文, 日本語 & 한국어)
