@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Music Player">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>YouTube Music Player</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="resource/icon/app-icon-192.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" sizes="192x192" href="resource/icon/app-icon-192.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+</head>
+<body>
+    <div id="background"></div>
+    <div class="container">
+        <div class="row justify-content-center align-items-stretch">        
+            <!-- Card 1: Music Player -->
+            <div class="col-lg-3 col-md-4 col-12 d-flex">
+                <div class="card shadow-lg w-100 h-100" style="max-height: 680px;">
+                    <div class="card-body text-center d-flex flex-column">
+                        <h5 class="card-title fw-bold"><i class='bx bxs-music'></i> YouTube Music Player</h5>
+    
+                        <div class="album-art-container">
+                            <img id="albumArt" src="https://via.placeholder.com/300" alt="Album Art" class="img-fluid shadow" draggable="false">
+                        </div>
+                        <div id="videoPlayerInAlbumArt" class="album-art-container">
+                            <div id="player"></div>
+                        </div>
+    
+                        <h4 id="nowPlaying" class="text-center mt-3">
+                            <span class="song-title"><span class="song-title-inner">Loading...</span></span> <br>
+                            <span class="author-name text-muted"><span class="author-name-inner"></span></span>
+                        </h4>
+                        
+                        <div class="progress-container">
+                            <div class="progress mt-2" id="progressBar">
+                                <div id="progress" class="progress-bar" style="width: 0%;"></div>
+                            </div>
+                            <div class="time-display">
+                                <span id="currentTime">0:00</span>
+                                <span id="totalTime">-0:00</span>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-center mt-3 gap-2">
+                            <button id="prevBtn" class="btn btn-primary rounded-circle px-3"><i class='bx bx-skip-previous' ></i></button>
+                            <button id="playPauseBtn" class="btn btn-success rounded-circle px-4"><i class='bx bx-play'></i></button>
+                            <button id="nextBtn" class="btn btn-primary rounded-circle px-3"><i class='bx bx-skip-next' ></i></button>
+                        </div>
+    
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <button id="autoPlayToggle" class="btn btn-secondary rounded-circle">
+                                    <i class='bx bx-play-circle'></i>
+                                </button>
+                                <span class="fw-bold" id="autoPlayText">Auto-Play</span>
+                            </div>
+                            
+                            <div class="d-flex align-items-center gap-2">
+                                <button id="repeatBtn" class="btn btn-secondary rounded-circle">
+                                    <i class='bx bx-repeat'></i>
+                                </button>
+                                <span class="fw-bold">Repeat</span>
+                            </div>
+                        </div>
+    
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-12 volume-container" aria-label="Volume controls">
+                                    <i class="bx bx-volume-low volume-icon" aria-hidden="true"></i>
+
+                                    <div class="volume-bar-container">
+                                        <div id="volumeProgress" class="volume-bar" aria-hidden="true"></div>
+                                        <div id="volumeThumb" class="volume-thumb" aria-hidden="true"></div>
+
+                                        <input
+                                            type="range"
+                                            id="volumeControl"
+                                            min="0"
+                                            max="100"
+                                            step="1"
+                                            value="100"
+                                            aria-label="Player volume"
+                                            aria-valuemin="0"
+                                            aria-valuemax="100"
+                                            aria-valuenow="100"
+                                        >
+                                    </div>
+
+                                    <i class="bx bx-volume-full volume-icon" aria-hidden="true"></i>
+                                    <output id="volumeValue" class="visually-hidden" aria-live="polite">100%</output>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p id="errorMessage" class="text-danger mt-2">⚠ This song is unavailable.</p>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Card 2: Song Selector -->
+            <div class="col-lg-8 col-md-8 col-12 mt-4 mt-md-0">
+                <div class="card shadow-lg card2">
+                    <div class="card-body">
+                        <!-- Toggle buttons for Song List / Lyrics -->
+                        <div class="d-flex justify-content-center mb-3">
+                            <div class="btn-group" role="group">
+                                <div class="d-flex justify-content-center mb-3">
+                                    <div class="btn-group" role="group">
+                                        <button id="showSongListBtn" class="btn btn-primary active">
+                                            <i class='bx bxs-playlist'></i> <span class="btn-text">My Playlist</span>
+                                        </button>
+                                        <button id="showLyricsBtn" class="btn btn-outline-primary">
+                                            <i class='bi bi-music-note-list'></i> <span class="btn-text">Lyrics</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Search Bar for Playlist (only visible in playlist view) -->
+                        <div id="playlistSearchContainer" class="input-group mb-3">
+                            <input type="text" id="searchPlaylistInput" class="form-control rounded-end" placeholder="Search your playlist...">
+                            <button class="btn btn-outline-secondary d-none" type="button" id="clearPlaylistSearchBtn" title="Clear search">
+                                <i class='bx bx-x'></i>
+                            </button>
+                        </div>
+
+                        <!-- Song List Container -->
+                        <div id="songListContainer">
+                            <!-- Song List Headers -->
+                            <div class="playlist-headers d-flex justify-content-between px-3 fw-bold border-bottom pb-2">
+                                <span class="number-header" style="width: 50px; text-align: center;">No.</span>
+                                <span class="song-header" style="flex: 2; text-align: center;">Song Name</span>
+                                <span class="author-header" style="flex: 1.5; text-align: center;">Author Name</span>
+                                <span class="action-header" style="width: 120px; text-align: center;">Action</span>
+                            </div>
+
+                            <ul id="songList" class="list-group overflow-auto">
+                                <!-- Songs will be dynamically loaded here by script.js -->
+                            </ul>
+                        </div>
+
+                        <!-- Lyrics Container (hidden by default) -->
+                        <div id="lyricsContainer" class="d-none">
+                            <div id="lyricsHeader">
+                                <div>
+                                    <div id="lyricsTitle"><i class="bi bi-music-note-list"></i> Lyrics</div>
+                                    <div id="lyricsMeta" style="font-size:12px;color:gray;">No lyrics loaded</div>
+                                </div>
+                                <div class="lyrics-controls">
+                                    <button id="toggleSyncBtn">Auto-Sync: ON</button>
+                                    <button id="refreshLyricsBtn">Refresh</button>
+                                    <button id="openRawBtn">Raw Data</button>
+                                </div>
+                            </div>
+                            <div id="lyricsText">No lyrics loaded.</div> <!-- Removed inline style -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: YouTube Search -->
+            <div class="col-md-11 col-12 mt-4 mx-auto">
+                <!-- YouTube Search Section -->
+                <div class="card shadow-lg">
+                    <div class="card-body">
+                        <h5 id="youtubeSearchTitle" class="card-title text-center fw-bold"><i class='bx bx-search'></i> Search YouTube</h5>
+                        
+                        <!-- YouTube Search Bar -->
+                        <div class="input-group mb-3">
+                            <input type="text" id="youtubeSearchInput" class="form-control" placeholder="Search YouTube for songs to add...">
+                            <button class="btn btn-primary" type="button" id="youtubeSearchBtn" title="Search YouTube">
+                                <i class='bx bx-search'></i> Search
+                            </button>
+                        </div>
+
+                        <!-- Search Results -->
+                        <div id="searchResults" class="d-none mt-3">
+                            <h6 id="searchResultsTitle" class="fw-bold mb-3">Search Results:</h6>
+                            <div id="searchResultsList" class="overflow-auto" style="max-height: 400px;">
+                                <!-- Search results will be populated here -->
+                            </div>
+                        </div>
+
+                        <!-- Loading indicator -->
+                        <div id="searchLoading" class="text-center d-none mt-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Searching...</span>
+                            </div>
+                            <p class="mt-2">Searching YouTube...</p>
+                        </div>
+
+                        <!-- Search error message -->
+                        <div id="searchError" class="alert alert-danger d-none mt-3" role="alert">
+                            <i class='bx bx-error'></i> <span id="youtubeSearchErrorText">Unable to search YouTube. Please check your internet connection and try again.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="floating-settings">
+            <button id="settingsBtn" class="btn btn-primary rounded-circle settings-btn" title="Settings">
+                <div style="font-size: 28px;"><i class='bx bx-cog'></i></div>
+            </button>
+            <div id="settingsMenu" class="settings-menu">
+                <div class="settings-header">
+                    <h6><i class='bx bx-cog'></i> Settings</h6>
+                    <button class="btn-close settings-close-btn"></button>
+                </div>
+                <div class="settings-body">
+                    <button id="settingsExportBtn" class="btn btn-success btn-sm w-100 mb-2" title="Export Playlist & Data">
+                        <i class='bx bx-export'></i> Export Playlist & Data
+                    </button>
+                    <button id="settingsImportBtn" class="btn btn-warning btn-sm w-100 mb-2" title="Import Playlist & Data">
+                        <i class='bx bx-import'></i> Import Playlist & Data
+                    </button>
+                    <button id="settingsClearCacheBtn" class="btn btn-danger btn-sm w-100 mb-2" title="Cache Manager">
+                        <i class='bx bx-trash'></i> Cache Manager
+                    </button>
+                    <div class="form-check form-switch dark-mode-switch mb-2">
+                        <input class="form-check-input darkModeToggle" type="checkbox" id="darkModeToggle">
+                        <label class="form-check-label" for="darkModeToggle">Dark Mode</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="translationToggle">
+                        <label class="form-check-label" for="translationToggle" data-translate="enableLyricsTranslation">
+                            Lyrics Translation
+                        </label>
+                    </div>
+                    <div class="album-art-display-toggle mb-3">
+                        <span class="fw-bold mb-1 d-block">Album Art Display:</span>
+                        <div class="btn-group w-100" role="group" id="albumArtDisplayToggle">
+                            <button type="button" class="btn btn-sm btn-outline-primary active" data-mode="spin">Spin</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-mode="none">None</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-mode="video">Video</button>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column align-items-start w-100 mb-2" aria-label="Language select">
+                        <label id="languageLabel" for="languageSelect" class="fw-bold mb-1">Language:</label>
+                        <select id="languageSelect" class="form-select form-select-sm w-100">
+                            <option value="en">English</option>
+                            <option value="zh">简体中文</option>
+                            <option value="zh-TW">繁體中文</option>
+                            <option value="ja">日本語</option>
+                            <option value="ko">한국어</option>
+                        </select>
+                    </div>
+                    <button id="settingsAboutBtn" class="btn btn-primary btn-sm w-100 mb-2" data-translate-title="settingsAboutTitle" title="About this Project">
+                        <i class='bx bx-info-circle'></i> <span data-translate="settingsAbout">About</span>
+                    </button>
+                </div>
+            </div>
+            <!-- Hidden file input for import -->
+            <input type="file" id="importFileInput" accept=".json,application/json,.txt,text/plain" style="display: none;">
+        </div>
+
+        <!-- About Window -->
+        <div id="aboutWindow" class="about-window">
+            <div class="about-header">
+                <h6><i class='bx bx-info-circle'></i> <span data-translate="aboutTitle">About YouTube Music Player</span></h6>
+                <button class="btn-close about-close-btn"></button>
+            </div>
+            <div class="about-body">
+                <div class="about-content">
+                    <div class="about-section">
+                        <h6><i class="bi bi-music-note-list"></i> <span data-translate="aboutTitle">YouTube Music Player</span></h6>
+                        <p data-translate="aboutDescription">A feature-rich web-based music player that uses YouTube as its music source. Play, manage, and organize your favorite music in a clean, intuitive interface.</p>
+                    </div>
+                    
+                    <div class="about-section">
+                        <h6><i class="bi bi-stars"></i> <span data-translate="featuresTitle">Features</span></h6>
+                        <ul>
+                            <li data-translate="feature1">YouTube music playback</li>
+                            <li data-translate="feature2">Playlist management with drag & drop</li>
+                            <li data-translate="feature3">Lyrics display with auto-sync</li>
+                            <li data-translate="feature4">Lyrics translation</li>
+                            <li data-translate="feature5">Dark/Light mode</li>
+                            <li data-translate="feature6">Export/Import playlists</li>
+                            <li data-translate="feature7">Volume control & progress bar</li>
+                            <li data-translate="feature8">Multi-language support (English/中文)</li>
+                            <li data-translate="feature9">Auto-play & repeat modes</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="about-section">
+                        <h6><i class="bi bi-person-fill"></i> <span data-translate="originalProjectTitle">Original Project</span></h6>
+                        <div class="creator-card">
+                            <img src="https://github.com/Jacob7179.png" alt="Jacob7179" class="creator-img">
+                            <div class="creator-info">
+                                <strong>Jacob7179</strong>
+                                <small data-translate="originalCreator">Original creator</small>
+                            </div>
+                            <a href="https://github.com/Jacob7179" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class='bx bx-link-external'></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="about-section">
+                        <h6><i class="bi bi-person-hearts"></i> <span data-translate="contributorsTitle">Contributors</span></h6>
+                        <div class="creator-card">
+                            <img src="https://github.com/Farwalker3.png" alt="Farwalker3" class="creator-img">
+                            <div class="creator-info">
+                                <strong>Farwalker3</strong>
+                                <small data-translate="forkMaintainer">Fork maintainer</small>
+                            </div>
+                            <a href="https://github.com/Farwalker3" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class='bx bx-link-external'></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="about-section">
+                        <h6><i class="bx bx-link"></i> <span data-translate="linksTitle">Links</span></h6>
+                        <div class="link-buttons">
+                            <a href="https://github.com/Jacob7179/YouTube-Music-Player-Web" target="_blank" class="btn btn-sm btn-outline-primary w-100 mb-2">
+                                <i class='bx bx-code'></i> <span data-translate="originalRepository">Original Repository</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="about-section">
+                        <h6><i class="bx bx-info-circle"></i> <span data-translate="versionInfoTitle">Version Information</span></h6>
+                        <small data-translate="version">Version: </small><small>1.6-alpha</small><br>
+                        <small data-translate="lastUpdated">Last Updated: </small><small id="formattedDate" data-original-date="{{BUILD_DATE}}">{{BUILD_DATE}}</small><br>
+                        <small data-translate="languages">Languages: </small><small id="supportedLanguages"></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cache Manager Window -->
+        <div id="cacheManagerWindow" class="cache-manager-window">
+            <div class="cache-manager-header">
+                <h6><i class='bx bx-trash'></i> <span data-translate="cacheManagerTitle">Cache Manager</span></h6>
+                <button class="btn-close cache-manager-close-btn"></button>
+            </div>
+            <div class="cache-manager-body">
+                <div class="cache-manager-content">
+                    <!-- Cache Categories -->
+                    <div class="cache-categories">
+                        <button class="btn btn-outline-primary btn-sm active" data-cache-type="all">
+                            <i class='bx bx-layer'></i> <span data-translate="all">All</span>
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" data-cache-type="search">
+                            <i class='bx bx-search'></i> <span data-translate="searchCache">Search</span>
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" data-cache-type="lyrics">
+                            <i class='bx bx-music'></i> <span data-translate="lyricsCache">Lyrics</span>
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" data-cache-type="translation">
+                            <i class='bx bx-transfer'></i> <span data-translate="translationCache">Translation</span>
+                        </button>
+                    </div>
+
+                    <!-- Cache Stats -->
+                    <div class="cache-stats">
+                        <div class="stat-item">
+                            <span class="stat-label" data-translate="totalItems">Total Items:</span>
+                            <span class="stat-value" id="totalCacheItems">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label" data-translate="totalSize">Total Size:</span>
+                            <span class="stat-value" id="totalCacheSize">0 KB</span>
+                        </div>
+                    </div>
+
+                    <!-- Cache Actions -->
+                    <div class="cache-actions">
+                        <button id="clearSelectedCacheBtn" class="btn btn-danger btn-sm">
+                            <i class='bx bx-trash'></i> <span data-translate="clearSelected">Clear Selected</span>
+                        </button>
+                        <button id="refreshCacheListBtn" class="btn btn-secondary btn-sm">
+                            <i class='bx bx-refresh'></i> <span data-translate="refresh">Refresh</span>
+                        </button>
+                        <button id="clearAllCacheBtn" class="btn btn-warning btn-sm">
+                            <i class='bx bx-trash-alt'></i> <span data-translate="clearAll">Clear All</span>
+                        </button>
+                    </div>
+
+                    <!-- Cache List -->
+                    <div class="cache-list-container">
+                        <div class="cache-list-header">
+                            <div class="cache-checkbox">
+                                <input type="checkbox" id="selectAllCache" class="form-check-input">
+                            </div>
+                            <div class="cache-key" data-translate="cacheKey">Cache Key</div>
+                            <div class="cache-type" data-translate="cacheType">Type</div>
+                            <div class="cache-size" data-translate="cacheSize">Size</div>
+                            <div class="cache-age" data-translate="cacheAge">Age</div>
+                            <div class="cache-actions-header" data-translate="actions">Actions</div>
+                        </div>
+                        <div id="cacheList" class="cache-list">
+                            <!-- Cache items will be dynamically loaded here -->
+                        </div>
+                    </div>
+
+                    
+                </div>
+            </div>
+        </div>
+
+        <!-- Cache Item Details Modal -->
+        <div id="cacheItemDetailsModal" class="cache-item-details-modal">
+            <div class="cache-item-details-content">
+                <div class="cache-item-details-header">
+                    <h6><i class='bx bx-detail'></i> <span data-translate="cacheItemDetails">Cache Item Details</span></h6>
+                    <button class="btn-close cache-details-close-btn"></button>
+                </div>
+                <div class="cache-item-details-body">
+                    <div class="detail-section">
+                        <label data-translate="cacheKey">Cache Key:</label>
+                        <div id="detailCacheKey" class="detail-value"></div>
+                    </div>
+                    <div class="detail-section">
+                        <label data-translate="cacheType">Type:</label>
+                        <div id="detailCacheType" class="detail-value"></div>
+                    </div>
+                    <div class="detail-section">
+                        <label data-translate="cacheSize">Size:</label>
+                        <div id="detailCacheSize" class="detail-value"></div>
+                    </div>
+                    <div class="detail-section">
+                        <label data-translate="cacheAge">Age:</label>
+                        <div id="detailCacheAge" class="detail-value"></div>
+                    </div>
+                    <div class="detail-section">
+                        <label data-translate="cacheContent">Content:</label>
+                        <pre id="detailCacheContent" class="detail-content"></pre>
+                    </div>
+                </div>
+                <div class="cache-item-details-footer">
+                    <button id="deleteFromDetailsBtn" class="btn btn-danger btn-sm">
+                        <i class='bx bx-trash'></i> <span data-translate="delete">Delete</span>
+                    </button>
+                    <button id="copyContentBtn" class="btn btn-primary btn-sm">
+                        <i class='bx bx-copy'></i> <span data-translate="copyContent">Copy Content</span>
+                    </button>
+                    <button class="btn btn-secondary btn-sm cache-details-close-btn">
+                        <span data-translate="close">Close</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cache Manager Overlay -->
+        <div id="cacheManagerOverlay" class="cache-manager-overlay"></div>
+
+        <div class="floating-top" style="right: 20px !important;">
+            <button id="goTopBtn" class="btn btn-secondary rounded-circle go-top-btn" title="Go to Top">
+                <i class='bx bx-chevron-up'></i>
+            </button>
+        </div>
+
+        <!-- Attribution Footer -->
+        <div class="d-none"> <!-- Remove this line to show attribution --> <!-- Contributors who fork this project and make any modifications must be able to display this section. -->
+        <div class="text-center mt-4 mb-4">
+            <p>
+                <small>
+                    <span id="attributionText">Original project by</span> <a href="https://github.com/Jacob7179" target="_blank" class="text-decoration-none">Jacob7179</a> | 
+                    <span id="attributionEnhanced">Enhanced version by</span> <a href="https://github.com/Farwalker3" target="_blank" class="text-decoration-none">Farwalker3</a> | 
+                    <a id="attributionRepo" href="https://github.com/Jacob7179/YouTube-Music-Player-Web" target="_blank" class="text-decoration-none">Original Repository</a>
+                </small>
+            </p>
+        </div>
+        </div>
+    </div>
+    <script>
+        (function() {
+        // Apply dark mode immediately from localStorage before page renders
+        if (localStorage.getItem("darkMode") === "enabled") {
+            document.documentElement.classList.add("dark-mode");
+            document.body.classList.add("dark-mode");
+        }
+    })();
+    </script>
+    <script src="script.js"></script>
+    <script src="pwa.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/boxicons@2.1.4/dist/boxicons.js"></script>
+</body>
+</html>

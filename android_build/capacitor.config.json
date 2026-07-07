@@ -1,0 +1,11 @@
+{
+  "appId": "com.jacob7179.youtubemusicplayer",
+  "appName": "YouTube Music Player",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}
