@@ -2563,6 +2563,7 @@ function exportPlaylist() {
             translationEnabled: translationEnabled,
             showOriginalFirst: showOriginalFirst,
             titleGapFraction: GAP_FRACTION,
+            titleScrollSpeed: TITLE_SCROLL_SPEED,
             allowLyricsFetchWhenHidden: allowLyricsFetchWhenHidden,
             allowLyricsTranslationWhenHidden: allowLyricsTranslationWhenHidden,
             exportDate: new Date().toISOString(),
@@ -2613,6 +2614,7 @@ function importPlaylist(file) {
             let importTranslationEnabled = translationEnabled;
             let importShowOriginalFirst = showOriginalFirst;
             let importTitleGapFraction = GAP_FRACTION;
+            let importTitleScrollSpeed = TITLE_SCROLL_SPEED;
             let importAllowLyricsFetchWhenHidden = allowLyricsFetchWhenHidden;
             let importAllowLyricsTranslationWhenHidden = allowLyricsTranslationWhenHidden;
             
@@ -2631,6 +2633,13 @@ function importPlaylist(file) {
 
                     if (Number.isFinite(importedGapFraction)) {
                         importTitleGapFraction = importedGapFraction;
+                    }
+                }
+                if (Object.prototype.hasOwnProperty.call(importedData, "titleScrollSpeed")) {
+                    const importedSpeed = Number(importedData.titleScrollSpeed);
+
+                    if (Number.isFinite(importedSpeed)) {
+                        importTitleScrollSpeed = importedSpeed;
                     }
                 }
                 if (typeof importedData.allowLyricsFetchWhenHidden === "boolean") {
@@ -2776,6 +2785,7 @@ function importPlaylist(file) {
                 }
 
                 setTitleGapFraction(importTitleGapFraction);
+                setTitleScrollSpeed(importTitleScrollSpeed);
                 
                 // ✅ Reset playing state
                 playing = false;
@@ -6470,8 +6480,24 @@ function formatCacheAge(timestamp) {
 
 // ========== TITLE SCROLL ANIMATION ==========
 
-const SLIDE_DURATION = 5;   // seconds for original title to fully exit
-const PAUSE_DURATION = 2;   // seconds to pause after each cycle
+const SLIDE_DURATION = 5; // Initial waiting time before scrolling
+const PAUSE_DURATION = 2; // Pause after one full scroll
+const TITLE_SCROLL_SPEED_KEY = "titleScrollSpeed";
+const DEFAULT_TITLE_SCROLL_SPEED = 50;
+const MIN_TITLE_SCROLL_SPEED = 10;
+const MAX_TITLE_SCROLL_SPEED = 150;
+
+const savedTitleScrollSpeed = localStorage.getItem(
+    TITLE_SCROLL_SPEED_KEY
+);
+
+let TITLE_SCROLL_SPEED = savedTitleScrollSpeed === null ? DEFAULT_TITLE_SCROLL_SPEED : Number(savedTitleScrollSpeed);
+
+if (!Number.isFinite(TITLE_SCROLL_SPEED) || TITLE_SCROLL_SPEED < MIN_TITLE_SCROLL_SPEED || TITLE_SCROLL_SPEED > MAX_TITLE_SCROLL_SPEED) {
+    TITLE_SCROLL_SPEED = DEFAULT_TITLE_SCROLL_SPEED;
+
+    localStorage.setItem(TITLE_SCROLL_SPEED_KEY, String(TITLE_SCROLL_SPEED));
+}
 
 const TITLE_GAP_FRACTION_KEY = "titleGapFraction";
 const DEFAULT_GAP_FRACTION = 0.3;
@@ -6512,6 +6538,37 @@ function setTitleGapFraction(value) {
     );
 
     // Apply the new gap immediately to a scrolling title.
+    stopTitleAnimation();
+    stopAuthorAnimation();
+
+    requestAnimationFrame(() => {
+        startTitleAnimation();
+        startAuthorAnimation();
+    });
+
+    return true;
+}
+
+function setTitleScrollSpeed(value) {
+    const parsedValue = Number(value);
+
+    if (!Number.isFinite(parsedValue)) {
+        return false;
+    }
+
+    TITLE_SCROLL_SPEED = Math.round(
+        Math.max(
+            MIN_TITLE_SCROLL_SPEED,
+            Math.min(MAX_TITLE_SCROLL_SPEED, parsedValue)
+        )
+    );
+
+    localStorage.setItem(
+        TITLE_SCROLL_SPEED_KEY,
+        String(TITLE_SCROLL_SPEED)
+    );
+
+    // Restart both animations so the new speed applies immediately.
     stopTitleAnimation();
     stopAuthorAnimation();
 
@@ -6589,9 +6646,8 @@ function startTitleAnimation() {
     const gap = Math.max(10, Math.min(containerWidth * GAP_FRACTION, oneCopyWidth * 0.5));
     secondCopy.style.marginLeft = gap + 'px';
 
-    const V = oneCopyWidth / SLIDE_DURATION;
     const totalSlideDistance = oneCopyWidth + gap;
-    const totalSlideDuration = totalSlideDistance / V;
+    const totalSlideDuration = totalSlideDistance / TITLE_SCROLL_SPEED;
 
     if (titleAnimationRunning) return;
     titleAnimationRunning = true;
@@ -6722,9 +6778,8 @@ function startAuthorAnimation() {
 
     secondCopy.style.marginLeft = `${gap}px`;
 
-    const speed = oneCopyWidth / SLIDE_DURATION;
     const totalDistance = oneCopyWidth + gap;
-    const totalDuration = totalDistance / speed;
+    const totalDuration = totalDistance / TITLE_SCROLL_SPEED;
 
     const token = ++authorAnimationToken;
     authorAnimationRunning = true;
