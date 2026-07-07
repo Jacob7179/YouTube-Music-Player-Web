@@ -1266,15 +1266,15 @@ body.dark-mode .volume-bar-container::before {
     transition: transform 0.4s ease-in-out;
 }
 
-/* Rotate icon on hover - ease out */
+/* Rotate and enlarge icon on hover */
 .settings-btn:hover i {
-    transform: rotate(180deg);
+    transform: rotate(180deg) scale(1.18);
     transition: transform 0.3s ease-out;
 }
 
-/* Rotate icon when menu is open */
+/* Rotate and enlarge icon when menu is open */
 .floating-settings.active .settings-btn i {
-    transform: rotate(180deg);
+    transform: rotate(180deg) scale(1.18);
     transition: transform 0.3s ease-out;
 }
 
@@ -2015,12 +2015,12 @@ body.dark-mode #lyricsText {
 }
 
 .experimental-btn:hover i {
-    transform: rotate(180deg);
+    transform: rotate(180deg) scale(1.18);
     transition: transform 0.3s ease-out;
 }
 
 .floating-experimental.active .experimental-btn i {
-    transform: rotate(180deg);
+    transform: rotate(180deg) scale(1.18);
     transition: transform 0.3s ease-out;
 }
 
