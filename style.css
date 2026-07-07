@@ -150,11 +150,11 @@ body.dark-mode .drag-ghost {
     text-align: left;
     font-weight: 500;
     font-size: 14px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
     min-width: 0;
-    order: 2; /* Second column */
+    order: 2;
 }
 
 #songList .author-column {

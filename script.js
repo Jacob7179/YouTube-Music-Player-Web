@@ -442,8 +442,7 @@ function renderPlaylist(songsToRender) {
         const songNameSpan = document.createElement('span');
         songNameSpan.classList.add('song-name');
         
-        const cleanSongName = cleanSongTitle(song.songName, song.authorName);
-        songNameSpan.textContent = cleanSongName;
+        songNameSpan.textContent = song.songName;
 
         // Column 3: Author Name - Separate column
         const authorColumnSpan = document.createElement('span');
@@ -526,13 +525,7 @@ function renderPlaylist(songsToRender) {
                 document.getElementById("albumArt").src = firstAlbumArtUrl;
                 document.getElementById("background").style.backgroundImage = `url('${firstAlbumArtUrl}')`;
                 
-                // Clean the song name for display
-                let cleanSongName = firstSongObj.songName;
-                cleanSongName = cleanSongName.replace(new RegExp(`^${firstSongObj.authorName}\\s*-\\s*`), '');
-                cleanSongName = cleanSongName.replace(new RegExp(`\\s*-\\s*${firstSongObj.authorName}$`), '');
-                cleanSongName = cleanSongName.replace(new RegExp(`\\s*by\\s*${firstSongObj.authorName}$`, 'i'), '');
-                
-                updateSongTitle(cleanSongName);
+                updateSongTitle(firstSongObj.songName);
                 updateAuthorName(firstSongObj.authorName);
                 loadLyricsFor(firstSongObj.songName, firstSongObj.authorName);
 
@@ -1128,12 +1121,6 @@ async function handleAddSongFromURL() {
         }
     }
 
-    // Clean song name
-    title = title
-        .replace(/\s*-\s*Topic$/i, "")
-        .replace(new RegExp(`^${author}\\s*-\\s*`, "i"), "")
-        .trim();
-
     // Add to playlist
     const newSong = { videoId, songName: title, authorName: author, albumArt, lyricsTimeOffset: 0};
     playlist.push(newSong);
@@ -1649,16 +1636,15 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
     if (songObject) {
         let originalSongName = songObject.songName;
         let authorName = songObject.authorName;
-        let cleanSongName = cleanSongTitle(originalSongName, authorName);
-
-        if (cleanSongName !== lastSong) {
+        if (originalSongName !== lastSong) {
             songTitleElem.style.transition = "opacity 0.5s ease-in-out";
             songTitleElem.style.opacity = "0";
             setTimeout(() => {
-                updateSongTitle(cleanSongName);
+                updateSongTitle(originalSongName);
                 songTitleElem.style.opacity = "1";
             }, 500);
-            lastSong = cleanSongName;
+
+            lastSong = originalSongName;
         }
         
         if (authorName !== lastAuthor) {
