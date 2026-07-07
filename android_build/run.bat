@@ -39,7 +39,8 @@ if not defined SDK_DIR if exist "%LOCALAPPDATA%\Android\Sdk" (
 if not defined SDK_DIR (
     echo.
     echo ERROR: Android SDK folder was not found.
-    echo Expected: %~dp0android-sdk
+    echo Expected bundled SDK path:
+    echo %~dp0android-sdk
     goto :error
 )
 
@@ -56,7 +57,6 @@ echo %SDK_DIR%
 
 REM ------------------------------------------------------------
 REM Create Android project first.
-REM capacitor-assets cannot generate Android icons before this.
 REM ------------------------------------------------------------
 if not exist "android" (
     echo.
@@ -71,7 +71,7 @@ if not exist "android" (
 )
 
 REM ------------------------------------------------------------
-REM Create Android SDK path file.
+REM Create android\local.properties with SDK location.
 REM ------------------------------------------------------------
 set "SDK_DIR_GRADLE=%SDK_DIR:\=\\%"
 
@@ -84,14 +84,15 @@ echo ==========================================
     echo sdk.dir=%SDK_DIR_GRADLE%
 ) > "android\local.properties"
 
+echo Created:
 type "android\local.properties"
 
 REM ------------------------------------------------------------
-REM Prepare launcher icon source.
+REM Prepare Android launcher icon and splash screen files.
 REM ------------------------------------------------------------
 echo.
 echo ==========================================
-echo Preparing app icon...
+echo Preparing app icon and splash screen...
 echo ==========================================
 
 if not exist "assets" (
@@ -99,20 +100,36 @@ if not exist "assets" (
 )
 
 if not exist "www\resource\icon\app-icon-512.png" (
-    echo ERROR: Icon file not found:
+    echo.
+    echo ERROR: Icon image not found:
     echo www\resource\icon\app-icon-512.png
     goto :error
 )
 
+REM Normal launcher icon
 copy /Y "www\resource\icon\app-icon-512.png" "assets\icon-only.png"
 if errorlevel 1 goto :error
 
+REM Adaptive icon foreground
+copy /Y "www\resource\icon\app-icon-512.png" "assets\icon-foreground.png"
+if errorlevel 1 goto :error
+
+REM Adaptive icon background - required by Android
+copy /Y "www\resource\icon\app-icon-512.png" "assets\icon-background.png"
+if errorlevel 1 goto :error
+
+REM Splash screen
+copy /Y "www\resource\icon\app-icon-512.png" "assets\splash.png"
+if errorlevel 1 goto :error
+
+echo Icon and splash files prepared.
+
 REM ------------------------------------------------------------
-REM Generate Android launcher icon files.
+REM Install Capacitor asset generator and create Android assets.
 REM ------------------------------------------------------------
 echo.
 echo ==========================================
-echo Generating Android app icons...
+echo Generating Android app icons and splash...
 echo ==========================================
 
 call npm install -D @capacitor/assets
@@ -122,7 +139,7 @@ call npx capacitor-assets generate --android
 if errorlevel 1 goto :error
 
 REM ------------------------------------------------------------
-REM Sync latest web files into Android.
+REM Sync latest web files into Android project.
 REM ------------------------------------------------------------
 echo.
 echo ==========================================
@@ -133,7 +150,7 @@ call npx cap sync android
 if errorlevel 1 goto :error
 
 REM ------------------------------------------------------------
-REM Build APK.
+REM Build debug APK.
 REM ------------------------------------------------------------
 echo.
 echo ==========================================
