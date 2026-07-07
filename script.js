@@ -442,7 +442,8 @@ function renderPlaylist(songsToRender) {
         const songNameSpan = document.createElement('span');
         songNameSpan.classList.add('song-name');
         
-        songNameSpan.textContent = song.songName;
+        const cleanSongName = cleanSongTitle(song.songName, song.authorName);
+        songNameSpan.textContent = cleanSongName;
 
         // Column 3: Author Name - Separate column
         const authorColumnSpan = document.createElement('span');
