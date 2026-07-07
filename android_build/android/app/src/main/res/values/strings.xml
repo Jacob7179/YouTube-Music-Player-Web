@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">YouTube Music Player</string>
-    <string name="title_activity_main">YouTube Music Player</string>
-    <string name="package_name">com.jacob7179.youtubemusicplayer</string>
-    <string name="custom_url_scheme">com.jacob7179.youtubemusicplayer</string>
-</resources>
