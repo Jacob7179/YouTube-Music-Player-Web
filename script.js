@@ -1637,15 +1637,16 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
     if (songObject) {
         let originalSongName = songObject.songName;
         let authorName = songObject.authorName;
-        if (originalSongName !== lastSong) {
+        let cleanSongName = cleanSongTitle(originalSongName, authorName);
+
+        if (cleanSongName !== lastSong) {
             songTitleElem.style.transition = "opacity 0.5s ease-in-out";
             songTitleElem.style.opacity = "0";
             setTimeout(() => {
-                updateSongTitle(originalSongName);
+                updateSongTitle(cleanSongName);
                 songTitleElem.style.opacity = "1";
             }, 500);
-
-            lastSong = originalSongName;
+            lastSong = cleanSongName;
         }
         
         if (authorName !== lastAuthor) {
