@@ -2,7 +2,12 @@
 
 This folder wraps the web app with Capacitor so it can be built as an Android APK.
 
-## Build
+## Auto Build
+```powershell
+./run.bat
+```
+
+## Manual Build
 
 ```powershell
 npm install
