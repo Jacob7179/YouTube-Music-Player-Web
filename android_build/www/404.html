@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 Not Found</title>
+    <link rel="icon" type="icon" href="https://avatars.githubusercontent.com/u/70430960">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #f8f9fa;
+            color: #212529;
+        }
+
+        .error-card {
+            width: min(100%, 520px);
+            padding: 42px 30px;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(72px, 15vw, 130px);
+            line-height: 1;
+            color: #007bff;
+        }
+
+        h2 {
+            margin: 16px 0 10px;
+            font-size: 24px;
+        }
+
+        p {
+            margin: 0 0 24px;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #6c757d;
+        }
+
+        a {
+            display: inline-block;
+            padding: 12px 20px;
+            border-radius: 8px;
+            background: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        a:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        small {
+            display: block;
+            min-height: 20px;
+            margin-top: 18px;
+            color: #888;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #121212;
+                color: #ffffff;
+            }
+
+            .error-card {
+                background: #222222;
+            }
+
+            p,
+            small {
+                color: #bbbbbb;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="error-card">
+        <h1>404</h1>
+        <h2>Page Not Found</h2>
+
+        <p>
+            Oops! The page you are looking for does not exist.
+        </p>
+
+        <a id="homeLink" href="/">Go back to Home</a>
+
+        <small id="countdownText">
+            Redirecting automatically in 5 seconds...
+        </small>
+    </main>
+
+    <script>
+        function getHomeUrl() {
+            const isGitHubPages =
+                window.location.hostname.endsWith(".github.io");
+
+            if (isGitHubPages) {
+                return "/YouTube-Music-Player-Web/";
+            }
+
+            // Vercel, localhost, or a custom domain
+            return "/";
+        }
+
+        const homeUrl = getHomeUrl();
+        const homeLink = document.getElementById("homeLink");
+        const countdownText = document.getElementById("countdownText");
+
+        homeLink.href = homeUrl;
+
+        let secondsLeft = 5;
+
+        const countdownInterval = setInterval(() => {
+            secondsLeft--;
+
+            if (secondsLeft > 0) {
+                countdownText.textContent =
+                    `Redirecting automatically in ${secondsLeft} second${
+                        secondsLeft === 1 ? "" : "s"
+                    }...`;
+                return;
+            }
+
+            clearInterval(countdownInterval);
+            countdownText.textContent = "Redirecting now...";
+            window.location.replace(homeUrl);
+        }, 1000);
+    </script>
+</body>
+</html>

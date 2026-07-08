@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Music Player</title>
+    <link rel="icon" type="icon" href="../resource/icon/Jacob_profile_picture_icon.ico">
+    <script src="../beta/js/xlsx.full.min.js"></script>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background-color: white;
+            color: black;
+            transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
+        }
+        #albumArt {
+            width: 300px;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+        #playerContainer {
+            width: 100%;
+            max-width: 560px;
+            margin: 20px auto;
+            display: block;
+        }
+        #playlist {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .songItem {
+            cursor: pointer;
+            margin: 5px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            display: inline-block;
+            text-align: center;
+            width: 150px;
+        }
+        .songItem img {
+            width: 100%;
+            height: auto;
+        }
+        #progressContainer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px auto;
+        }
+        #progressBar {
+            width: 300px;
+            height: 10px;
+            background: #ddd;
+            position: relative;
+            cursor: pointer;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        #progress {
+            height: 100%;
+            width: 0%;
+            background: #007bff;
+            position: absolute;
+            transition: width 0.1s linear;
+        }
+        #timeDisplay {
+            font-size: 14px;
+            font-weight: bold;
+            width: 80px;
+        }
+        /* Dark Mode */
+        body.dark-mode {
+            background-color: #121212; /* Darker background for better contrast */
+            color: #e0e0e0; /* Lighter text */
+        }
+    </style>
+</head>
+<body>
+    <h1>Beta Version - Read Excel Files</h1>
+    <br>
+    <h2>🎵 YouTube Music Player</h2>
+
+    <img id="albumArt" src="https://via.placeholder.com/300" alt="Album Art">
+    
+    <h3 id="nowPlaying" style="display: none; font-size: 20px; font-weight: bold; margin-bottom: 10px;"></h3>
+    
+    <div id="playerContainer">
+        <div id="player"></div>
+    </div>
+    
+    <div id="progressContainer">
+        <span id="currentTime">0:00</span>
+        <div id="progressBar" onclick="seekVideo(event)">
+            <div id="progress"></div>
+        </div>
+        <span id="totalTime">0:00</span>
+    </div>
+
+    <button id="darkModeToggle" class="btn btn-dark">Enable Dark Mode</button>
+
+    <div id="playlist"></div>
+
+    <script>
+        const filePath = "../resource/files/playlist.xlsx"; // Fixed file path
+        let player;
+        let progressInterval;
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '315',
+                width: '560',
+                playerVars: { autoplay: 0, controls: 1 },
+                events: { 'onStateChange': handlePlayerStateChange }
+            });
+        }
+
+        async function loadPlaylist() {
+            try {
+                const response = await fetch(filePath);
+                const arrayBuffer = await response.arrayBuffer();
+
+                const workbook = XLSX.read(arrayBuffer, { type: "array" });
+                const sheetName = workbook.SheetNames[0]; 
+                const sheet = workbook.Sheets[sheetName];
+
+                const data = XLSX.utils.sheet_to_json(sheet);
+                displayPlaylist(data);
+            } catch (error) {
+                console.error("Error reading Excel file:", error);
+            }
+        }
+
+        function displayPlaylist(songs) {
+            const playlistDiv = document.getElementById("playlist");
+            playlistDiv.innerHTML = ""; 
+        
+            songs.forEach(song => {
+                const songItem = document.createElement("div");
+                songItem.className = "songItem";
+                const thumbnailUrl = `https://i.ytimg.com/vi/${song["YouTube ID"]}/hqdefault.jpg`;
+        
+                songItem.innerHTML = `
+                    <img src="${thumbnailUrl}" alt="${song["Song Name"]}">
+                    <br>${song["Song Name"]} - ${song["Author Name"]}
+                `;
+        
+                // Pass song name and author name to playSong()
+                songItem.onclick = () => playSong(song["YouTube ID"], thumbnailUrl, song["Song Name"], song["Author Name"]);
+                playlistDiv.appendChild(songItem);
+            });
+        }
+        
+        function playSong(videoId, thumbnail, songName, authorName) {
+            document.getElementById('albumArt').src = thumbnail;
+        
+            // Show the selected song name and author
+            let nowPlayingText = document.getElementById("nowPlaying");
+            nowPlayingText.innerHTML = `Now Playing:<br> ${songName} - ${authorName}`;
+            nowPlayingText.style.display = "block"; // Make it visible
+        
+            if (player) {
+                player.loadVideoById(videoId);
+                startProgressTracking();
+            } else {
+                player = new YT.Player('player', {
+                    height: '315',
+                    width: '560',
+                    videoId: videoId,
+                    events: { 'onStateChange': handlePlayerStateChange }
+                });
+            }
+        }        
+
+        function handlePlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                startProgressTracking();
+            } else {
+                clearInterval(progressInterval);
+            }
+        }
+
+        function startProgressTracking() {
+            clearInterval(progressInterval); // Clear any existing interval
+
+            progressInterval = setInterval(() => {
+                if (player && player.getDuration) {
+                    let duration = player.getDuration();
+                    let currentTime = player.getCurrentTime();
+                    let progressPercent = (currentTime / duration) * 100;
+
+                    document.getElementById("progress").style.width = progressPercent + "%";
+                    document.getElementById("currentTime").textContent = formatTime(currentTime);
+                    document.getElementById("totalTime").textContent = formatTime(duration);
+                }
+            }, 500);
+        }
+
+        function seekVideo(event) {
+            if (!player || !player.getDuration) return;
+
+            let progressBar = document.getElementById("progressBar");
+            let rect = progressBar.getBoundingClientRect();
+            let offsetX = event.clientX - rect.left;
+            let newTime = (offsetX / rect.width) * player.getDuration();
+
+            player.seekTo(newTime, true);
+        }
+
+        function formatTime(seconds) {
+            let minutes = Math.floor(seconds / 60);
+            let secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs < 10 ? "0" + secs : secs}`;
+        }
+
+        let tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        let firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        loadPlaylist();
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Check if dark mode is enabled in local storage before page renders
+            if (localStorage.getItem("darkMode") === "enabled") {
+                document.body.classList.add("dark-mode");
+                document.getElementById("darkModeToggle").innerHTML = "Disable Dark Mode";
+                applyDarkModeToElements(true);
+            }
+    
+            // Ensure body opacity animation starts only after dark mode is set
+            document.body.style.opacity = "1";
+        });
+    
+        function applyDarkModeToElements(enable) {
+            document.querySelectorAll(
+                ".card, .btn-dark-mode-toggle, .author-name, .song-title, #songList, #songList .list-group-item, #songList .song, #songList .author"
+            ).forEach(el => el.classList.toggle("dark-mode", enable));
+        }
+
+        document.getElementById("darkModeToggle").addEventListener("click", function () {
+            const isDarkMode = document.body.classList.toggle("dark-mode");
+        
+            // Save preference
+            localStorage.setItem("darkMode", isDarkMode ? "enabled" : "disabled");
+        
+            // Apply dark mode to all necessary elements
+            applyDarkModeToElements(isDarkMode);
+        
+            // Update button text
+            this.innerHTML = isDarkMode ? "Disable Dark Mode" : "Enable Dark Mode";
+        });
+    </script>
+</body>
+</html>

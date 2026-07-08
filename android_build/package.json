@@ -1,0 +1,18 @@
+{
+  "name": "youtube-music-player-apk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Android APK wrapper for YouTube Music Player Web.",
+  "scripts": {
+    "sync": "cap sync android",
+    "build:apk": "cd android && gradlew.bat assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.4.3"
+  }
+}
