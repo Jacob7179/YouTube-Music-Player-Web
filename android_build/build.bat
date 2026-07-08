@@ -15,6 +15,63 @@ call npm install
 if errorlevel 1 goto :error
 
 REM ------------------------------------------------------------
+REM Download Android SDK automatically if local SDK is missing.
+REM Installs into:
+REM android_build\android-sdk
+REM ------------------------------------------------------------
+if not exist "%~dp0android-sdk\platform-tools" (
+    echo.
+    echo ==========================================
+    echo Android SDK not found. Downloading SDK...
+    echo ==========================================
+
+    set "SDK_DIR=%~dp0android-sdk"
+    set "SDKMANAGER=%SDK_DIR%\cmdline-tools\latest\bin\sdkmanager.bat"
+
+    if not exist "%SDK_DIR%\cmdline-tools" mkdir "%SDK_DIR%\cmdline-tools"
+
+    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+        "$ErrorActionPreference='Stop';" ^
+        "$sdk='%SDK_DIR%';" ^
+        "New-Item -ItemType Directory -Force -Path (Join-Path $sdk 'cmdline-tools') | Out-Null;" ^
+        "Set-Location $sdk;" ^
+        "Invoke-WebRequest -Uri 'https://dl.google.com/android/repository/commandlinetools-win-14742923_latest.zip' -OutFile 'cmdline-tools.zip';" ^
+        "Expand-Archive -Force 'cmdline-tools.zip' -DestinationPath 'cmdline-tools';" ^
+        "if (Test-Path '.\cmdline-tools\latest') { Remove-Item '.\cmdline-tools\latest' -Recurse -Force };" ^
+        "if (Test-Path '.\cmdline-tools\cmdline-tools') { Move-Item '.\cmdline-tools\cmdline-tools' '.\cmdline-tools\latest' };" ^
+        "Remove-Item 'cmdline-tools.zip' -Force;"
+
+    if errorlevel 1 goto :error
+
+    if not exist "%SDKMANAGER%" (
+        echo.
+        echo ERROR: sdkmanager.bat was not found:
+        echo %SDKMANAGER%
+        goto :error
+    )
+
+    echo.
+    echo ==========================================
+    echo Accepting Android SDK licenses...
+    echo ==========================================
+
+    cmd /c "for /l %%i in (1,1,100) do @echo y" | call "%SDKMANAGER%" --sdk_root="%SDK_DIR%" --licenses
+    if errorlevel 1 goto :error
+
+    echo.
+    echo ==========================================
+    echo Installing Android SDK packages...
+    echo ==========================================
+
+    call "%SDKMANAGER%" --sdk_root="%SDK_DIR%" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+    if errorlevel 1 goto :error
+
+    echo.
+    echo Android SDK installed successfully:
+    echo %SDK_DIR%
+)
+
+REM ------------------------------------------------------------
 REM Find Android SDK.
 REM First use the bundled android-sdk folder.
 REM ------------------------------------------------------------
