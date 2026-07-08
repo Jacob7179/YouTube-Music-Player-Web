@@ -26,13 +26,13 @@ if not exist "%~dp0android-sdk\platform-tools" (
     echo ==========================================
 
     set "SDK_DIR=%~dp0android-sdk"
-    set "SDKMANAGER=%SDK_DIR%\cmdline-tools\latest\bin\sdkmanager.bat"
+    set "SDKMANAGER=!SDK_DIR!\cmdline-tools\latest\bin\sdkmanager.bat"
 
-    if not exist "%SDK_DIR%\cmdline-tools" mkdir "%SDK_DIR%\cmdline-tools"
+    if not exist "!SDK_DIR!\cmdline-tools" mkdir "!SDK_DIR!\cmdline-tools"
 
     powershell -NoProfile -ExecutionPolicy Bypass -Command ^
         "$ErrorActionPreference='Stop';" ^
-        "$sdk='%SDK_DIR%';" ^
+        "$sdk='!SDK_DIR!';" ^
         "New-Item -ItemType Directory -Force -Path (Join-Path $sdk 'cmdline-tools') | Out-Null;" ^
         "Set-Location $sdk;" ^
         "Invoke-WebRequest -Uri 'https://dl.google.com/android/repository/commandlinetools-win-14742923_latest.zip' -OutFile 'cmdline-tools.zip';" ^
@@ -43,10 +43,10 @@ if not exist "%~dp0android-sdk\platform-tools" (
 
     if errorlevel 1 goto :error
 
-    if not exist "%SDKMANAGER%" (
+    if not exist "!SDKMANAGER!" (
         echo.
         echo ERROR: sdkmanager.bat was not found:
-        echo %SDKMANAGER%
+        echo !SDKMANAGER!
         goto :error
     )
 
@@ -55,7 +55,7 @@ if not exist "%~dp0android-sdk\platform-tools" (
     echo Accepting Android SDK licenses...
     echo ==========================================
 
-    cmd /c "for /l %%i in (1,1,100) do @echo y" | call "%SDKMANAGER%" --sdk_root="%SDK_DIR%" --licenses
+    cmd /c "for /l %%i in (1,1,100) do @echo y" | call "!SDKMANAGER!" --sdk_root="!SDK_DIR!" --licenses
     if errorlevel 1 goto :error
 
     echo.
@@ -63,12 +63,12 @@ if not exist "%~dp0android-sdk\platform-tools" (
     echo Installing Android SDK packages...
     echo ==========================================
 
-    call "%SDKMANAGER%" --sdk_root="%SDK_DIR%" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+    call "!SDKMANAGER!" --sdk_root="!SDK_DIR!" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
     if errorlevel 1 goto :error
 
     echo.
     echo Android SDK installed successfully:
-    echo %SDK_DIR%
+    echo !SDK_DIR!
 )
 
 REM ------------------------------------------------------------
