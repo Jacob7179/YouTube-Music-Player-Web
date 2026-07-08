@@ -29,46 +29,91 @@ let translationRequestVersion = 0;
 let lyricsFetchController = null;
 let lyricsTranslationController = null;
 
-// YOUTUBE_API_KEY is now loaded from "YOUR_YOUTUBE_API_KEY" or Vercel API endpoint
+// YOUTUBE_API_KEY is now loaded from "YOUR_YOUTUBE_API_KEY", Vercel API endpoint or Cloudflare Worker endpoint
 const YOUTUBE_API_KEY = "YOUR_YOUTUBE_API_KEY";
 const VERCEL_API_KEY_ENDPOINT = "/api/getApiKey";
 
 let cachedApiKey = null;
 
 async function getApiKey() {
-    if (cachedApiKey) return cachedApiKey;
-
-    // GitHub Pages: deploy.yml replaces the placeholder with the secret.
-    if (
-        YOUTUBE_API_KEY &&
-        YOUTUBE_API_KEY !== "YOUR_YOUTUBE_API_KEY"
-    ) {
-        cachedApiKey = YOUTUBE_API_KEY;
+    if (cachedApiKey) {
         return cachedApiKey;
     }
 
-    // Vercel fallback.
-    try {
-        const response = await fetch(VERCEL_API_KEY_ENDPOINT);
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.apiKey) {
-            cachedApiKey = data.apiKey;
-            return cachedApiKey;
-        }
-
-        throw new Error("No API key returned.");
-    } catch (error) {
-        console.warn("Could not fetch API key from Vercel:", error);
-        throw new Error(
-            "No API key available. Add YOUTUBE_API_KEY to GitHub Actions secrets or Vercel environment variables."
-        );
+    // 1. Try direct injected key first
+    if (
+        typeof YOUTUBE_API_KEY !== "undefined" &&
+        YOUTUBE_API_KEY &&
+        YOUTUBE_API_KEY !== "YOUR_YOUTUBE_API_KEY" &&
+        YOUTUBE_API_KEY.length > 10
+    ) {
+        cachedApiKey = YOUTUBE_API_KEY;
+        console.log("Using injected YouTube API key.");
+        return cachedApiKey;
     }
+
+    // 2. Try Vercel / local API endpoint
+    try {
+        console.log("Trying Vercel/local API key endpoint:", VERCEL_API_KEY_ENDPOINT);
+
+        const response = await fetch(VERCEL_API_KEY_ENDPOINT, {
+            method: "GET",
+            cache: "no-store"
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+
+            if (
+                data &&
+                data.apiKey &&
+                data.apiKey !== "YOUR_YOUTUBE_API_KEY" &&
+                data.apiKey.length > 10
+            ) {
+                cachedApiKey = data.apiKey;
+                console.log("Using API key from Vercel/local endpoint.");
+                return cachedApiKey;
+            }
+        } else {
+            console.warn("Vercel/local API key endpoint failed:", response.status);
+        }
+    } catch (error) {
+        console.warn("Vercel/local API key endpoint error:", error);
+    }
+
+    // 3. Last fallback: try Cloudflare Worker endpoint
+    const CLOUDFLARE_API_KEY_ENDPOINT =
+        "https://get-api-key.jacobng9022.workers.dev/getApiKey";
+
+    try {
+        console.log("Trying Cloudflare API key endpoint:", CLOUDFLARE_API_KEY_ENDPOINT);
+
+        const response = await fetch(CLOUDFLARE_API_KEY_ENDPOINT, {
+            method: "GET",
+            cache: "no-store"
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+
+            if (
+                data &&
+                data.apiKey &&
+                data.apiKey !== "YOUR_YOUTUBE_API_KEY" &&
+                data.apiKey.length > 10
+            ) {
+                cachedApiKey = data.apiKey;
+                console.log("Using API key from Cloudflare endpoint.");
+                return cachedApiKey;
+            }
+        } else {
+            console.warn("Cloudflare API key endpoint failed:", response.status);
+        }
+    } catch (error) {
+        console.warn("Cloudflare API key endpoint error:", error);
+    }
+
+    throw new Error("No valid YouTube API key found.");
 }
 
 function isLyricsPageVisible() {
