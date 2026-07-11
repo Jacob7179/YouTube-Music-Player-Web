@@ -5,3 +5,4 @@ android-sdk
 node_modules
 package-lock.json
 local.properties
+tools

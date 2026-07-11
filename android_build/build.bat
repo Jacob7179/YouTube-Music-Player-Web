@@ -9,6 +9,65 @@ cd /d "%~dp0"
 
 echo.
 echo ==========================================
+echo Checking Node.js / npm...
+echo ==========================================
+
+where npm >nul 2>&1
+if errorlevel 1 (
+    echo npm not found.
+    echo Using portable Node.js inside this project...
+
+    set "TOOLS_DIR=%~dp0tools"
+    set "LOCAL_NODE_DIR=%~dp0tools\nodejs"
+    set "LOCAL_NODE_EXE=%~dp0tools\nodejs\node.exe"
+    set "LOCAL_NPM_CMD=%~dp0tools\nodejs\npm.cmd"
+
+    if not exist "!LOCAL_NPM_CMD!" (
+        echo.
+        echo ==========================================
+        echo Downloading latest Node.js LTS portable ZIP...
+        echo ==========================================
+
+        if not exist "!TOOLS_DIR!" mkdir "!TOOLS_DIR!"
+
+        powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+            "$ErrorActionPreference='Stop';" ^
+            "$tools='!TOOLS_DIR!';" ^
+            "$nodeDir='!LOCAL_NODE_DIR!';" ^
+            "$index=Invoke-RestMethod 'https://nodejs.org/dist/index.json';" ^
+            "$lts=$index | Where-Object { $_.lts -ne $false } | Select-Object -First 1;" ^
+            "$version=$lts.version;" ^
+            "$zipName='node-' + $version + '-win-x64.zip';" ^
+            "$url='https://nodejs.org/dist/' + $version + '/' + $zipName;" ^
+            "$zipPath=Join-Path $tools $zipName;" ^
+            "Write-Host ('Downloading ' + $url);" ^
+            "Invoke-WebRequest -Uri $url -OutFile $zipPath;" ^
+            "if (Test-Path $nodeDir) { Remove-Item $nodeDir -Recurse -Force };" ^
+            "Expand-Archive -Force $zipPath -DestinationPath $tools;" ^
+            "$extracted=Join-Path $tools ('node-' + $version + '-win-x64');" ^
+            "Move-Item $extracted $nodeDir;" ^
+            "Remove-Item $zipPath -Force;"
+
+        if errorlevel 1 goto :error
+    )
+
+    if not exist "!LOCAL_NPM_CMD!" (
+        echo.
+        echo ERROR: Portable npm was not found:
+        echo !LOCAL_NPM_CMD!
+        goto :error
+    )
+
+    set "PATH=!LOCAL_NODE_DIR!;!PATH!"
+
+    echo.
+    echo Portable Node.js ready:
+    call node -v
+    call npm -v
+)
+
+echo.
+echo ==========================================
 echo Installing Node.js dependencies...
 echo ==========================================
 call npm install

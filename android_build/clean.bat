@@ -3,7 +3,7 @@ setlocal EnableExtensions
 
 REM ============================================================
 REM Clean Android APK build folders
-REM Deletes: android, android-sdk, node_modules
+REM Deletes: android, android-sdk, node_modules, tools
 REM ============================================================
 
 cd /d "%~dp0"
@@ -13,7 +13,7 @@ echo ==========================================
 echo Cleaning generated build folders...
 echo ==========================================
 
-for %%D in (android android-sdk node_modules) do (
+for %%D in (android android-sdk node_modules tools) do (
     if exist "%%D" (
         echo Deleting %%D ...
         rmdir /S /Q "%%D"
