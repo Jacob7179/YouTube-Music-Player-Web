@@ -70,15 +70,32 @@ echo.
 echo ==========================================
 echo Installing Node.js dependencies...
 echo ==========================================
-call npm install
-if errorlevel 1 goto :error
+if not exist "node_modules" (
+    echo Installing Node.js dependencies...
+
+    if exist "package-lock.json" (
+        call npm ci
+    ) else (
+        call npm install
+    )
+
+    if errorlevel 1 goto :error
+) else (
+    echo node_modules already exists. Skipping npm install.
+)
 
 REM ------------------------------------------------------------
 REM Download Android SDK automatically if local SDK is missing.
 REM Installs into:
 REM android_build\android-sdk
 REM ------------------------------------------------------------
-if not exist "%~dp0android-sdk\platform-tools" (
+set "NEED_SDK_INSTALL=0"
+
+if not exist "%~dp0android-sdk\platform-tools\adb.exe" set "NEED_SDK_INSTALL=1"
+if not exist "%~dp0android-sdk\platforms\android-35\android.jar" set "NEED_SDK_INSTALL=1"
+if not exist "%~dp0android-sdk\build-tools\35.0.0\aapt2.exe" set "NEED_SDK_INSTALL=1"
+
+if "%NEED_SDK_INSTALL%"=="1" (
     echo.
     echo ==========================================
     echo Android SDK not found. Downloading SDK...
@@ -170,6 +187,9 @@ if not exist "%SDK_DIR%\platform-tools" (
 echo.
 echo Android SDK found:
 echo %SDK_DIR%
+set "ANDROID_HOME=%SDK_DIR%"
+set "ANDROID_SDK_ROOT=%SDK_DIR%"
+set "PATH=%SDK_DIR%\platform-tools;%SDK_DIR%\cmdline-tools\latest\bin;%PATH%"
 
 REM ------------------------------------------------------------
 REM Create Android project first.
@@ -229,12 +249,8 @@ set "ANDROID_RES_DIR=%~dp0android\app\src\main\res"
 
 if not exist "%IMAGE_RES_DIR%" (
     echo.
-    echo ERROR: Image resource folder not found:
-    echo %IMAGE_RES_DIR%
-    echo.
-    echo Please place your converted res folder here:
-    echo image_source\res
-    goto :error
+    echo Image resource folder not found. Skipping icon replacement.
+    goto :skip_icon_replace
 )
 
 if not exist "%ANDROID_RES_DIR%" (
@@ -294,6 +310,7 @@ if exist "%IMAGE_RES_DIR%\values\ic_launcher_background.xml" (
 
 echo Android icon and splash resources replaced.
 
+:skip_icon_replace
 REM ------------------------------------------------------------
 REM Build debug APK.
 REM ------------------------------------------------------------
