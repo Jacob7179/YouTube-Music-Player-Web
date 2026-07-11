@@ -4,6 +4,7 @@ This folder wraps the web app with Capacitor so it can be built as an Android AP
 
 ## Auto Build
 ```powershell
+cd android_build
 ./build.bat
 ```
 
