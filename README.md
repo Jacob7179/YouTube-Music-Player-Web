@@ -1,192 +1,391 @@
-<h1 align="center">YouTube Music Player Web</h1>
+<div align="center">
+
+# YouTube Music Player Web
+
+A responsive YouTube-based music player with playlists, synchronized lyrics, translation, media controls, data import/export, and an optional Android APK wrapper.
+
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Open_Player-005495?style=for-the-badge&logo=youtube)](https://jacob7179.github.io/YouTube-Music-Player-Web/)
+[![License](https://img.shields.io/github/license/Jacob7179/YouTube-Music-Player-Web?style=for-the-badge)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/Jacob7179/YouTube-Music-Player-Web?style=for-the-badge)](https://github.com/Jacob7179/YouTube-Music-Player-Web/stargazers)
+[![Android](https://img.shields.io/badge/Android-Capacitor_7-3DDC84?style=for-the-badge&logo=android&logoColor=white)](android_build/README-APK.md)
+
+[Live Website](https://jacob7179.github.io/YouTube-Music-Player-Web/) · [Report a Bug](https://github.com/Jacob7179/YouTube-Music-Player-Web/issues) · [Android Build Guide](android_build/README-APK.md)
+
+</div>
 
 > [!WARNING]
-> **This project is in the testing stage and some features may be unstable and unsafe. Use at your own risk.**
+> This project is under active development. Some browser, lyrics, translation, and Android background-playback behavior may vary by device or platform.
 
-> [!NOTE]
-> **The project was developed using HTML, CSS, JavaScript language and [YouTube Iframe Player API](https://developers.google.com/youtube/iframe_api_reference).**
+> [!IMPORTANT]
+> This is an independent project and is not affiliated with, endorsed by, or sponsored by YouTube or Google. Playback depends on the YouTube IFrame Player API and requires an internet connection.
+
+## Overview
+
+YouTube Music Player Web turns embedded YouTube videos into a playlist-oriented music player. It runs as a browser application using HTML, CSS, and JavaScript, and it can also be packaged as an Android APK with Capacitor.
+
+The application stores the playlist and most preferences in browser storage, so users can return to their previous setup without creating an account.
 
 ## Screenshots
-**My Playlist**
-![Alt text](resource/image/1.png)
-**Lyrics**
-![Alt text](resource/image/2.png)
-**Video Mode (Album Art)**
-![Alt text](resource/image/3.png)
-**Lyrics Translate**
-![Alt text](resource/image/4.png)
-**YouTube Search**
-![Alt text](resource/image/5.png)
 
-**Settings**
+### Main interface
 
-![Alt text](resource/image/6.png)
+![YouTube Music Player main interface](resource/image/1.png)
 
-**Experimental Project**
+### Settings
 
-![Alt text](resource/image/7.png)
+<p align="center">
+  <img src="resource/image/2.png" alt="YouTube Music Player settings panel" width="300">
+</p>
 
-## Information
+## Features
 
-This project is a **YouTube Music Player Web Application** that allows users to stream and control YouTube videos as an interactive music player. It features a custom playlist, enabling users to select and play songs seamlessly. The app includes auto-play, repeat mode, and volume control, along with a progress bar for tracking playback. Additionally, a dark mode toggle enhances user experience. The interface is styled using Bootstrap and custom CSS animations, while JavaScript manages the YouTube IFrame API for video playback. The app also dynamically updates the background image based on the selected song, creating a visually engaging experience.
+### Playback and playlist
 
-The player in this project is created using the **YouTube IFrame API**, which allows embedding and controlling YouTube videos through JavaScript.
+- Play, pause, seek, previous, next, volume, autoplay, and repeat controls
+- Custom playlist with drag-and-drop reordering
+- Playlist search and filtering
+- Automatic skipping of unavailable videos
+- Album-art modes: spinning artwork, static/hidden artwork, or embedded video
+- Persistent playlist, volume, display, and playback preferences
+- Add a song through a URL parameter:
 
-## 🚀 Setup Instructions
+```text
+https://jacob7179.github.io/YouTube-Music-Player-Web/?add_song=YOUTUBE_VIDEO_LINK
+```
 
-### YouTube Search Functionality (GitHub Secrets Method - Recommended)
+### YouTube search
 
-For secure API key management, this project uses GitHub Secrets:
+- Search YouTube and add results directly to the playlist
+- Browser-side search-result caching to reduce repeated API requests
+- Cache viewer and cache deletion tools
+- Multiple API-key loading methods for GitHub Pages, Vercel, and local development
 
-1. **Get a YouTube Data API Key**:
-   - Go to the [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project or select an existing one
-   - Enable the **YouTube Data API v3**
-   - Create credentials (API key)
-   - Restrict the API key to YouTube Data API v3 for security
+### Lyrics and translation
 
-2. **Add Your API Key to GitHub Secrets**:
-   - Go to your repository on GitHub
-   - Click on **Settings** → **Secrets and variables** → **Actions**
-   - Click **New repository secret**
-   - Name: `YOUTUBE_API_KEY`
-   - Value: Your actual YouTube Data API key
-   - Click **Add secret**
+- Synchronized and plain lyrics support
+- Click a synchronized lyric line to seek to that timestamp
+- Per-song lyrics timing offset
+- Lyrics translation with cancellation of stale requests when the song changes
+- Translation cache and configurable original/translated text order
+- Optional background lyrics fetching and translation settings
 
-3. **Deploy**:
-   - The GitHub Actions workflow will automatically inject your API key during deployment
-   - Push any changes to the `main` branch to trigger a new deployment
-   - Your API key remains secure and is never exposed in your code
+### Interface and data
 
-### Alternative: Local Development Setup
+- Responsive layout for desktop, tablet, and mobile screens
+- Light and dark modes
+- Interface languages:
+  - English
+  - 简体中文
+  - 繁體中文
+  - 日本語
+  - 한국어
+- Import and export playlist data and compatible settings as JSON/TXT data
+- Adjustable title-scroll speed and spacing
+- Scroll-to-top control
 
-For local development, you can still manually add the API key:
+### System and Android integration
 
-1. **Clone the repository locally**
-2. **Find**: `const YOUTUBE_API_KEY = "YOUR_YOUTUBE_API_KEY";` **in script.js**
-3. **Replace** `YOUR_YOUTUBE_API_KEY` with your actual API key
-4. **Important**: Never commit this change to prevent exposing your API key
+- Browser Media Session API integration where supported
+- Operating-system play, pause, previous, next, seek, metadata, and playback-position controls
+- Capacitor Android wrapper with native file picker, filesystem, sharing, and media-session plugins
+- Android notification, lock-screen, headset, and background-playback support where the device permits it
+- Wired-earphone center-button controls in the patched Android build:
+  - 1 tap: play or pause
+  - 2 taps: next song
+  - 3 taps: previous song
 
-### API Usage Information
+## Technology
 
-- **Daily Quotas**: The YouTube Data API has daily quotas
-- **Search Requests**: Each search consumes quota units
-- **Free Tier**: Should be sufficient for personal use
-- **Rate Limiting**: The app includes error handling for API limits
+| Area | Technology |
+|---|---|
+| Front end | HTML5, CSS3, JavaScript |
+| UI | Bootstrap 5, Bootstrap Icons, Boxicons |
+| Playback | YouTube IFrame Player API |
+| Search | YouTube Data API v3 |
+| Storage | Browser `localStorage` |
+| Web deployment | GitHub Pages / Vercel |
+| Android | Capacitor 7, Gradle, Java 21, Android SDK 35 |
 
-### Without API Key
+## Quick Start
 
-If you don't want to set up the YouTube API, you can still:
-- Use the existing default playlist
-- Manually add songs by editing the `playlist` array in `script.js`
-- Search and filter your existing playlist
-- Import and Export Playlist & Data
-- Add a song using a YouTube video link: https://jacob7179.github.io/YouTube-Music-Player-Web/?add_song=`YOUTUBE_VIDEO_LINK`
+### 1. Clone the repository
 
-## 🎵 How to Use
+```bash
+git clone https://github.com/Jacob7179/YouTube-Music-Player-Web.git
+cd YouTube-Music-Player-Web
+```
 
-1. **Playing Songs**: Click on any song in your playlist to play it
-2. **Search YouTube**: Use the search bar to find new songs on YouTube
-3. **Add Songs**: Click the "Add" button next to search results to add them to your playlist
-4. **Persistent Playlist**: Your playlist is saved in browser storage and persists across sessions
-5. **Remove Songs**: Click the trash icon next to songs in your playlist to remove them
-6. **Search Playlist**: Use the playlist search bar to filter your existing songs
-7. **Controls**: Use play/pause, next/previous, volume, and repeat controls
-8. **Dark Mode**: Toggle dark mode for better viewing experience
-9. **Lyrics**: Toggle to view the song’s lyrics
-10. **Language**: Languages available: English, 简体中文, 繁體中文, 日本語 & 한국어
-11. **Drag and Drop**: Drag songs to reorder your playlist
-12. **Secure API Key Management**: Uses GitHub Secrets for secure API key storage
-13. **Lyrics Translate**: Enable "Lyrics Translation" button on "Settings" to translate supported language (English, 简体中文, 繁體中文, 日本語 & 한국어)
-14. **Optimized Search**: Searched result will store in browser storage (No need to waste Quota for same results)
-15. **Import Playlist & Data**: Import playlist and data (Dark mode, Album Art spin settings & Lyrics settings) from JSON or TXT file
-16. **Export Playlist & Data**: Export playlist and data (Dark mode, Album Art spin settings & Lyrics settings) to TXT file
-17. **Album Art Display**: Select Album Art Display option to switch Spin, None or Video mode.
-18. **System Media Controls**: Use operating-system media keys, notification controls, lock-screen controls, and headset previous/next buttons when supported by the browser or native app.
-19. **Delete Search Cache**: Delete search cache from browser storage
-20. **Set the Current Song’s Lyrics Time Offset**: In the browser console, run `setCurrentSongLyricsTimeOffset(0.75);` to adjust the current song’s lyric timing by 0.75 seconds.
+### 2. Start a local web server
 
-## 🔧 GitHub Actions Workflow
+Using Python:
 
-This project uses GitHub Actions to:
-- **Securely inject** the YouTube API key from GitHub Secrets
-- **Automatically deploy** to GitHub Pages on every push to main
-- **Keep your API key safe** by never exposing it in the repository
+```bash
+python -m http.server 8000
+```
 
-The workflow file is located at `.github/workflows/deploy.yml`.
+Then open:
 
-## 📁 Project Structure
+```text
+http://localhost:8000
+```
 
-- `index.html` - Main application interface
-- `script.js` - Core functionality and YouTube integration
-- `style.css` - Styling and animations
-- `.github/workflows/deploy.yml` - GitHub Actions deployment workflow
-- `README.md` - This documentation
-- `/beta/index.html` - Read Excel Files Methods Version (Experimental Project)
-- `/alpha/index.html` - Read Api Keys Methods Version (Experimental Project)
-- `/resource` - Source of the project (Image, Files, Icon & Export data version)
+Opening `index.html` directly may work for basic playback, but a local HTTP server is recommended because some browser APIs and API endpoints do not work correctly with `file://` URLs.
 
-## 🔐 Security Features
+### 3. Configure YouTube search
 
-- **GitHub Secrets**: API keys are stored securely in GitHub Secrets
-- **No Key Exposure**: API keys are never committed to the repository
-- **Automatic Injection**: Keys are injected during deployment only
-- **Restricted API Keys**: Recommended to restrict API keys to specific services
+Playback and the existing playlist can work without a YouTube Data API key. A key is required for YouTube search and for automatically resolving some video information.
 
-## 🤝 Attribution
+## YouTube Data API Configuration
 
-- **Original Creator**: [Jacob7179](https://github.com/Jacob7179) - Created the base YouTube Music Player
-- **Original Repository**: [Jacob7179/YouTube-Music-Player-Web](https://github.com/Jacob7179/YouTube-Music-Player-Web)
-- **Fork Maintainer**: [Farwalker3](https://github.com/Farwalker3) - Added enhanced features and YouTube search
+### Create an API key
 
-## 📄 License
+1. Open [Google Cloud Console](https://console.cloud.google.com/).
+2. Create or select a project.
+3. Enable **YouTube Data API v3**.
+4. Create an API key.
+5. Restrict the key to **YouTube Data API v3**.
+6. Add an application restriction appropriate for the deployment, such as HTTP referrers for a website.
 
-[![License](https://img.shields.io/github/license/Jacob7179/YouTube-Music-Player-Web?logo=github&style=for-the-badge)](LICENSE)
+### Option A: GitHub Pages
 
-## 🌐 Website
-[![Website](https://img.shields.io/badge/Website-Visit-blue?style=for-the-badge&logo=internet-explorer)](https://jacob7179.github.io/YouTube-Music-Player-Web/)
+The included workflow deploys the site when changes are pushed to `main`.
 
-## 🐛 Issues & Contributions
+1. Open the GitHub repository.
+2. Go to **Settings → Secrets and variables → Actions**.
+3. Create a repository secret named:
 
-If you encounter any issues or have suggestions for improvements:
-- Check the [original repository](https://github.com/Jacob7179/YouTube-Music-Player-Web) for base functionality issues
-- Open issues in this fork for enhanced features
-- Contributions are welcome via pull requests
+```text
+YOUTUBE_API_KEY
+```
 
-## 🔧 Development
+4. Push to `main`, or run the workflow manually from the **Actions** page.
 
-To run this project locally:
-1. Clone the repository
-2. Set up your YouTube Data API key (see setup instructions above)
-3. Open `index.html` in a web browser
-4. The app works entirely client-side, no server required
+The workflow in `.github/workflows/deploy.yml` copies the deployable files, injects the value into the deployment copy of `script.js`, uploads the Pages artifact, and deploys it.
 
-For production deployment:
-1. Set up the `YOUTUBE_API_KEY` secret in your GitHub repository
-2. Push to the `main` branch
-3. GitHub Actions will handle the rest!
+> [!CAUTION]
+> GitHub Secrets prevent the key from being committed to the repository, but a key injected into browser JavaScript is still visible to website visitors through developer tools and network requests. Use strict API restrictions and quota limits. For stronger protection, send search requests through a server-side proxy that never returns the key to the browser.
+
+### Option B: Vercel
+
+The project includes `api/getApiKey.js`, which reads `YOUTUBE_API_KEY` from the Vercel environment.
+
+1. Import the repository into Vercel.
+2. Add an environment variable named `YOUTUBE_API_KEY`.
+3. Redeploy the project.
+
+The current endpoint returns the key to the browser, so the same client-side visibility warning applies. A secure production design should proxy YouTube API requests on the server instead of returning the key.
+
+### Option C: Local direct key
+
+For temporary local testing, replace this line in `script.js`:
+
+```javascript
+const YOUTUBE_API_KEY = "YOUR_YOUTUBE_API_KEY";
+```
+
+Do not commit a real key to Git.
+
+### Current key-resolution order
+
+`script.js` attempts to obtain a key in this order:
+
+1. Key injected directly into `script.js`
+2. `/api/getApiKey`
+3. Configured Cloudflare Worker fallback
+
+## Deployment
+
+### GitHub Pages
+
+The repository already contains `.github/workflows/deploy.yml`.
+
+Before the first deployment:
+
+1. Add the `YOUTUBE_API_KEY` repository secret.
+2. In **Settings → Pages**, select **GitHub Actions** as the source.
+3. Push to `main` or manually run the deployment workflow.
+
+### Vercel
+
+The root folder can be deployed as a static site. The `api` folder is automatically treated as a serverless function directory by Vercel.
+
+Set `YOUTUBE_API_KEY` in the Vercel project environment before deployment.
+
+## Android APK
+
+The `android_build` folder contains a Capacitor wrapper and a Windows build script.
+
+### Automatic Windows build
+
+```powershell
+cd android_build
+.\build.bat
+```
+
+The script prepares portable Node.js, Java JDK 21, and Android SDK 35 tools when required, synchronizes Capacitor, applies the Android media-session patches, and builds a debug APK.
+
+Generated APK:
+
+```text
+android_build/android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+See [android_build/README-APK.md](android_build/README-APK.md) for:
+
+- Complete requirements and build behavior
+- Quick rebuild commands
+- ADB installation
+- Android icons and splash resources
+- Native import/export
+- Background playback
+- Media controls and earphone multi-click behavior
+- Common Gradle, Java, and Android SDK errors
+
+## Usage
+
+1. Select a song from the playlist.
+2. Use the player controls to play, pause, seek, change volume, or switch tracks.
+3. Search YouTube and add a result to the playlist.
+4. Drag playlist items to reorder them.
+5. Open **Settings** to change language, appearance, album-art mode, lyrics behavior, translation, and title animation.
+6. Export the playlist and settings before clearing browser storage or changing devices.
+7. Import a previous export to restore compatible data.
+
+## Advanced Console Commands
+
+Open the browser developer console to use these optional commands.
+
+### Adjust the current song's lyric timing
+
+```javascript
+setCurrentSongLyricsTimeOffset(0.75);
+```
+
+Positive values delay the displayed lyrics. Negative values show them earlier. The offset is saved in that song's playlist data.
+
+### Adjust title spacing
+
+```javascript
+setTitleGapFraction(0.3);
+```
+
+### Adjust title scrolling speed
+
+```javascript
+setTitleScrollSpeed(50);
+```
+
+## Data Storage
+
+The app stores data locally in the browser, including:
+
+- Playlist and per-song lyric offsets
+- Search cache
+- Lyrics and translation caches
+- Language and dark-mode preferences
+- Volume, autoplay, and repeat settings
+- Album-art mode
+- Lyrics and translation options
+- Title animation settings
+
+Clearing site data or browser storage removes local data unless it has been exported first.
+
+## Project Structure
+
+```text
+YouTube-Music-Player-Web/
+├─ .github/
+│  └─ workflows/
+│     └─ deploy.yml                 GitHub Pages deployment
+├─ alpha/                           Experimental API-key version
+├─ android_build/                   Capacitor Android wrapper
+│  ├─ build.bat                     Automated Windows APK build
+│  ├─ clean.bat                     Generated-folder cleanup
+│  ├─ capacitor.config.json         Capacitor application settings
+│  ├─ package.json                  Android dependencies and scripts
+│  └─ README-APK.md                 Detailed Android documentation
+├─ api/
+│  └─ getApiKey.js                  Vercel API-key endpoint
+├─ beta/                            Experimental file-reading version
+├─ resource/                        Screenshots, icons, and sample exports
+├─ 404.html                         GitHub Pages fallback page
+├─ index.html                       Main interface
+├─ script.js                        Player, playlist, lyrics, search, and settings
+├─ style.css                        Responsive styling and animations
+├─ LICENSE                          AGPL-3.0 license
+└─ README.md                        Project documentation
+```
+
+## Troubleshooting
+
+### YouTube search says the API key is not configured
+
+- Confirm the environment variable or GitHub secret is named exactly `YOUTUBE_API_KEY`.
+- Redeploy after adding or changing the key.
+- Check the browser console and network panel for failures from `getApiKey` or the YouTube API.
+- Confirm YouTube Data API v3 is enabled in the Google Cloud project.
+- Check API restrictions and quota usage.
+
+### Playback works but search does not
+
+Playback uses the YouTube IFrame Player API, while search uses YouTube Data API v3. These are separate services; search requires a valid Data API key.
+
+### Lyrics or translation do not load
+
+- Confirm the device has internet access.
+- Try another song title or author because external lyrics services may not have a matching record.
+- Disable browser extensions that block translation, lyrics, proxy, or advertising-related network requests.
+- Open the browser console to identify blocked CORS or rate-limit responses.
+
+### Android playback stops in the background
+
+- Install an APK produced by the latest `build.bat`.
+- Grant notification permission on Android 13 or later.
+- Set the app's battery mode to **Unrestricted** when required by the device manufacturer.
+- Do not force-stop the app.
+
+Because playback still uses an embedded YouTube web player, some Android versions or manufacturers may stop the WebView after the app is removed from recent apps.
+
+## Security and Privacy
+
+- Playlist and preference data are stored locally in the user's browser unless exported or shared manually.
+- YouTube, lyrics, translation, CDN, proxy, and hosting services receive network requests required for their features.
+- Do not treat a browser-delivered API key as a secret.
+- Restrict keys by API, website referrer, quota, and deployment environment.
+- Do not commit credentials, private exports, generated signing keys, or local Android tool folders.
+
+## Contributing
+
+Bug reports, suggestions, and pull requests are welcome.
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Test the web version and, when relevant, the Android build.
+4. Submit a pull request with a clear description of the change.
+
+Use the [issue tracker](https://github.com/Jacob7179/YouTube-Music-Player-Web/issues) for reproducible bugs and feature requests.
 
 ## Contributors
 
 <table>
-    <tbody>
-        <tr>
-            <td align="center" valign="top" width="14.28%">
-                <a href="https://github.com/Jacob7179" target="_blank">
-                    <img src="https://avatars.githubusercontent.com/u/70430960?v=4" width="100px;" alt="Jacob7179 Avatar"/><br />
-                    <sub><b>Jacob7179</b></sub>
-                </a>
-            </td>
-            <td align="center" valign="top" width="14.28%">
-                <a href="https://github.com/Farwalker3" target="_blank">
-                    <img src="https://avatars.githubusercontent.com/u/30270971?v=4" width="100px;" alt="Farwalker3 Avatar"/><br />
-                    <sub><b>Farwalker3</b></sub>
-                </a>
-            </td>
-        </tr>
-    </tbody>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="160">
+        <a href="https://github.com/Jacob7179">
+          <img src="https://avatars.githubusercontent.com/u/70430960?v=4" width="100" alt="Jacob7179"><br>
+          <sub><strong>Jacob7179</strong></sub>
+        </a>
+      </td>
+      <td align="center" valign="top" width="160">
+        <a href="https://github.com/Farwalker3">
+          <img src="https://avatars.githubusercontent.com/u/30270971?v=4" width="100" alt="Farwalker3"><br>
+          <sub><strong>Farwalker3</strong></sub>
+        </a>
+      </td>
+    </tr>
+  </tbody>
 </table>
 
+## License
 
----
-*This project builds upon the excellent work of [Jacob7179](https://github.com/Jacob7179). Thanks for creating such a solid foundation!*
+This project is licensed under the [GNU Affero General Public License v3.0](LICENSE).

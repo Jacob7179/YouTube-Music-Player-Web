@@ -1,0 +1,136 @@
+{
+  "playlist": [
+    {
+      "videoId": "oWRCXGvcU9s",
+      "songName": "愛くださいませ",
+      "authorName": "NOT EQUAL ME",
+      "albumArt": "https://i.ytimg.com/vi/oWRCXGvcU9s/hqdefault.jpg"
+    },
+    {
+      "videoId": "IBWxJxQxSHE",
+      "songName": "≠ME",
+      "authorName": "NOT EQUAL ME",
+      "albumArt": "https://i.ytimg.com/vi/IBWxJxQxSHE/hqdefault.jpg",
+      "lyricsTimeOffset": -3
+    },
+    {
+      "videoId": "bi__z02xRgo",
+      "songName": "チョコレートメランコリー",
+      "authorName": "NOT EQUAL ME",
+      "albumArt": "https://i.ytimg.com/vi/bi__z02xRgo/hqdefault.jpg"
+    },
+    {
+      "videoId": "2RdTOBmz6jY",
+      "songName": "排他的ファイター",
+      "authorName": "NOT EQUAL ME",
+      "albumArt": "https://i.ytimg.com/vi/2RdTOBmz6jY/hqdefault.jpg",
+      "lyricsTimeOffset": -5.5
+    },
+    {
+      "videoId": "TQ8WlA2GXbk",
+      "songName": "Official髭男dism - Pretender［Official Video］",
+      "authorName": "Official髭男dism",
+      "albumArt": "https://i.ytimg.com/vi/TQ8WlA2GXbk/hqdefault.jpg"
+    },
+    {
+      "videoId": "0sDmhAItwbI",
+      "songName": "Official髭男dism - Pretender (Acoustic ver.)［Official Video］",
+      "authorName": "Official髭男dism",
+      "albumArt": "https://i.ytimg.com/vi/0sDmhAItwbI/hqdefault.jpg",
+      "lyricsTimeOffset": 17.5
+    },
+    {
+      "videoId": "22mOCjkwQjM",
+      "songName": "Official髭男dism - Stand By You［Official Video］",
+      "authorName": "Official髭男dism",
+      "albumArt": "https://i.ytimg.com/vi/22mOCjkwQjM/hqdefault.jpg",
+      "lyricsTimeOffset": -2
+    },
+    {
+      "videoId": "1oYzKnVG1Vk",
+      "songName": "Official髭男dism - Stand By You (Acoustic ver.)［Official Video］",
+      "authorName": "Official髭男dism",
+      "albumArt": "https://i.ytimg.com/vi/1oYzKnVG1Vk/hqdefault.jpg",
+      "lyricsTimeOffset": -2
+    },
+    {
+      "videoId": "pkoxFpmiCWo",
+      "songName": "Official髭男dism - パラボラ［Official Video］",
+      "authorName": "Official髭男dism",
+      "albumArt": "https://i.ytimg.com/vi/pkoxFpmiCWo/hqdefault.jpg"
+    },
+    {
+      "videoId": "ArjJj4cuOVo",
+      "songName": "Laughter (ONLINE LIVE 2020 - Arena Travelers -)",
+      "authorName": "OFFICIAL HIGE DANDISM - Topic",
+      "albumArt": "https://i.ytimg.com/vi/ArjJj4cuOVo/hqdefault.jpg"
+    },
+    {
+      "videoId": "cqzyiJE4SQE",
+      "songName": "笑顔の待つ場所",
+      "authorName": "Official髭男dism",
+      "albumArt": "https://i.ytimg.com/vi/cqzyiJE4SQE/hqdefault.jpg"
+    },
+    {
+      "videoId": "P1iOKxg6JQk",
+      "songName": "明け方のゲッタウェイ (Live)",
+      "authorName": "Official髭男dism",
+      "albumArt": "https://i.ytimg.com/vi/P1iOKxg6JQk/hqdefault.jpg"
+    },
+    {
+      "videoId": "86uTlHDIbAw",
+      "songName": "ダッフルコートノアマイユメ_オリジナル",
+      "authorName": "Satoshi Fujihara",
+      "albumArt": "https://i.ytimg.com/vi/86uTlHDIbAw/hqdefault.jpg"
+    },
+    {
+      "videoId": "sPAJ6mTxNCU",
+      "songName": "ふりだす雨、ゴキゲンな君",
+      "authorName": "Official髭男dism",
+      "albumArt": "https://i.ytimg.com/vi/sPAJ6mTxNCU/hqdefault.jpg"
+    },
+    {
+      "videoId": "DuMqFknYHBs",
+      "songName": "Official髭男dism - イエスタデイ［Official Video］",
+      "authorName": "Official髭男dism",
+      "albumArt": "https://i.ytimg.com/vi/DuMqFknYHBs/hqdefault.jpg"
+    },
+    {
+      "videoId": "aRtoPwe4ado",
+      "songName": "Sanitizer",
+      "authorName": "OFFICIAL HIGE DANDISM - Topic",
+      "albumArt": "https://i.ytimg.com/vi/aRtoPwe4ado/hqdefault.jpg"
+    },
+    {
+      "videoId": "l2nqfPAMrSo",
+      "songName": "Chessboard",
+      "authorName": "OFFICIAL HIGE DANDISM - Topic",
+      "albumArt": "https://i.ytimg.com/vi/l2nqfPAMrSo/hqdefault.jpg"
+    },
+    {
+      "videoId": "cqzyiJE4SQE",
+      "songName": "笑顔の待つ場所",
+      "authorName": "Official髭男dism",
+      "albumArt": "https://i.ytimg.com/vi/cqzyiJE4SQE/hqdefault.jpg"
+    },
+    {
+      "videoId": "ajJKtzg--5g",
+      "songName": "ラストソング［Studio Live Session］",
+      "authorName": "Official髭男dism",
+      "albumArt": "https://i.ytimg.com/vi/ajJKtzg--5g/hqdefault.jpg",
+      "lyricsTimeOffset": -9
+    }
+  ],
+  "albumArtDisplayMode": "video",
+  "darkMode": true,
+  "showLyrics": false,
+  "language": "en",
+  "translationEnabled": false,
+  "showOriginalFirst": true,
+  "titleGapFraction": 0.3,
+  "titleScrollSpeed": 50,
+  "allowLyricsFetchWhenHidden": false,
+  "allowLyricsTranslationWhenHidden": false,
+  "exportDate": "2026-07-12T14:56:52.263Z",
+  "version": "1.6"
+}

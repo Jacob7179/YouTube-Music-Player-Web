@@ -3,3 +3,4 @@ android-sdk
 node_modules
 local.properties
 tools
+apk-sha-reports
