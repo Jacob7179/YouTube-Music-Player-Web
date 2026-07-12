@@ -27,6 +27,13 @@ const nativeMediaSessionActionCallbacks = new Map();
 let lastNativeMediaPositionUpdate = 0;
 let systemMediaSessionActivated = false;
 
+// Chrome may associate system media controls with the cross-origin YouTube
+// iframe instead of this page. A silent same-page audio element keeps this
+// page's Media Session active so Previous/Next actions reach our playlist.
+let browserMediaSessionAudio = null;
+let browserMediaSessionAudioUrl = "";
+let browserMediaSessionBridgeStarted = false;
+
 // Lyrics performance settings.
 // false = do not fetch/translate while the Playlist page is open.
 let allowLyricsFetchWhenHidden =
@@ -438,6 +445,11 @@ function updateRenderedPlaylistSelection(index) {
 
 function playPlaylistIndex(index) {
     if (!playlist.length) return false;
+
+    runMediaSessionPromise(
+        activateBrowserMediaSessionBridge(),
+        "browser bridge activation"
+    );
 
     const normalizedIndex = ((Number(index) % playlist.length) + playlist.length) % playlist.length;
     const song = playlist[normalizedIndex];
@@ -1657,6 +1669,7 @@ function handleVideoError(event) {
     if (player && player.pauseVideo) {
         player.pauseVideo();
     }
+    pauseBrowserMediaSessionBridge();
 
     playPauseBtn.innerHTML = ICON_PLAY; // Use constant
     document.getElementById("albumArt").classList.add("rotate-paused");
@@ -2117,7 +2130,112 @@ function runMediaSessionPromise(task, label) {
     });
 }
 
+function createSilentWavBlob(durationSeconds = 1, sampleRate = 8000) {
+    const frameCount = Math.max(1, Math.floor(durationSeconds * sampleRate));
+    const bytesPerSample = 2;
+    const dataSize = frameCount * bytesPerSample;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+
+    const writeText = (offset, value) => {
+        for (let i = 0; i < value.length; i++) {
+            view.setUint8(offset + i, value.charCodeAt(i));
+        }
+    };
+
+    writeText(0, "RIFF");
+    view.setUint32(4, 36 + dataSize, true);
+    writeText(8, "WAVE");
+    writeText(12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * bytesPerSample, true);
+    view.setUint16(32, bytesPerSample, true);
+    view.setUint16(34, 16, true);
+    writeText(36, "data");
+    view.setUint32(40, dataSize, true);
+
+    // ArrayBuffer bytes are already zero-filled, producing silent PCM audio.
+    return new Blob([buffer], { type: "audio/wav" });
+}
+
+function getBrowserMediaSessionAudio() {
+    if (!("mediaSession" in navigator) || isRunningInNativeCapacitor()) {
+        return null;
+    }
+
+    if (browserMediaSessionAudio) {
+        return browserMediaSessionAudio;
+    }
+
+    const audio = document.createElement("audio");
+    browserMediaSessionAudioUrl = URL.createObjectURL(createSilentWavBlob());
+    audio.id = "browserMediaSessionAudio";
+    audio.src = browserMediaSessionAudioUrl;
+    audio.loop = true;
+    audio.preload = "auto";
+    audio.volume = 1;
+    audio.setAttribute("playsinline", "");
+    audio.setAttribute("aria-hidden", "true");
+    audio.style.display = "none";
+    (document.body || document.documentElement).appendChild(audio);
+
+    browserMediaSessionAudio = audio;
+    return audio;
+}
+
+async function activateBrowserMediaSessionBridge() {
+    const audio = getBrowserMediaSessionAudio();
+    if (!audio) return false;
+
+    if (browserMediaSessionBridgeStarted && !audio.paused) {
+        setupWebMediaSessionHandlers(true);
+        return true;
+    }
+
+    try {
+        await audio.play();
+        browserMediaSessionBridgeStarted = true;
+
+        // Re-register after playback begins. This makes the parent page's
+        // handlers win if Chrome previously selected the YouTube iframe.
+        setupWebMediaSessionHandlers(true);
+        return true;
+    } catch (error) {
+        // The first attempt can be blocked until a user gesture. Calls from
+        // the player buttons and media-control actions will retry it.
+        console.debug("Browser media-session bridge could not start yet:", error);
+        return false;
+    }
+}
+
+function pauseBrowserMediaSessionBridge(resetPosition = false) {
+    if (!browserMediaSessionAudio) return;
+
+    browserMediaSessionAudio.pause();
+
+    if (resetPosition) {
+        try {
+            browserMediaSessionAudio.currentTime = 0;
+        } catch (error) {
+            console.debug("Unable to reset browser media-session bridge:", error);
+        }
+    }
+}
+
+window.addEventListener("beforeunload", () => {
+    if (browserMediaSessionAudioUrl) {
+        URL.revokeObjectURL(browserMediaSessionAudioUrl);
+    }
+});
+
 function requestPlayerPlayFromSystem() {
+    runMediaSessionPromise(
+        activateBrowserMediaSessionBridge(),
+        "browser bridge activation"
+    );
     systemMediaSessionActivated = true;
 
     if (!player || typeof player.playVideo !== "function") {
@@ -2171,15 +2289,24 @@ function handleSystemMediaAction(action, details = {}) {
             if (player && typeof player.stopVideo === "function") {
                 player.stopVideo();
             }
+            pauseBrowserMediaSessionBridge(true);
             systemMediaSessionActivated = false;
             setSystemMediaPlaybackState("none");
             break;
 
         case "previoustrack":
+            runMediaSessionPromise(
+                activateBrowserMediaSessionBridge(),
+                "browser bridge activation"
+            );
             playPreviousSong();
             break;
 
         case "nexttrack":
+            runMediaSessionPromise(
+                activateBrowserMediaSessionBridge(),
+                "browser bridge activation"
+            );
             playNextSong();
             break;
 
@@ -2212,8 +2339,8 @@ function handleSystemMediaAction(action, details = {}) {
     }
 }
 
-function setupWebMediaSessionHandlers() {
-    if (webMediaSessionHandlersInitialized || !("mediaSession" in navigator)) {
+function setupWebMediaSessionHandlers(force = false) {
+    if ((!force && webMediaSessionHandlersInitialized) || !("mediaSession" in navigator)) {
         return;
     }
 
@@ -2401,6 +2528,7 @@ document.getElementById("playPauseBtn").addEventListener("click", function () {
     if (player) {
         if (playing) {
             player.pauseVideo();
+            pauseBrowserMediaSessionBridge();
             this.innerHTML = ICON_PLAY;
             playing = false;
             clearInterval(progressInterval);
@@ -2413,6 +2541,10 @@ document.getElementById("playPauseBtn").addEventListener("click", function () {
             setSystemMediaPlaybackState('paused');
             updateSystemMediaPosition(true);
         } else {
+            runMediaSessionPromise(
+                activateBrowserMediaSessionBridge(),
+                "browser bridge activation"
+            );
             player.playVideo();
             this.innerHTML = ICON_PAUSE;
             playing = true;
@@ -2627,11 +2759,13 @@ function handlePlayerStateChange(event) {
         }
 
         playPauseBtn.innerHTML = ICON_REVISION;
+        pauseBrowserMediaSessionBridge(true);
         systemMediaSessionActivated = false;
         setSystemMediaPlaybackState("none");
     } else if (event.data === 2) { // ✅ 2 means PAUSED
         playPauseBtn.innerHTML = ICON_PLAY; // Use constant
         playing = false;
+        pauseBrowserMediaSessionBridge();
         clearInterval(progressInterval);
         updateTimelineFromPlayer(true);
 
@@ -2644,6 +2778,10 @@ function handlePlayerStateChange(event) {
     } else if (event.data === 1) { // ✅ 1 means PLAYING
         playPauseBtn.innerHTML = ICON_PAUSE; // Use constant
         playing = true;
+        runMediaSessionPromise(
+            activateBrowserMediaSessionBridge(),
+            "browser bridge activation"
+        );
         if (albumArtSpinEnabled) {
             albumArt.classList.remove("rotate-paused");
             albumArt.classList.add("rotate");
