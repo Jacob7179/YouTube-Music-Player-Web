@@ -5599,153 +5599,388 @@ async function translateLyrics(text, sourceLang = "auto", targetLang = getLyrics
     return await translateSingleLine(text, sourceLang, targetLang, cacheKey, signal );
 }
 
-async function translateSingleLine(text, sourceLang, targetLang, cacheKey = null, signal = null ) {
-    throwIfLyricsAborted(signal);
-    const translationServices = [
-        // Service 1: LibreTranslate (primary)
-        async (text, source, target, signal) => {
+const TRANSLATION_REQUEST_TIMEOUT = 8000;
+
+function getTranslationLanguageCode(service, language) {
+    const languageMaps = {
+        google: {
+            "zh": "zh-CN",
+            "zh-TW": "zh-TW"
+        },
+        myMemory: {
+            "zh": "zh-CN",
+            "zh-TW": "zh-TW"
+        },
+        lingva: {
+            "zh": "zh",
+            "zh-TW": "zh_HANT"
+        },
+        libreTranslate: {
+            "zh": "zh",
+            "zh-TW": "zt"
+        }
+    };
+
+    return languageMaps[service]?.[language] || language;
+}
+
+function decodeTranslationEntities(value) {
+    if (typeof value !== "string" || !value.includes("&")) {
+        return value;
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.innerHTML = value;
+    return textarea.value;
+}
+
+function normalizeTranslationResult(value) {
+    if (Array.isArray(value)) {
+        value = value.join("\n");
+    }
+
+    if (typeof value !== "string") {
+        return "";
+    }
+
+    return decodeTranslationEntities(value).trim();
+}
+
+function isUsableTranslation(translatedText, originalText) {
+    if (!translatedText) return false;
+
+    const normalizedTranslation = translatedText.trim();
+    const normalizedOriginal = String(originalText || "").trim();
+
+    if (!normalizedTranslation || normalizedTranslation === normalizedOriginal) {
+        return false;
+    }
+
+    const knownErrorMessages = [
+        "QUERY LENGTH LIMIT EXCEEDED",
+        "INVALID LANGUAGE PAIR",
+        "PLEASE SELECT TWO DISTINCT LANGUAGES",
+        "TRANSLATION FAILED"
+    ];
+
+    const upperResult = normalizedTranslation.toUpperCase();
+    return !knownErrorMessages.some(message => upperResult.includes(message));
+}
+
+async function fetchTranslationJson(
+    url,
+    options = {},
+    parentSignal = null,
+    timeoutMs = TRANSLATION_REQUEST_TIMEOUT
+) {
+    throwIfLyricsAborted(parentSignal);
+
+    const controller = new AbortController();
+    let timedOut = false;
+
+    const abortFromParent = () => controller.abort();
+
+    if (parentSignal) {
+        if (parentSignal.aborted) {
+            abortFromParent();
+        } else {
+            parentSignal.addEventListener("abort", abortFromParent, { once: true });
+        }
+    }
+
+    const timeoutId = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+    }, timeoutMs);
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+
+        if (!response.ok) {
+            let details = "";
+
             try {
-                // LibreTranslate language codes mapping
-                const libreCodes = {
-                    'en': 'en',
-                    'zh': 'zh',
-                    'zh-TW': 'zh-TW',
-                    'ja': 'ja',
-                    'ko': 'ko'
-                };
-                
-                const libreSource = libreCodes[source] || source;
-                const libreTarget = libreCodes[target] || target;
-                
-                // Skip if LibreTranslate doesn't support this language pair directly
-                const supportedPairs = [
-                    'en-zh', 'zh-en',
-                    'en-ja', 'ja-en',
-                    'en-ko', 'ko-en'
-                ];
-                
-                if (!supportedPairs.includes(`${libreSource}-${libreTarget}`) && 
-                    !supportedPairs.includes(`${libreTarget}-${libreSource}`)) {
-                    throw new Error('Language pair not directly supported');
+                details = (await response.text()).slice(0, 160).trim();
+            } catch (_) {
+                // Ignore response-body parsing errors.
+            }
+
+            throw new Error(
+                `HTTP ${response.status}${details ? `: ${details}` : ""}`
+            );
+        }
+
+        return await response.json();
+    } catch (error) {
+        if (parentSignal?.aborted) {
+            throw new DOMException("Lyrics task cancelled.", "AbortError");
+        }
+
+        if (timedOut) {
+            throw new Error("Translation request timed out");
+        }
+
+        throw error;
+    } finally {
+        clearTimeout(timeoutId);
+        parentSignal?.removeEventListener("abort", abortFromParent);
+    }
+}
+
+function getLingvaTranslateInstances() {
+    return [
+        "https://lingva.ml",
+        "https://translate.igna.wtf",
+        "https://translate.plausibility.cloud",
+        "https://lingva.lunar.icu"
+    ];
+}
+
+function getLibreTranslateInstances() {
+    const customEndpoint = (
+        localStorage.getItem("libreTranslateEndpoint") || ""
+    ).trim();
+
+    return [
+        customEndpoint,
+        "https://translate.cutie.dating",
+        "https://translate.fedilab.app"
+    ]
+        .filter(Boolean)
+        .map(endpoint => endpoint.replace(/\/+$/, ""))
+        .filter((endpoint, index, endpoints) => endpoints.indexOf(endpoint) === index);
+}
+
+async function translateSingleLine(text, sourceLang, targetLang, cacheKey = null, signal = null) {
+    throwIfLyricsAborted(signal);
+
+    const effectiveSourceLang = sourceLang === "auto"
+        ? detectLanguage(text)
+        : sourceLang;
+
+    if (effectiveSourceLang === targetLang) {
+        return text;
+    }
+
+    const translationServices = [
+        {
+            name: "Google Translate",
+            translate: async (input, source, target, requestSignal) => {
+                const googleSource = getTranslationLanguageCode("google", source);
+                const googleTarget = getTranslationLanguageCode("google", target);
+
+                const url = new URL(
+                    "https://translate.googleapis.com/translate_a/single"
+                );
+                url.searchParams.set("client", "gtx");
+                url.searchParams.set("sl", googleSource);
+                url.searchParams.set("tl", googleTarget);
+                url.searchParams.set("dt", "t");
+                url.searchParams.set("q", input);
+
+                const data = await fetchTranslationJson(
+                    url.toString(),
+                    {},
+                    requestSignal
+                );
+
+                if (!Array.isArray(data?.[0])) {
+                    throw new Error("Unexpected Google Translate response");
                 }
-                
-                const response = await fetch('https://libretranslate.com/translate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    signal,
-                    body: JSON.stringify({
-                        q: text,
+
+                return data[0]
+                    .map(item => Array.isArray(item) ? (item[0] || "") : "")
+                    .join("");
+            }
+        },
+        {
+            name: "MyMemory",
+            translate: async (input, source, target, requestSignal) => {
+                if (new TextEncoder().encode(input).length > 500) {
+                    throw new Error("MyMemory 500-byte request limit exceeded");
+                }
+
+                const myMemorySource = getTranslationLanguageCode("myMemory", source);
+                const myMemoryTarget = getTranslationLanguageCode("myMemory", target);
+
+                const url = new URL(
+                    "https://api.mymemory.translated.net/get"
+                );
+                url.searchParams.set("q", input);
+                url.searchParams.set(
+                    "langpair",
+                    `${myMemorySource}|${myMemoryTarget}`
+                );
+                url.searchParams.set("mt", "1");
+
+                const data = await fetchTranslationJson(
+                    url.toString(),
+                    {},
+                    requestSignal
+                );
+
+                const status = Number(data?.responseStatus || 200);
+                if (status >= 400) {
+                    throw new Error(
+                        data?.responseDetails || `MyMemory error ${status}`
+                    );
+                }
+
+                return data?.responseData?.translatedText || "";
+            }
+        },
+        {
+            name: "Lingva Translate",
+            translate: async (input, source, target, requestSignal) => {
+                const lingvaSource = getTranslationLanguageCode("lingva", source);
+                const lingvaTarget = getTranslationLanguageCode("lingva", target);
+                let lastInstanceError = null;
+
+                for (const instance of getLingvaTranslateInstances()) {
+                    throwIfLyricsAborted(requestSignal);
+
+                    try {
+                        const endpoint = `${instance}/api/v1/${encodeURIComponent(lingvaSource)}/${encodeURIComponent(lingvaTarget)}/${encodeURIComponent(input)}`;
+                        const data = await fetchTranslationJson(
+                            endpoint,
+                            {},
+                            requestSignal,
+                            6500
+                        );
+
+                        const result = normalizeTranslationResult(data?.translation);
+                        if (result) return result;
+
+                        throw new Error("Empty Lingva translation");
+                    } catch (error) {
+                        if (requestSignal?.aborted || isAbortError(error)) {
+                            throw error;
+                        }
+
+                        lastInstanceError = error;
+                    }
+                }
+
+                throw lastInstanceError || new Error("All Lingva instances failed");
+            }
+        },
+        {
+            name: "LibreTranslate",
+            translate: async (input, source, target, requestSignal) => {
+                const libreSource = getTranslationLanguageCode(
+                    "libreTranslate",
+                    source
+                );
+                const libreTarget = getTranslationLanguageCode(
+                    "libreTranslate",
+                    target
+                );
+                const apiKey = (
+                    localStorage.getItem("libreTranslateApiKey") || ""
+                ).trim();
+                let lastInstanceError = null;
+
+                for (const instance of getLibreTranslateInstances()) {
+                    throwIfLyricsAborted(requestSignal);
+
+                    const requestBody = {
+                        q: input,
                         source: libreSource,
                         target: libreTarget,
-                        format: 'text'
-                    })
-                });
-                
-                if (!response.ok) throw new Error('LibreTranslate failed');
-                
-                const data = await response.json();
-                return data.translatedText;
-            } catch (error) {
-                console.log('LibreTranslate failed, trying next service');
-                throw error;
-            }
-        },
-        
-        // Service 2: MyMemory (fallback 1) - better for CJK languages
-        async (text, source, target, signal) => {
-            try {
-                // MyMemory API uses language codes like "en" for English, "zh-CN" for Chinese
-                const myMemorySource = source === 'zh' ? 'zh-CN' :
-                                    source === 'zh-TW' ? 'zh-TW' :
-                                    source === 'ja' ? 'ja' :
-                                    source === 'ko' ? 'ko' : source;
+                        format: "text"
+                    };
 
-                const myMemoryTarget = target === 'zh' ? 'zh-CN' :
-                                    target === 'zh-TW' ? 'zh-TW' :
-                                    target === 'ja' ? 'ja' :
-                                    target === 'ko' ? 'ko' : target;
-                
-                const response = await fetch(
-                    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${myMemorySource}|${myMemoryTarget}`,
-                    { signal }
-                );
-                
-                if (!response.ok) throw new Error('MyMemory failed');
-                
-                const data = await response.json();
-                return data.responseData.translatedText;
-            } catch (error) {
-                console.log('MyMemory failed, trying next service');
-                throw error;
-            }
-        },
-        
-        // Service 3: Google Translate (unofficial API)
-        async (text, source, target, signal) => {
-            try {
-                const googleLangCodes = {
-                    'en': 'en',
-                    'zh': 'zh-CN',
-                    'zh-TW': 'zh-TW',
-                    'ja': 'ja',
-                    'ko': 'ko'
-                };
-                
-                const googleSource = googleLangCodes[source] || source;
-                const googleTarget = googleLangCodes[target] || target;
-                
-                // Use a public Google Translate proxy
-                const response = await fetch(
-                    `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${googleSource}&tl=${googleTarget}&dt=t&q=${encodeURIComponent(text)}`,
-                    { signal }
-                );
-                
-                if (!response.ok) throw new Error('Google Translate failed');
-                
-                const data = await response.json();
-                // Extract translation from the response format
-                return data[0].map(item => item[0]).join('');
-            } catch (error) {
-                console.log('Google Translate failed');
-                throw error;
+                    if (apiKey) {
+                        requestBody.api_key = apiKey;
+                    }
+
+                    try {
+                        const data = await fetchTranslationJson(
+                            `${instance}/translate`,
+                            {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "Accept": "application/json"
+                                },
+                                body: JSON.stringify(requestBody)
+                            },
+                            requestSignal,
+                            9000
+                        );
+
+                        const result = normalizeTranslationResult(
+                            data?.translatedText
+                        );
+                        if (result) return result;
+
+                        throw new Error("Empty LibreTranslate response");
+                    } catch (error) {
+                        if (requestSignal?.aborted || isAbortError(error)) {
+                            throw error;
+                        }
+
+                        lastInstanceError = error;
+                    }
+                }
+
+                throw lastInstanceError || new Error("All LibreTranslate instances failed");
             }
         }
     ];
-    
+
     let lastError = null;
-    
-    // Try each service in order
-    for (let i = 0; i < translationServices.length; i++) {
+
+    for (const service of translationServices) {
+        throwIfLyricsAborted(signal);
+
         try {
-            const translatedText = await translationServices[i](text, sourceLang, targetLang, signal);
-            
-            // Validate that we got a translation
-            if (translatedText && translatedText !== text) {
-                // Cache the translation if cacheKey is provided
+            const translatedText = normalizeTranslationResult(
+                await service.translate(
+                    text,
+                    effectiveSourceLang,
+                    targetLang,
+                    signal
+                )
+            );
+
+            if (isUsableTranslation(translatedText, text)) {
                 if (cacheKey) {
                     translationCache[cacheKey] = {
                         translation: translatedText,
                         timestamp: Date.now()
                     };
-                    localStorage.setItem('lyricsTranslationCache', JSON.stringify(translationCache));
+                    localStorage.setItem(
+                        "lyricsTranslationCache",
+                        JSON.stringify(translationCache)
+                    );
                 }
-                
-                console.log(`Translation successful with service ${i + 1}`);
+
+                console.log(`Translation successful with ${service.name}`);
                 return translatedText;
             }
+
+            throw new Error("Provider returned an empty or unchanged translation");
         } catch (error) {
+            if (signal?.aborted || isAbortError(error)) {
+                throwIfLyricsAborted(signal);
+                throw error;
+            }
+
             lastError = error;
-            console.log(`Translation service ${i + 1} failed:`, error.message);
+            console.warn(`${service.name} failed:`, error.message);
         }
     }
-    
-    // If all services fail, return original text
-    console.warn('All translation services failed, returning original text');
+
+    console.warn(
+        "All translation services failed, returning original text",
+        lastError
+    );
     return text;
 }
-
 function clearExpiredTranslationCache() {
     let hasChanges = false;
     const now = Date.now();
