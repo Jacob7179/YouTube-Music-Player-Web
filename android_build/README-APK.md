@@ -173,6 +173,26 @@ The application playlist remains managed by JavaScript. Operating systems do not
 
 After changing media-session dependencies, run `build.bat` so Capacitor synchronizes the native plugin.
 
+## Android Background Playback
+
+The APK build now applies Android-specific background playback support automatically:
+
+- A custom Capacitor WebView prevents embedded YouTube playback from being stopped only because the app window becomes hidden.
+- Capacitor `KeepRunning` is explicitly enabled so JavaScript timers remain active after pressing Home or locking the screen.
+- The native media-session foreground service stays active during playback and holds a partial wake lock only while the song is playing.
+- Android 13 and newer request notification permission so play, pause, previous, and next controls can be shown.
+
+Run `build.bat`, install the newly generated APK, start a song once inside the app, and grant notification permission when Android asks. Playback should then continue when the screen is locked or another app is opened.
+
+Force stopping the app or swiping it away on devices that terminate the WebView will still end playback because the YouTube player remains an embedded web player rather than a native audio stream. Some manufacturers may also require setting the app battery mode to **Unrestricted**.
+
+The build applies these files after every Capacitor sync:
+
+```text
+scripts/configure-android-background-playback.js
+scripts/patch-media-session-plugin.js
+```
+
 ## Android Play/Pause Media Control Fix
 
 The build runs `scripts\patch-media-session-plugin.js` after installing dependencies. This corrects the Android notification Play and Pause PendingIntent actions used by `@capgo/capacitor-media-session` 7.3.0.

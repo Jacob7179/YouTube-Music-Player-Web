@@ -306,6 +306,13 @@ echo ==========================================
 call npx cap sync android
 if errorlevel 1 goto :error
 
+echo.
+echo ==========================================
+echo Configuring Android background playback...
+echo ==========================================
+call node scripts\configure-android-background-playback.js
+if errorlevel 1 goto :error
+
 REM ------------------------------------------------------------
 REM Add the Android 14+ foreground media playback permission.
 REM The native media session plugin uses a mediaPlayback foreground
