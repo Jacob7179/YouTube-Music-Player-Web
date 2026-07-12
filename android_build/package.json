@@ -8,8 +8,11 @@
     "build:apk": "cd android && gradlew.bat assembleDebug"
   },
   "dependencies": {
+    "@capawesome/capacitor-file-picker": "^7.2.0",
     "@capacitor/android": "^7.4.3",
-    "@capacitor/core": "^7.4.3"
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/filesystem": "^7.1.8",
+    "@capacitor/share": "^7.0.4"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

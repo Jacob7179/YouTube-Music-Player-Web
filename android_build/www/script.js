@@ -2523,10 +2523,16 @@ document.addEventListener("DOMContentLoaded", function() {
         closeSettingsMenu();
     });
     
-    // Import playlist functionality
-    settingsImportBtn.addEventListener("click", function() {
-        importFileInput.click();
+    // Import playlist functionality. Android uses the native file picker,
+    // while GitHub Pages, Vercel and normal browsers use the HTML input.
+    settingsImportBtn.addEventListener("click", async function() {
         closeSettingsMenu();
+
+        if (isRunningInNativeCapacitor()) {
+            await chooseAndImportPlaylistOnAndroid();
+        } else {
+            importFileInput.click();
+        }
     });
     
     // Handle file selection for import
@@ -2534,10 +2540,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (e.target.files && e.target.files.length > 0) {
             const file = e.target.files[0];
             
-            if (file.type === 'application/json' || 
-                file.type === 'text/plain' || 
-                file.name.endsWith('.json') || 
-                file.name.endsWith('.txt')) {
+            if (isSupportedPlaylistImportFile(file.name, file.type)) {
                 importPlaylist(file);
             } else {
                 alert(translations[currentLang].importFileTypeError);
@@ -2583,10 +2586,90 @@ document.addEventListener("DOMContentLoaded", function() {
 const lyricsPanel = document.getElementById("lyricsPanel");
 const lyricsToggle = document.getElementById("lyricsToggle");
 
+// Return a Capacitor native plugin without requiring a JavaScript bundler.
+// Capacitor injects registerPlugin() into the Android WebView at runtime.
+function getCapacitorNativePlugin(pluginName) {
+    const capacitor = window.Capacitor;
+
+    if (!capacitor) {
+        return null;
+    }
+
+    if (capacitor.Plugins && capacitor.Plugins[pluginName]) {
+        return capacitor.Plugins[pluginName];
+    }
+
+    if (typeof capacitor.registerPlugin === "function") {
+        return capacitor.registerPlugin(pluginName);
+    }
+
+    return null;
+}
+
+function isRunningInNativeCapacitor() {
+    const capacitor = window.Capacitor;
+    return Boolean(
+        capacitor &&
+        typeof capacitor.isNativePlatform === "function" &&
+        capacitor.isNativePlatform()
+    );
+}
+
+function downloadTextFileInBrowser(fileName, fileContent) {
+    const blob = new Blob([fileContent], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = fileName;
+    link.style.display = "none";
+
+    document.body.appendChild(link);
+    link.click();
+
+    setTimeout(() => {
+        link.remove();
+        URL.revokeObjectURL(url);
+    }, 1000);
+}
+
+async function exportTextFileOnAndroid(fileName, fileContent) {
+    const Filesystem = getCapacitorNativePlugin("Filesystem");
+    const Share = getCapacitorNativePlugin("Share");
+
+    if (!Filesystem || !Share) {
+        throw new Error(
+            "Capacitor Filesystem or Share plugin is unavailable. Run npm install and npx cap sync android before rebuilding."
+        );
+    }
+
+    // Android's Share plugin can share files from the app cache directory by default.
+    // The Android share sheet then lets the user save the file to Files/Downloads,
+    // Drive, email, messaging apps, and other installed destinations.
+    const writeResult = await Filesystem.writeFile({
+        path: fileName,
+        data: fileContent,
+        directory: "CACHE",
+        encoding: "utf8",
+        recursive: true
+    });
+
+    if (!writeResult || !writeResult.uri) {
+        throw new Error("The exported playlist file was created without a usable URI.");
+    }
+
+    await Share.share({
+        title: fileName,
+        text: "YouTube Music Player playlist export",
+        files: [writeResult.uri],
+        dialogTitle: "Export playlist file"
+    });
+}
+
 // Export playlist function
-function exportPlaylist() {
+async function exportPlaylist() {
     try {
-        // Get current playlist and dark mode status
+        // Get current playlist and app settings.
         const exportData = {
             playlist: playlist,
             albumArtDisplayMode: albumArtDisplayMode,
@@ -2602,33 +2685,143 @@ function exportPlaylist() {
             exportDate: new Date().toISOString(),
             version: "1.6-alpha"
         };
-        
-        const playlistData = JSON.stringify(exportData, null, 2);
-        
-        // Always export as TXT
-        const fileExtension = 'txt';
-        const mimeType = 'text/plain';
-        
-        const blob = new Blob([playlistData], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        const date = new Date().toISOString().slice(0, 10);
-        a.href = url;
-        a.download = `youtube-music-playlist-${date}.${fileExtension}`;
-        a.style.display = 'none';
-        
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 100);
 
+        const playlistData = JSON.stringify(exportData, null, 2);
+        const date = new Date().toISOString().slice(0, 10);
+        const fileName = `youtube-music-playlist-${date}.txt`;
+
+        if (isRunningInNativeCapacitor()) {
+            await exportTextFileOnAndroid(fileName, playlistData);
+        } else {
+            downloadTextFileInBrowser(fileName, playlistData);
+        }
     } catch (error) {
         console.error("Error exporting playlist:", error);
         alert(translations[currentLang].exportError);
+    }
+}
+
+// Check imported playlist file name and MIME type.
+// Android file providers sometimes return an empty or generic MIME type,
+// so a valid .txt or .json extension is also accepted.
+function isSupportedPlaylistImportFile(fileName, mimeType) {
+    const normalizedName = String(fileName || "").toLowerCase();
+    const normalizedMime = String(mimeType || "").toLowerCase();
+
+    const supportedExtension =
+        normalizedName.endsWith(".txt") ||
+        normalizedName.endsWith(".json");
+
+    const supportedMime =
+        normalizedMime === "text/plain" ||
+        normalizedMime === "application/json";
+
+    return supportedExtension || supportedMime;
+}
+
+// Decode the Base64 content returned by the native Android file picker.
+function decodeBase64Text(base64Data) {
+    const cleanedData = String(base64Data || "")
+        .replace(/^data:[^,]*,/, "")
+        .replace(/\s/g, "");
+
+    const binary = atob(cleanedData);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let index = 0; index < binary.length; index += 1) {
+        bytes[index] = binary.charCodeAt(index);
+    }
+
+    return new TextDecoder("utf-8").decode(bytes);
+}
+
+// Read a file selected by the native Android picker.
+async function readNativePickedFileAsText(pickedFile) {
+    if (typeof pickedFile.data === "string" && pickedFile.data.length > 0) {
+        return decodeBase64Text(pickedFile.data);
+    }
+
+    // Web implementation of the plugin can return a Blob.
+    if (pickedFile.blob instanceof Blob) {
+        return pickedFile.blob.text();
+    }
+
+    // Fallback for native plugin versions that return only a file path.
+    if (pickedFile.path) {
+        const capacitor = window.Capacitor;
+        const readablePath =
+            capacitor && typeof capacitor.convertFileSrc === "function"
+                ? capacitor.convertFileSrc(pickedFile.path)
+                : pickedFile.path;
+
+        const response = await fetch(readablePath);
+
+        if (!response.ok) {
+            throw new Error(`Unable to read selected file (${response.status}).`);
+        }
+
+        return response.text();
+    }
+
+    throw new Error("The selected file did not contain readable data.");
+}
+
+// Open Android's native document picker and pass the selected playlist file
+// into the same import function used by GitHub Pages and Vercel.
+async function chooseAndImportPlaylistOnAndroid() {
+    try {
+        const FilePicker = getCapacitorNativePlugin("FilePicker");
+
+        if (!FilePicker) {
+            throw new Error(
+                "Capacitor File Picker is unavailable. Run npm install and npx cap sync android before rebuilding."
+            );
+        }
+
+        const result = await FilePicker.pickFiles({
+            types: ["application/json", "text/plain"],
+            readData: true
+        });
+
+        const pickedFile = result && result.files && result.files[0];
+
+        if (!pickedFile) {
+            return;
+        }
+
+        if (!isSupportedPlaylistImportFile(pickedFile.name, pickedFile.mimeType)) {
+            alert(translations[currentLang].importFileTypeError);
+            return;
+        }
+
+        // Playlist exports are small text files. Reject unexpectedly large files
+        // before decoding Base64 inside the WebView.
+        const maximumImportSize = 5 * 1024 * 1024;
+        if (Number(pickedFile.size) > maximumImportSize) {
+            throw new Error("The selected playlist file is larger than 5 MB.");
+        }
+
+        const fileText = await readNativePickedFileAsText(pickedFile);
+        const fileName = pickedFile.name || "youtube-music-playlist.txt";
+        const mimeType = pickedFile.mimeType || "text/plain";
+
+        const importedFile = new Blob([fileText], { type: mimeType });
+        Object.defineProperty(importedFile, "name", {
+            value: fileName,
+            configurable: true
+        });
+
+        importPlaylist(importedFile);
+    } catch (error) {
+        const message = String(error && error.message ? error.message : error);
+
+        // Closing Android's document picker is not an import failure.
+        if (/cancel|canceled|cancelled|dismiss/i.test(message)) {
+            return;
+        }
+
+        console.error("Error selecting playlist file:", error);
+        alert(translations[currentLang].importError + message);
     }
 }
 
@@ -2642,7 +2835,7 @@ function importPlaylist(file) {
             
             // Handle both old format (array) and new format (object with playlist property)
             let importedPlaylist;
-            let importDarkMode = false;
+            let importDarkMode;
             let importLanguage = currentLang;
             let importTranslationEnabled = translationEnabled;
             let importShowOriginalFirst = showOriginalFirst;

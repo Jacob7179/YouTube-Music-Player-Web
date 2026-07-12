@@ -70,7 +70,16 @@ echo.
 echo ==========================================
 echo Installing Node.js dependencies...
 echo ==========================================
-if not exist "node_modules" (
+
+REM Reinstall when node_modules is missing or when the native export/import
+REM plugins were not installed by an older project build.
+set "NEED_NPM_INSTALL=0"
+if not exist "node_modules" set "NEED_NPM_INSTALL=1"
+if not exist "node_modules\@capacitor\filesystem" set "NEED_NPM_INSTALL=1"
+if not exist "node_modules\@capacitor\share" set "NEED_NPM_INSTALL=1"
+if not exist "node_modules\@capawesome\capacitor-file-picker" set "NEED_NPM_INSTALL=1"
+
+if "!NEED_NPM_INSTALL!"=="1" (
     echo Installing Node.js dependencies...
 
     if exist "package-lock.json" (
@@ -81,8 +90,63 @@ if not exist "node_modules" (
 
     if errorlevel 1 goto :error
 ) else (
-    echo node_modules already exists. Skipping npm install.
+    echo Required Node.js dependencies are already installed.
 )
+
+REM ------------------------------------------------------------
+REM Download and use portable Java JDK 21 for Capacitor 7.
+REM Installs into:
+REM android_build\tools\jdk-21
+REM ------------------------------------------------------------
+echo.
+echo ==========================================
+echo Checking Java JDK 21...
+echo ==========================================
+
+set "LOCAL_JDK_DIR=%~dp0tools\jdk-21"
+set "LOCAL_JAVA_EXE=%~dp0tools\jdk-21\bin\java.exe"
+
+if not exist "%LOCAL_JAVA_EXE%" (
+    echo Java JDK 21 was not found.
+    echo Downloading Eclipse Temurin JDK 21...
+
+    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+        "$ErrorActionPreference='Stop';" ^
+        "$tools=[IO.Path]::GetFullPath('%~dp0tools');" ^
+        "$jdk=Join-Path $tools 'jdk-21';" ^
+        "$zip=Join-Path $tools 'temurin-jdk21.zip';" ^
+        "$extract=Join-Path $tools 'jdk21-extract';" ^
+        "New-Item -ItemType Directory -Force -Path $tools | Out-Null;" ^
+        "if (Test-Path $jdk) { Remove-Item $jdk -Recurse -Force };" ^
+        "if (Test-Path $extract) { Remove-Item $extract -Recurse -Force };" ^
+        "if (Test-Path $zip) { Remove-Item $zip -Force };" ^
+        "Invoke-WebRequest -Uri 'https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jdk/hotspot/normal/eclipse' -OutFile $zip;" ^
+        "Expand-Archive -Force $zip -DestinationPath $extract;" ^
+        "$root=Get-ChildItem $extract -Directory | Select-Object -First 1;" ^
+        "if (-not $root) { throw 'The downloaded JDK archive was empty.' };" ^
+        "Move-Item -Path $root.FullName -Destination $jdk;" ^
+        "Remove-Item $extract -Recurse -Force;" ^
+        "Remove-Item $zip -Force;"
+
+    if errorlevel 1 goto :error
+)
+
+if not exist "%LOCAL_JAVA_EXE%" (
+    echo.
+    echo ERROR: Java JDK 21 installation failed.
+    echo Expected Java executable:
+    echo %LOCAL_JAVA_EXE%
+    goto :error
+)
+
+set "JAVA_HOME=%LOCAL_JDK_DIR%"
+set "PATH=%JAVA_HOME%\bin;%PATH%"
+
+echo.
+echo Java selected:
+echo JAVA_HOME=%JAVA_HOME%
+java -version
+if errorlevel 1 goto :error
 
 REM ------------------------------------------------------------
 REM Download Android SDK automatically if local SDK is missing.
@@ -320,6 +384,9 @@ echo Building debug APK...
 echo ==========================================
 
 cd /d "%~dp0android"
+
+REM Stop any Gradle daemon that was started with an older Java version.
+call gradlew.bat --stop >nul 2>&1
 
 call gradlew.bat clean
 if errorlevel 1 goto :error
