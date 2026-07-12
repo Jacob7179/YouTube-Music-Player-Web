@@ -296,3 +296,15 @@ The app still requires internet access for:
 - Lyrics
 - Translation
 - CDN-hosted styles or scripts
+
+## Earphone Multi-click Controls
+
+The Android build patches the media-session callback to recognize the central button on common wired earphones:
+
+```text
+1 tap  = Play or pause
+2 taps = Next song
+3 taps = Previous song
+```
+
+The three taps must be reasonably quick. A single or double-tap action waits briefly so the app can determine whether another tap follows. Re-run `build.bat` after changing or reinstalling npm dependencies so the native plugin patch is applied again.
