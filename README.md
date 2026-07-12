@@ -102,8 +102,9 @@ If you don't want to set up the YouTube API, you can still:
 15. **Import Playlist & Data**: Import playlist and data (Dark mode, Album Art spin settings & Lyrics settings) from JSON or TXT file
 16. **Export Playlist & Data**: Export playlist and data (Dark mode, Album Art spin settings & Lyrics settings) to TXT file
 17. **Album Art Display**: Select Album Art Display option to switch Spin, None or Video mode.
-18. **Delete Search Cache**: Delete search cache from browser storage
-19. **Set the Current Song’s Lyrics Time Offset**: In the browser console, run `setCurrentSongLyricsTimeOffset(0.75);` to adjust the current song’s lyric timing by 0.75 seconds.
+18. **System Media Controls**: Use operating-system media keys, notification controls, lock-screen controls, and headset previous/next buttons when supported by the browser or native app.
+19. **Delete Search Cache**: Delete search cache from browser storage
+20. **Set the Current Song’s Lyrics Time Offset**: In the browser console, run `setCurrentSongLyricsTimeOffset(0.75);` to adjust the current song’s lyric timing by 0.75 seconds.
 
 ## 🔧 GitHub Actions Workflow
 

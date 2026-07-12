@@ -71,13 +71,14 @@ echo ==========================================
 echo Installing Node.js dependencies...
 echo ==========================================
 
-REM Reinstall when node_modules is missing or when the native export/import
+REM Reinstall when node_modules is missing or when the native file/media
 REM plugins were not installed by an older project build.
 set "NEED_NPM_INSTALL=0"
 if not exist "node_modules" set "NEED_NPM_INSTALL=1"
 if not exist "node_modules\@capacitor\filesystem" set "NEED_NPM_INSTALL=1"
 if not exist "node_modules\@capacitor\share" set "NEED_NPM_INSTALL=1"
 if not exist "node_modules\@capawesome\capacitor-file-picker" set "NEED_NPM_INSTALL=1"
+if not exist "node_modules\@capgo\capacitor-media-session" set "NEED_NPM_INSTALL=1"
 
 if "!NEED_NPM_INSTALL!"=="1" (
     echo Installing Node.js dependencies...
@@ -92,6 +93,13 @@ if "!NEED_NPM_INSTALL!"=="1" (
 ) else (
     echo Required Node.js dependencies are already installed.
 )
+
+echo.
+echo ==========================================
+echo Applying Android media control patch...
+echo ==========================================
+call node scripts\patch-media-session-plugin.js
+if errorlevel 1 goto :error
 
 REM ------------------------------------------------------------
 REM Download and use portable Java JDK 21 for Capacitor 7.
@@ -296,6 +304,35 @@ echo Syncing Capacitor files...
 echo ==========================================
 
 call npx cap sync android
+if errorlevel 1 goto :error
+
+REM ------------------------------------------------------------
+REM Add the Android 14+ foreground media playback permission.
+REM The native media session plugin uses a mediaPlayback foreground
+REM service for notification, lock-screen and headset controls.
+REM ------------------------------------------------------------
+echo.
+echo ==========================================
+echo Configuring Android media controls...
+echo ==========================================
+
+set "APP_MANIFEST=%~dp0android\app\src\main\AndroidManifest.xml"
+
+if not exist "%APP_MANIFEST%" (
+    echo ERROR: AndroidManifest.xml was not found:
+    echo %APP_MANIFEST%
+    goto :error
+)
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$ErrorActionPreference='Stop';" ^
+    "$path='%APP_MANIFEST%';" ^
+    "$content=Get-Content -LiteralPath $path -Raw;" ^
+    "$permission='<uses-permission android:name=' + [char]34 + 'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK' + [char]34 + ' />';" ^
+    "if ($content -notmatch 'FOREGROUND_SERVICE_MEDIA_PLAYBACK') {" ^
+    "  $content=$content -replace '</manifest>', ('    ' + $permission + [Environment]::NewLine + '</manifest>');" ^
+    "  Set-Content -LiteralPath $path -Value $content -Encoding UTF8 -NoNewline;" ^
+    "}"
 if errorlevel 1 goto :error
 
 REM ------------------------------------------------------------

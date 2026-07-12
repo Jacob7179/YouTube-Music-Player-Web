@@ -14,6 +14,7 @@ The Android project uses:
 - Capacitor Filesystem 7
 - Capacitor Share 7
 - Capawesome File Picker 7.2.0
+- Capgo Media Session 7.3.0
 
 The automatic build uses portable tools stored inside the `android_build` folder. A system-wide Java or Android SDK installation is not required.
 
@@ -58,8 +59,9 @@ The script will:
 5. Add the Android platform when it is missing.
 6. Create `android/local.properties`.
 7. Sync the web files and Capacitor plugins.
-8. Replace the Android icon and splash resources using `image_source\res`.
-9. Build the debug APK.
+8. Configure native Android media controls and foreground media playback permission.
+9. Replace the Android icon and splash resources using `image_source\res`.
+10. Build the debug APK.
 
 The generated APK will be located at:
 
@@ -146,6 +148,7 @@ The Android app uses these native plugins:
 @capacitor/filesystem
 @capacitor/share
 @capawesome/capacitor-file-picker
+@capgo/capacitor-media-session
 ```
 
 After adding or changing a native plugin, always run:
@@ -158,6 +161,30 @@ npx cap sync android
 Then rebuild the APK.
 
 GitHub Pages, Vercel, and normal browsers continue using the browser-based import and download functions.
+
+## System Media Controls
+
+The project supports system play, pause, previous, next, seek, metadata, and playback-position controls through two paths:
+
+- Windows, macOS, Android browsers, and Safari use the browser Media Session API when supported.
+- The Capacitor app uses `@capgo/capacitor-media-session` for Android notification, lock-screen, headset, and system media controls. The same JavaScript adapter can also use the plugin in a future Capacitor iOS build.
+
+The application playlist remains managed by JavaScript. Operating systems do not provide one universal cross-platform API for publishing the complete queue, but their previous and next controls now call the real playlist array instead of the currently filtered HTML list.
+
+After changing media-session dependencies, run `build.bat` so Capacitor synchronizes the native plugin.
+
+## Android Play/Pause Media Control Fix
+
+The build runs `scripts\patch-media-session-plugin.js` after installing dependencies. This corrects the Android notification Play and Pause PendingIntent actions used by `@capgo/capacitor-media-session` 7.3.0.
+
+Do not remove the patch script or the `postinstall` entry from `package.json`. After changing dependencies, run:
+
+```powershell
+npm ci
+npx cap sync android
+```
+
+Then rebuild and reinstall the APK.
 
 ## Common Errors
 

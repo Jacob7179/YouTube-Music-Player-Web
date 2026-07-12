@@ -5,14 +5,16 @@
   "description": "Android APK wrapper for YouTube Music Player Web.",
   "scripts": {
     "sync": "cap sync android",
-    "build:apk": "cd android && gradlew.bat assembleDebug"
+    "build:apk": "cd android && gradlew.bat assembleDebug",
+    "postinstall": "node scripts/patch-media-session-plugin.js"
   },
   "dependencies": {
-    "@capawesome/capacitor-file-picker": "^7.2.0",
     "@capacitor/android": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "@capacitor/filesystem": "^7.1.8",
-    "@capacitor/share": "^7.0.4"
+    "@capacitor/share": "^7.0.4",
+    "@capawesome/capacitor-file-picker": "^7.2.0",
+    "@capgo/capacitor-media-session": "^7.3.0"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
