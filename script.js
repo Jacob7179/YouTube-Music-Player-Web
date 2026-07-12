@@ -2,6 +2,7 @@ let player;
 let playing = false;
 let songUnavailable = false;
 let progressInterval;
+let timelineMetadataRetryTimeout;
 let isDragging = false;
 let errorTimeout;
 let selectedVideoId;
@@ -932,9 +933,7 @@ function removeSong(videoIdToRemove) {
         document.getElementById("albumArt").src = "https://via.placeholder.com/300";
         updateSongTitle("No Song");
         updateAuthorName("");
-        document.getElementById("progress").style.width = "0%";
-        document.getElementById("currentTime").innerText = "0:00";
-        document.getElementById("totalTime").innerText = "-0:00";
+        resetTimelineDisplay();
         document.getElementById("background").style.backgroundImage = "none";
 
         clearInterval(progressInterval);
@@ -1627,6 +1626,11 @@ function createMainYouTubePlayer(videoId, autoplay = false) {
                     event.target.playVideo();
                 }
 
+                // A cued video does not start playing, but its duration becomes
+                // available shortly after the iframe is ready. Refresh the
+                // timeline so the initial screen shows the song duration.
+                refreshTimelineWhenMetadataReady();
+
                 if (albumArtDisplayMode === "video") {
                     initializeVideoPlayerInAlbumArt();
                 }
@@ -1835,9 +1839,7 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
     updateSystemMediaMetadata(songObject || getCurrentSongObject());
 
     // ✅ Reset progress bar and timer
-    document.getElementById("progress").style.width = "0%";
-    document.getElementById("currentTime").innerText = "0:00";
-    document.getElementById("totalTime").innerText = "-0:00";
+    resetTimelineDisplay();
 
     playing = true;
     systemMediaSessionActivated = true;
@@ -2616,13 +2618,47 @@ function updateTimelineFromPlayer(forceMediaPositionUpdate = false) {
 
     document.getElementById("progress").style.width = `${progressPercent}%`;
     document.getElementById("currentTime").innerText = formatTime(safeCurrentTime);
-    document.getElementById("totalTime").innerText = `-${formatTime(remainingTime)}`;
+    document.getElementById("totalTime").innerText = formatRemainingTime(remainingTime);
     updateSystemMediaPosition(forceMediaPositionUpdate);
 
     return true;
 }
 
+function resetTimelineDisplay() {
+    clearTimeout(timelineMetadataRetryTimeout);
+    timelineMetadataRetryTimeout = null;
+
+    document.getElementById("progress").style.width = "0%";
+    document.getElementById("currentTime").innerText = "0:00";
+    document.getElementById("totalTime").innerText = "0:00";
+}
+
+function refreshTimelineWhenMetadataReady(maxAttempts = 40) {
+    clearTimeout(timelineMetadataRetryTimeout);
+
+    let attempts = 0;
+
+    const tryUpdate = () => {
+        if (updateTimelineFromPlayer(true)) {
+            timelineMetadataRetryTimeout = null;
+            return;
+        }
+
+        attempts += 1;
+        if (attempts >= maxAttempts) {
+            timelineMetadataRetryTimeout = null;
+            return;
+        }
+
+        timelineMetadataRetryTimeout = setTimeout(tryUpdate, 250);
+    };
+
+    tryUpdate();
+}
+
 function updateProgressBar() {
+    clearTimeout(timelineMetadataRetryTimeout);
+    timelineMetadataRetryTimeout = null;
     clearInterval(progressInterval);
 
     // Update immediately instead of waiting one second for the first tick.
@@ -2637,6 +2673,11 @@ function formatTime(seconds) {
     let mins = Math.floor(seconds / 60);
     let secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+}
+
+function formatRemainingTime(seconds) {
+    const formattedTime = formatTime(Math.max(0, Number(seconds) || 0));
+    return formattedTime === "0:00" ? "0:00" : `-${formattedTime}`;
 }
 
 const progressBar = document.getElementById("progressBar");
@@ -2799,6 +2840,15 @@ function handlePlayerStateChange(event) {
         setSystemMediaPlaybackState('playing');
         updateSystemMediaMetadata();
         updateSystemMediaPosition(true);
+    } else if (event.data === YT.PlayerState.CUED) {
+        // The first song is intentionally loaded without autoplay. Once it is
+        // cued, read its metadata and show 0:00 / -duration immediately.
+        playing = false;
+        systemMediaSessionActivated = false;
+        playPauseBtn.innerHTML = ICON_PLAY;
+        clearInterval(progressInterval);
+        refreshTimelineWhenMetadataReady();
+        setSystemMediaPlaybackState("none");
     }
     
     // Call setupMediaSession when player state changes
@@ -3516,10 +3566,10 @@ function importPlaylist(file) {
                         });
                     }
 
-                    // Reset progress bar + time display
-                    document.getElementById("progress").style.width = "0%";
-                    document.getElementById("currentTime").innerText = "0:00";
-                    document.getElementById("totalTime").innerText = "-0:00";
+                    // Reset progress bar and show the cued song duration
+                    // without starting playback.
+                    resetTimelineDisplay();
+                    refreshTimelineWhenMetadataReady();
                 }
                 
                 // Show import success message with settings applied
