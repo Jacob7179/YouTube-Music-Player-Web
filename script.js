@@ -275,6 +275,71 @@ const CORS_PROXIES = [
 // const CORS_PROXY_URL = 'https://cors-anywhere.herokuapp.com/'; // Requires authorization
 
 let playlist = []; // Array to store playlist data
+const LAST_SELECTED_SONG_STORAGE_KEY = 'youtubeMusicLastSelectedSong';
+
+function restoreLastSelectedSong() {
+    if (!playlist.length) {
+        currentPlaylistIndex = -1;
+        actualSelectedVideoId = null;
+        selectedVideoId = null;
+        return;
+    }
+
+    let restoredIndex = -1;
+
+    try {
+        const savedSelection = JSON.parse(
+            localStorage.getItem(LAST_SELECTED_SONG_STORAGE_KEY) || 'null'
+        );
+
+        if (savedSelection && typeof savedSelection === 'object') {
+            const savedIndex = Number(savedSelection.index);
+            const savedVideoId = typeof savedSelection.videoId === 'string'
+                ? savedSelection.videoId
+                : '';
+
+            if (
+                Number.isInteger(savedIndex) &&
+                savedIndex >= 0 &&
+                savedIndex < playlist.length &&
+                (!savedVideoId || playlist[savedIndex].videoId === savedVideoId)
+            ) {
+                restoredIndex = savedIndex;
+            } else if (savedVideoId) {
+                restoredIndex = playlist.findIndex(song => song.videoId === savedVideoId);
+            }
+        }
+    } catch (error) {
+        console.warn('Unable to restore the last selected song:', error);
+    }
+
+    if (restoredIndex < 0) {
+        restoredIndex = 0;
+    }
+
+    const restoredSong = playlist[restoredIndex];
+    currentPlaylistIndex = restoredIndex;
+    actualSelectedVideoId = restoredSong.videoId;
+    selectedVideoId = restoredSong.videoId;
+}
+
+function saveLastSelectedSong() {
+    const index = getCurrentPlaylistIndex();
+    const song = index >= 0 ? playlist[index] : null;
+
+    if (!song) {
+        localStorage.removeItem(LAST_SELECTED_SONG_STORAGE_KEY);
+        return;
+    }
+
+    localStorage.setItem(
+        LAST_SELECTED_SONG_STORAGE_KEY,
+        JSON.stringify({
+            index,
+            videoId: song.videoId
+        })
+    );
+}
 
 // Define icon HTML as constants to prevent syntax issues
 const ICON_TRASH = '<i class=\'bx bx-trash\'></i>';
@@ -403,7 +468,10 @@ function loadPlaylist() {
             { videoId: 'ajJKtzg--5g', songName: 'ラストソング［Studio Live Session］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/ajJKtzg--5g/hqdefault.jpg', lyricsTimeOffset: -9.0 },
         ];
     }
+
+    restoreLastSelectedSong();
     renderPlaylist(playlist);
+    saveLastSelectedSong();
 }
 
 const MAX_LYRICS_TIME_OFFSET_SECONDS = 30;
@@ -625,31 +693,38 @@ function renderPlaylist(songsToRender) {
     // Apply current language
     applyLanguage(currentLang);
 
-    // ✅ Only auto-select first song on VERY FIRST page load (when player doesn't exist)
+    // Prepare the restored selection on the first page load without autoplay.
     if (!player && songsToRender.length > 0) {
         const searchInput = document.getElementById('searchPlaylistInput');
-        // ✅ Only auto-select if NOT searching (search input is empty)
+
         if (!searchInput || searchInput.value.trim() === '') {
-            const firstSongElement = document.querySelector('#songList li');
-            if (firstSongElement) {
-                firstSongElement.classList.add('selected');
-                const firstVideoId = firstSongElement.getAttribute('data-video');
-                const firstAlbumArtUrl = firstSongElement.getAttribute('data-img');
-                const firstSongObj = songsToRender[0];
+            const restoredIndex = getCurrentPlaylistIndex() >= 0
+                ? getCurrentPlaylistIndex()
+                : 0;
+            const restoredSongObj = playlist[restoredIndex];
+            const restoredSongElement = document.querySelector(
+                `#songList li[data-playlist-index="${restoredIndex}"]`
+            );
 
-                currentPlaylistIndex = playlist.indexOf(firstSongObj);
-                actualSelectedVideoId = firstVideoId;
+            if (restoredSongElement && restoredSongObj) {
+                updateRenderedPlaylistSelection(restoredIndex);
 
-                // ✅ Immediately update UI without autoplay
-                document.getElementById("albumArt").src = firstAlbumArtUrl;
-                document.getElementById("background").style.backgroundImage = `url('${firstAlbumArtUrl}')`;
-                
-                updateSongTitle(firstSongObj.songName);
-                updateAuthorName(firstSongObj.authorName);
-                loadLyricsFor(firstSongObj.songName, firstSongObj.authorName);
+                const restoredVideoId = restoredSongObj.videoId;
+                const restoredAlbumArtUrl = restoredSongObj.albumArt;
 
-                // Only prepare player, don't autoplay
-                selectedVideoId = firstVideoId;
+                currentPlaylistIndex = restoredIndex;
+                actualSelectedVideoId = restoredVideoId;
+                selectedVideoId = restoredVideoId;
+                saveLastSelectedSong();
+
+                // Immediately update the UI without autoplay.
+                document.getElementById("albumArt").src = restoredAlbumArtUrl;
+                document.getElementById("background").style.backgroundImage = `url('${restoredAlbumArtUrl}')`;
+
+                updateSongTitle(restoredSongObj.songName);
+                updateAuthorName(restoredSongObj.authorName);
+                loadLyricsFor(restoredSongObj.songName, restoredSongObj.authorName);
+
                 onYouTubeIframeAPIReady();
             }
         }
@@ -833,6 +908,7 @@ function initDragAndDrop(item) {
                 }
 
                 savePlaylist();
+                saveLastSelectedSong();
                 renderPlaylist(playlist);
                 updateRenderedPlaylistSelection(currentPlaylistIndex);
                 updateSystemMediaMetadata();
@@ -912,6 +988,7 @@ function removeSong(videoIdToRemove) {
     }
 
     savePlaylist();
+    saveLastSelectedSong();
     renderPlaylist(playlist);
 
     if (wasPlayingCurrent && playlist.length > 0) {
@@ -1730,6 +1807,7 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
         currentPlaylistIndex = playlist.findIndex(song => song.videoId === videoId);
     }
 
+    saveLastSelectedSong();
     stopLyricsJobs({ clearLyrics: true });
 
     if (player) {
@@ -3389,7 +3467,10 @@ function importPlaylist(file) {
                 // Replace current playlist
                 playlist = importedPlaylist;
                 currentPlaylistIndex = playlist.length > 0 ? 0 : -1;
+                actualSelectedVideoId = playlist.length > 0 ? playlist[0].videoId : null;
+                selectedVideoId = actualSelectedVideoId;
                 savePlaylist();
+                saveLastSelectedSong();
                 renderPlaylist(playlist);
                 
                 // Apply dark mode if included in export
@@ -3539,8 +3620,11 @@ function importPlaylist(file) {
                     const firstLi = document.querySelector("#songList li");
                     if (firstLi) firstLi.classList.add("selected");
 
-                    // ✅ Load video but don't autoplay
+                    // Load video but don't autoplay.
+                    currentPlaylistIndex = 0;
+                    actualSelectedVideoId = firstSong.videoId;
                     selectedVideoId = firstSong.videoId;
+                    saveLastSelectedSong();
                     if (player && player.loadVideoById) {
                         player.cueVideoById(firstSong.videoId); // cue = load but don't play
                     } else {
