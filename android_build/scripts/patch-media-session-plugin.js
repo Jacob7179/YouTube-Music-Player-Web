@@ -98,6 +98,41 @@ replaceOnce(
   "wake-lock state update"
 );
 
+
+// Make Android's system media panel and notification expose a real timeline.
+// The explicit update timestamp lets Android extrapolate the current position
+// while playing, and notification progress is refreshed after each JS update.
+replaceOnce(
+  "import android.os.PowerManager;",
+  "import android.os.PowerManager;\nimport android.os.SystemClock;",
+  "SystemClock import"
+);
+replaceOnce(
+  ".setState(PlaybackStateCompat.STATE_PAUSED, position, playbackSpeed);",
+  ".setState(PlaybackStateCompat.STATE_PAUSED, position, playbackSpeed, SystemClock.elapsedRealtime());",
+  "initial playback position timestamp"
+);
+replaceOnce(
+  `    public void setPosition(long newPosition) {\n        if (position != newPosition) {\n            position = newPosition;\n            playbackStateUpdate = true;\n        }\n    }`,
+  `    public void setPosition(long newPosition) {\n        if (position != newPosition) {\n            position = newPosition;\n            playbackStateUpdate = true;\n            notificationUpdate = true;\n        }\n    }`,
+  "notification position refresh"
+);
+replaceOnce(
+  `    @SuppressLint("RestrictedApi")\n    public void update() {`,
+  `    private String formatPlaybackTime(long milliseconds) {\n        long totalSeconds = Math.max(0L, milliseconds / 1000L);\n        long hours = totalSeconds / 3600L;\n        long minutes = (totalSeconds % 3600L) / 60L;\n        long seconds = totalSeconds % 60L;\n\n        if (hours > 0L) {\n            return String.format(java.util.Locale.US, "%d:%02d:%02d", hours, minutes, seconds);\n        }\n        return String.format(java.util.Locale.US, "%d:%02d", minutes, seconds);\n    }\n\n    @SuppressLint("RestrictedApi")\n    public void update() {`,
+  "playback time formatter"
+);
+replaceOnce(
+  "playbackStateBuilder.setState(playbackState, position, playbackSpeed);",
+  "playbackStateBuilder.setState(playbackState, position, playbackSpeed, SystemClock.elapsedRealtime());",
+  "playback position timestamp"
+);
+replaceOnce(
+  `            notificationBuilder.setContentTitle(title).setContentText(artist + " - " + album).setLargeIcon(artwork);`,
+  `            if (duration > 0L) {\n                int durationSeconds = (int) Math.min(duration / 1000L, Integer.MAX_VALUE);\n                int positionSeconds = (int) Math.min(\n                    Math.max(position / 1000L, 0L),\n                    durationSeconds\n                );\n                long remaining = Math.max(0L, duration - position);\n                notificationBuilder.setProgress(durationSeconds, positionSeconds, false);\n                notificationBuilder.setContentText(\n                    artist + " • "\n                        + formatPlaybackTime(position) + " / -" + formatPlaybackTime(remaining)\n                        + " • " + album\n                );\n            } else {\n                notificationBuilder.setProgress(0, 0, false);\n                notificationBuilder.setContentText(artist + " • " + album);\n            }\n            notificationBuilder.setContentTitle(title).setSubText(null).setLargeIcon(artwork);`,
+  "visible notification playback progress"
+);
+
 if (changed) {
   fs.writeFileSync(serviceJavaFile, source, "utf8");
 }

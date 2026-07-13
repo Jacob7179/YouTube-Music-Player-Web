@@ -26,6 +26,7 @@ let nativeMediaSessionPlugin = null;
 let nativeMediaSessionListenerHandle = null;
 const nativeMediaSessionActionCallbacks = new Map();
 let lastNativeMediaPositionUpdate = 0;
+const NATIVE_MEDIA_POSITION_UPDATE_INTERVAL_MS = 1000;
 let systemMediaSessionActivated = false;
 
 // Chrome may associate system media controls with the cross-origin YouTube
@@ -33,7 +34,9 @@ let systemMediaSessionActivated = false;
 // page's Media Session active so Previous/Next actions reach our playlist.
 let browserMediaSessionAudio = null;
 let browserMediaSessionAudioUrl = "";
+let browserMediaSessionAudioDuration = 0;
 let browserMediaSessionBridgeStarted = false;
+const BROWSER_MEDIA_SESSION_SYNC_THRESHOLD_SECONDS = 1.25;
 
 // Lyrics performance settings.
 // false = do not fetch/translate while the Playlist page is open.
@@ -2252,7 +2255,8 @@ function runMediaSessionPromise(task, label) {
 }
 
 function createSilentWavBlob(durationSeconds = 1, sampleRate = 8000) {
-    const frameCount = Math.max(1, Math.floor(durationSeconds * sampleRate));
+    const safeDuration = Math.max(1, Number(durationSeconds) || 1);
+    const frameCount = Math.max(1, Math.ceil(safeDuration * sampleRate));
     const bytesPerSample = 2;
     const dataSize = frameCount * bytesPerSample;
     const buffer = new ArrayBuffer(44 + dataSize);
@@ -2282,36 +2286,116 @@ function createSilentWavBlob(durationSeconds = 1, sampleRate = 8000) {
     return new Blob([buffer], { type: "audio/wav" });
 }
 
-function getBrowserMediaSessionAudio() {
+function replaceBrowserMediaSessionAudioSource(audio, durationSeconds) {
+    const safeDuration = Math.max(1, Number(durationSeconds) || 1);
+
+    if (
+        browserMediaSessionAudioUrl &&
+        Math.abs(browserMediaSessionAudioDuration - safeDuration) < 0.5
+    ) {
+        return;
+    }
+
+    const previousUrl = browserMediaSessionAudioUrl;
+    audio.pause();
+
+    browserMediaSessionAudioUrl = URL.createObjectURL(
+        createSilentWavBlob(safeDuration)
+    );
+    browserMediaSessionAudioDuration = safeDuration;
+    browserMediaSessionBridgeStarted = false;
+
+    audio.src = browserMediaSessionAudioUrl;
+    audio.loop = false;
+    audio.load();
+
+    if (previousUrl) {
+        // Revoke after the element has switched away from the old source.
+        setTimeout(() => URL.revokeObjectURL(previousUrl), 0);
+    }
+}
+
+function getBrowserMediaSessionAudio(durationSeconds = 1) {
     if (!("mediaSession" in navigator) || isRunningInNativeCapacitor()) {
         return null;
     }
 
-    if (browserMediaSessionAudio) {
-        return browserMediaSessionAudio;
+    if (!browserMediaSessionAudio) {
+        const audio = document.createElement("audio");
+        audio.id = "browserMediaSessionAudio";
+        audio.preload = "auto";
+        audio.volume = 1;
+        audio.setAttribute("playsinline", "");
+        audio.setAttribute("aria-hidden", "true");
+        audio.style.display = "none";
+        (document.body || document.documentElement).appendChild(audio);
+        browserMediaSessionAudio = audio;
     }
 
-    const audio = document.createElement("audio");
-    browserMediaSessionAudioUrl = URL.createObjectURL(createSilentWavBlob());
-    audio.id = "browserMediaSessionAudio";
-    audio.src = browserMediaSessionAudioUrl;
-    audio.loop = true;
-    audio.preload = "auto";
-    audio.volume = 1;
-    audio.setAttribute("playsinline", "");
-    audio.setAttribute("aria-hidden", "true");
-    audio.style.display = "none";
-    (document.body || document.documentElement).appendChild(audio);
+    replaceBrowserMediaSessionAudioSource(
+        browserMediaSessionAudio,
+        durationSeconds
+    );
 
-    browserMediaSessionAudio = audio;
-    return audio;
+    return browserMediaSessionAudio;
 }
 
-async function activateBrowserMediaSessionBridge() {
-    const audio = getBrowserMediaSessionAudio();
+function waitForBrowserMediaSessionAudioMetadata(audio) {
+    if (audio.readyState >= HTMLMediaElement.HAVE_METADATA) {
+        return Promise.resolve();
+    }
+
+    return new Promise(resolve => {
+        let settled = false;
+
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeoutId);
+            audio.removeEventListener("loadedmetadata", finish);
+            audio.removeEventListener("error", finish);
+            resolve();
+        };
+
+        const timeoutId = setTimeout(finish, 1500);
+        audio.addEventListener("loadedmetadata", finish, { once: true });
+        audio.addEventListener("error", finish, { once: true });
+    });
+}
+
+async function syncBrowserMediaSessionBridge(position, duration, shouldPlay) {
+    const audio = getBrowserMediaSessionAudio(duration);
     if (!audio) return false;
 
-    if (browserMediaSessionBridgeStarted && !audio.paused) {
+    await waitForBrowserMediaSessionAudioMetadata(audio);
+
+    const safeDuration = Number.isFinite(duration) && duration > 0
+        ? duration
+        : browserMediaSessionAudioDuration;
+    const safePosition = Math.min(
+        Math.max(Number(position) || 0, 0),
+        Math.max(0, safeDuration - 0.05)
+    );
+
+    try {
+        if (
+            !Number.isFinite(audio.currentTime) ||
+            Math.abs(audio.currentTime - safePosition) >=
+                BROWSER_MEDIA_SESSION_SYNC_THRESHOLD_SECONDS
+        ) {
+            audio.currentTime = safePosition;
+        }
+    } catch (error) {
+        console.debug("Unable to synchronize browser media position:", error);
+    }
+
+    if (!shouldPlay) {
+        audio.pause();
+        return true;
+    }
+
+    if (!audio.paused) {
+        browserMediaSessionBridgeStarted = true;
         setupWebMediaSessionHandlers(true);
         return true;
     }
@@ -2330,6 +2414,12 @@ async function activateBrowserMediaSessionBridge() {
         console.debug("Browser media-session bridge could not start yet:", error);
         return false;
     }
+}
+
+async function activateBrowserMediaSessionBridge() {
+    const duration = Number(player?.getDuration?.()) || 1;
+    const position = Number(player?.getCurrentTime?.()) || 0;
+    return syncBrowserMediaSessionBridge(position, duration, true);
 }
 
 function pauseBrowserMediaSessionBridge(resetPosition = false) {
@@ -2545,11 +2635,17 @@ function updateSystemMediaMetadata(song = getCurrentSongObject()) {
         ? getAbsoluteUrl(song.albumArt)
         : "";
 
+    // Keep the artist in its own media-session field and remove a matching
+    // "Author - " prefix (or " - Author" suffix) from the displayed title.
+    const mediaSessionTitle = cleanSongTitle(song.songName, song.authorName)
+        || song.songName
+        || "Unknown title";
+
     const metadata = {
-        title: song.songName || "Unknown title",
+        title: mediaSessionTitle,
         artist: song.authorName || "Unknown artist",
         album: playlist.length > 0
-            ? `YouTube Music Player • Track ${getCurrentPlaylistIndex() + 1} of ${playlist.length}`
+            ? `Track ${getCurrentPlaylistIndex() + 1} of ${playlist.length} • YouTube Music Player`
             : "YouTube Music Player",
         artwork: artworkUrl
             ? [{ src: artworkUrl, sizes: "512x512", type: "image/jpeg" }]
@@ -2593,20 +2689,59 @@ function setSystemMediaPlaybackState(playbackState) {
     }
 }
 
+function getSystemMediaPlaybackRate() {
+    if (!player || typeof player.getPlaybackRate !== "function") {
+        return 1;
+    }
+
+    const playbackRate = Number(player.getPlaybackRate());
+    return Number.isFinite(playbackRate) && playbackRate > 0
+        ? playbackRate
+        : 1;
+}
+
 function updateSystemMediaPosition(forceNativeUpdate = false) {
-    if (!player || typeof player.getCurrentTime !== "function") return;
+    if (
+        !player ||
+        typeof player.getCurrentTime !== "function" ||
+        typeof player.getDuration !== "function"
+    ) {
+        return;
+    }
 
-    const position = Number(player.getCurrentTime()) || 0;
-    const duration = Number(player.getDuration?.()) || 0;
+    const rawPosition = Number(player.getCurrentTime());
+    const duration = Number(player.getDuration());
 
-    if (!(duration > 0) || position < 0 || position > duration) return;
+    // MediaSession position state requires a positive, finite duration.
+    // YouTube reports duration = 0 briefly while a new video is loading.
+    if (!Number.isFinite(duration) || duration <= 0) return;
+
+    const position = Math.min(
+        Math.max(Number.isFinite(rawPosition) ? rawPosition : 0, 0),
+        duration
+    );
 
     const positionState = {
         duration,
         position,
-        playbackRate: 1
+        playbackRate: getSystemMediaPlaybackRate()
     };
 
+    // Keep the browser-owned media element on the real song duration and
+    // position. The previous one-second looping bridge could replace the
+    // custom Media Session timeline with a one-second timeline.
+    const playerState = Number(player.getPlayerState?.());
+    runMediaSessionPromise(
+        syncBrowserMediaSessionBridge(
+            position,
+            duration,
+            playing || playerState === 1
+        ),
+        "browser progress synchronization"
+    );
+
+    // Chrome/Edge use this to show elapsed time, total duration and a
+    // seekable progress bar in system media controls.
     if ("mediaSession" in navigator && typeof navigator.mediaSession.setPositionState === "function") {
         try {
             navigator.mediaSession.setPositionState(positionState);
@@ -2615,11 +2750,17 @@ function updateSystemMediaPosition(forceNativeUpdate = false) {
         }
     }
 
+    // Android can advance the position natively from playbackRate, but a
+    // one-second refresh keeps the notification/lock-screen time accurate
+    // after seeks, buffering, playback-rate changes and iframe state changes.
     const now = Date.now();
-    if (forceNativeUpdate || now - lastNativeMediaPositionUpdate >= 5000) {
+    if (
+        forceNativeUpdate ||
+        now - lastNativeMediaPositionUpdate >= NATIVE_MEDIA_POSITION_UPDATE_INTERVAL_MS
+    ) {
         lastNativeMediaPositionUpdate = now;
         const nativeSession = getNativeMediaSessionPlugin();
-        if (nativeSession) {
+        if (nativeSession && typeof nativeSession.setPositionState === "function") {
             runMediaSessionPromise(
                 nativeSession.setPositionState(positionState),
                 "position update"
@@ -2639,6 +2780,7 @@ function setupMediaSession() {
     setSystemMediaPlaybackState(
         playing ? "playing" : (systemMediaSessionActivated ? "paused" : "none")
     );
+    updateSystemMediaPosition(true);
 }
 
 document.getElementById("playPauseBtn").addEventListener("click", function () {
