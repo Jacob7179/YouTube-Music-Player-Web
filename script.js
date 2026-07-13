@@ -399,7 +399,7 @@ function loadPlaylist() {
             { videoId: 'DuMqFknYHBs', songName: 'Official髭男dism - イエスタデイ［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/DuMqFknYHBs/hqdefault.jpg' },
             { videoId: 'aRtoPwe4ado', songName: 'Sanitizer', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/aRtoPwe4ado/hqdefault.jpg' },
             { videoId: 'l2nqfPAMrSo', songName: 'Chessboard', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/l2nqfPAMrSo/hqdefault.jpg' },
-            { videoId: 'cqzyiJE4SQE', songName: '笑顔の待つ場所', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/cqzyiJE4SQE/hqdefault.jpg' },
+            { videoId: 'Vho5jBUfR28', songName: 'Official髭男dism - コーヒーとシロップ［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/Vho5jBUfR28/hqdefault.jpg' },
             { videoId: 'ajJKtzg--5g', songName: 'ラストソング［Studio Live Session］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/ajJKtzg--5g/hqdefault.jpg', lyricsTimeOffset: -9.0 },
         ];
     }

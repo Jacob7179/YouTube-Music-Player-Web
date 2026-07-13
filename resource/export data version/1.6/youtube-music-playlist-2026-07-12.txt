@@ -108,10 +108,10 @@
       "albumArt": "https://i.ytimg.com/vi/l2nqfPAMrSo/hqdefault.jpg"
     },
     {
-      "videoId": "cqzyiJE4SQE",
-      "songName": "笑顔の待つ場所",
+      "videoId": "Vho5jBUfR28",
+      "songName": "Official髭男dism - コーヒーとシロップ［Official Video］",
       "authorName": "Official髭男dism",
-      "albumArt": "https://i.ytimg.com/vi/cqzyiJE4SQE/hqdefault.jpg"
+      "albumArt": "https://i.ytimg.com/vi/Vho5jBUfR28/hqdefault.jpg"
     },
     {
       "videoId": "ajJKtzg--5g",
