@@ -1,4 +1,4 @@
-const CACHE_NAME = "youtube-music-player-v1-last-selection";
+const CACHE_NAME = "youtube-music-player-v1-filtered-navigation";
 const APP_SHELL = [
   "./",
   "./index.html",

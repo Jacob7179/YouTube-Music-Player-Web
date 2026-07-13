@@ -535,6 +535,50 @@ function playPlaylistIndex(index) {
     return true;
 }
 
+function getPlaylistNavigationIndexes() {
+    if (!playlist.length) return [];
+
+    const searchInput = document.getElementById('searchPlaylistInput');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+    if (!searchTerm) {
+        return playlist.map((song, index) => index);
+    }
+
+    const matchingIndexes = [];
+
+    playlist.forEach((song, index) => {
+        const songName = String(song.songName || '').toLowerCase();
+        const authorName = String(song.authorName || '').toLowerCase();
+
+        if (songName.includes(searchTerm) || authorName.includes(searchTerm)) {
+            matchingIndexes.push(index);
+        }
+    });
+
+    return matchingIndexes;
+}
+
+function playAdjacentPlaylistSong(direction) {
+    const navigationIndexes = getPlaylistNavigationIndexes();
+
+    if (!navigationIndexes.length) return false;
+
+    const currentIndex = getCurrentPlaylistIndex();
+    const currentPosition = navigationIndexes.indexOf(currentIndex);
+
+    // Do not reload the same song when it is the only filtered result.
+    if (navigationIndexes.length === 1 && currentPosition === 0) {
+        return false;
+    }
+
+    const targetPosition = currentPosition >= 0
+        ? (currentPosition + direction + navigationIndexes.length) % navigationIndexes.length
+        : (direction < 0 ? navigationIndexes.length - 1 : 0);
+
+    return playPlaylistIndex(navigationIndexes[targetPosition]);
+}
+
 function setCurrentSongLyricsTimeOffset(seconds) {
     const song = getCurrentSongObject();
     const offset = Number(seconds);
@@ -1039,10 +1083,7 @@ document.getElementById('searchPlaylistInput').addEventListener('input', functio
         this.classList.add('rounded-end');
     }
     
-    const filteredSongs = playlist.filter(song =>
-        song.songName.toLowerCase().includes(searchTerm) ||
-        song.authorName.toLowerCase().includes(searchTerm)
-    );
+    const filteredSongs = getPlaylistNavigationIndexes().map(index => playlist[index]);
     renderPlaylist(filteredSongs);
 });
 
@@ -2652,23 +2693,11 @@ document.getElementById("prevBtn").addEventListener("click", playPreviousSong);
 document.getElementById("nextBtn").addEventListener("click", playNextSong);
 
 function playPreviousSong() {
-    if (!playlist.length) return;
-
-    const currentIndex = getCurrentPlaylistIndex();
-    const previousIndex = currentIndex >= 0
-        ? currentIndex - 1
-        : playlist.length - 1;
-
-    playPlaylistIndex(previousIndex);
+    playAdjacentPlaylistSong(-1);
 }
 
 function playNextSong() {
-    if (!playlist.length) return;
-
-    const currentIndex = getCurrentPlaylistIndex();
-    const nextIndex = currentIndex >= 0 ? currentIndex + 1 : 0;
-
-    playPlaylistIndex(nextIndex);
+    playAdjacentPlaylistSong(1);
 }
 
 function updateTimelineFromPlayer(forceMediaPositionUpdate = false) {
@@ -2872,7 +2901,7 @@ function handlePlayerStateChange(event) {
             return;
         }
 
-        if (autoPlayEnabled && playlist.length > 1) {
+        if (autoPlayEnabled && getPlaylistNavigationIndexes().length > 1) {
             playNextSong();
             return;
         }
