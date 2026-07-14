@@ -71,25 +71,78 @@ echo ==========================================
 echo Installing Node.js dependencies...
 echo ==========================================
 
-REM Reinstall when node_modules is missing or when the native file/media
-REM plugins were not installed by an older project build.
+REM Reinstall when node_modules is missing, incomplete, or was created
+REM from a different package-lock.json.
 set "NEED_NPM_INSTALL=0"
+set "CURRENT_LOCK_HASH="
+set "INSTALLED_LOCK_HASH="
+
+if exist "package-lock.json" (
+    for /f "usebackq delims=" %%H in (`powershell -NoProfile -Command "(Get-FileHash -LiteralPath 'package-lock.json' -Algorithm SHA256).Hash"`) do set "CURRENT_LOCK_HASH=%%H"
+)
+
 if not exist "node_modules" set "NEED_NPM_INSTALL=1"
 if not exist "node_modules\@capacitor\filesystem" set "NEED_NPM_INSTALL=1"
 if not exist "node_modules\@capacitor\share" set "NEED_NPM_INSTALL=1"
 if not exist "node_modules\@capawesome\capacitor-file-picker" set "NEED_NPM_INSTALL=1"
 if not exist "node_modules\@capgo\capacitor-media-session" set "NEED_NPM_INSTALL=1"
+if not exist "node_modules\.ytmp-package-lock-sha256" set "NEED_NPM_INSTALL=1"
+
+if exist "node_modules\.ytmp-package-lock-sha256" (
+    set /p "INSTALLED_LOCK_HASH=" < "node_modules\.ytmp-package-lock-sha256"
+)
+
+if defined CURRENT_LOCK_HASH if /i not "!CURRENT_LOCK_HASH!"=="!INSTALLED_LOCK_HASH!" set "NEED_NPM_INSTALL=1"
 
 if "!NEED_NPM_INSTALL!"=="1" (
     echo Installing Node.js dependencies...
 
+    REM Ensure this project never uses a registry URL saved by another environment.
+    call npm config set registry https://registry.npmjs.org/ --location=project
+    if errorlevel 1 goto :error
+
+    REM Gradle may keep Capacitor plugin source files open on Windows.
+    REM Stop its daemon before npm removes and recreates node_modules.
+    if exist "android\gradlew.bat" (
+        call "android\gradlew.bat" --stop >nul 2>&1
+    )
+
+    if exist "node_modules" (
+        echo Removing old node_modules...
+        powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+            "$ErrorActionPreference='Stop';" ^
+            "$path=[IO.Path]::GetFullPath('node_modules');" ^
+            "$removed=$false;" ^
+            "for($attempt=1; $attempt -le 5; $attempt++){" ^
+            "  try {" ^
+            "    if(Test-Path -LiteralPath $path){ Remove-Item -LiteralPath $path -Recurse -Force };" ^
+            "    $removed=$true; break;" ^
+            "  } catch {" ^
+            "    Write-Host ('Cleanup attempt ' + $attempt + ' failed: ' + $_.Exception.Message);" ^
+            "    Start-Sleep -Seconds 2;" ^
+            "  }" ^
+            "};" ^
+            "if(-not $removed){ throw 'node_modules is locked. Close Android Studio, File Explorer windows opened inside node_modules, and any running Java/Gradle/Node processes, then run build.bat again.' }"
+        if errorlevel 1 goto :error
+    )
+
     if exist "package-lock.json" (
-        call npm ci
+        call npm ci --registry=https://registry.npmjs.org/ --fetch-retries=5 --fetch-retry-mintimeout=10000 --fetch-retry-maxtimeout=120000
+        if errorlevel 1 (
+            echo.
+            echo First npm install attempt failed. Verifying cache and retrying...
+            call npm cache verify
+            call npm ci --registry=https://registry.npmjs.org/ --fetch-retries=5 --fetch-retry-mintimeout=10000 --fetch-retry-maxtimeout=120000
+        )
     ) else (
-        call npm install
+        call npm install --registry=https://registry.npmjs.org/ --fetch-retries=5 --fetch-retry-mintimeout=10000 --fetch-retry-maxtimeout=120000
     )
 
     if errorlevel 1 goto :error
+
+    if defined CURRENT_LOCK_HASH (
+        > "node_modules\.ytmp-package-lock-sha256" echo !CURRENT_LOCK_HASH!
+    )
 ) else (
     echo Required Node.js dependencies are already installed.
 )

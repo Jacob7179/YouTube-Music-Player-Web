@@ -1,4 +1,4 @@
-const CACHE_NAME = "youtube-music-player-v1-media-session-update";
+const CACHE_NAME = "youtube-music-player-v1-no-notification-time";
 const APP_SHELL = [
   "./",
   "./index.html",
