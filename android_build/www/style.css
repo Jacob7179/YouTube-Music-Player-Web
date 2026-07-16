@@ -3246,6 +3246,7 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         width: 100%;
     }
 }
+
 /* ========================================================================== */
 /* Mobile playlist experience                                                 */
 /* ========================================================================== */
@@ -3299,6 +3300,8 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         overscroll-behavior: contain;
         scroll-padding-block: 8px;
         -webkit-overflow-scrolling: touch;
+        background-color: transparent;
+        transition: background-color 0.8s ease-in-out;
     }
 
     /*
@@ -3322,10 +3325,13 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         padding: 8px 7px 8px 9px;
         border: 1px solid #e7ebf0 !important;
         border-radius: 12px !important;
-        background: #fff;
+        background-color: #fff;
         box-shadow: 0 2px 7px rgba(20, 35, 55, 0.055);
-        transition: transform 0.16s ease, box-shadow 0.16s ease,
-                    background-color 0.25s ease, border-color 0.25s ease;
+        transition: transform 0.16s ease,
+                    background-color 0.8s ease-in-out,
+                    border-color 0.8s ease-in-out,
+                    color 0.8s ease-in-out,
+                    box-shadow 0.8s ease-in-out;
         touch-action: pan-y;
     }
 
@@ -3337,7 +3343,8 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         left: 0;
         width: 3px;
         border-radius: 0 4px 4px 0;
-        background: transparent;
+        background-color: transparent;
+        transition: background-color 0.8s ease-in-out;
     }
 
     #songList .list-group-item:not(.empty-playlist):active {
@@ -3358,11 +3365,13 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         align-self: center;
         padding: 0;
         border-radius: 50%;
-        background: #eef3f8;
+        background-color: #eef3f8;
         color: #52606d !important;
         font-size: 12px;
         font-weight: 700;
         line-height: 1;
+        transition: background-color 0.8s ease-in-out,
+                    color 0.8s ease-in-out;
     }
 
     #songList .song-name {
@@ -3378,6 +3387,7 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         font-size: 14px;
         font-weight: 650;
         line-height: 1.25;
+        transition: color 0.8s ease-in-out;
     }
 
     #songList .author-column {
@@ -3389,9 +3399,10 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        transition: color 0.8s ease-in-out;
     }
 
-    #songList .drag-handle {
+    #songList .list-group-item .drag-handle {
         grid-area: drag;
         width: 40px;
         height: 44px;
@@ -3403,6 +3414,8 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         color: #718096;
         font-size: 21px;
         touch-action: none;
+        transition: background-color 0.8s ease-in-out,
+                    color 0.8s ease-in-out;
     }
 
     #songList .song-action {
@@ -3424,16 +3437,16 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
     /* Selected row: keep the layout readable instead of flattening all details. */
     #songList .list-group-item.selected {
         border-color: #0d6efd !important;
-        background: #0d6efd !important;
+        background-color: #0d6efd !important;
         box-shadow: 0 5px 14px rgba(13, 110, 253, 0.22);
     }
 
     #songList .list-group-item.selected::before {
-        background: rgba(255, 255, 255, 0.9);
+        background-color: rgba(255, 255, 255, 0.9);
     }
 
     #songList .list-group-item.selected .song-number {
-        background: rgba(255, 255, 255, 0.2);
+        background-color: rgba(255, 255, 255, 0.2);
         color: #fff !important;
     }
 
@@ -3455,18 +3468,22 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         padding: 24px 18px !important;
         border: 1px dashed #ccd4dd !important;
         border-radius: 12px !important;
+        background-color: #fff;
         line-height: 1.45;
+        transition: background-color 0.8s ease-in-out,
+                    border-color 0.8s ease-in-out,
+                    color 0.8s ease-in-out;
     }
 
     /* Dark-mode equivalents for the compact phone cards. */
     body.dark-mode #songList .list-group-item:not(.empty-playlist) {
         border-color: #404751 !important;
-        background: #2b2f35;
+        background-color: #2b2f35;
         box-shadow: 0 2px 7px rgba(0, 0, 0, 0.16);
     }
 
     body.dark-mode #songList .song-number {
-        background: #3b424b;
+        background-color: #3b424b;
         color: #e5e9ef !important;
     }
 
@@ -3475,18 +3492,18 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
     }
 
     body.dark-mode #songList .author-column,
-    body.dark-mode #songList .drag-handle {
+    body.dark-mode #songList .list-group-item .drag-handle {
         color: #b8c0ca !important;
     }
 
     body.dark-mode #songList .list-group-item.selected {
         border-color: #2684ff !important;
-        background: #0d6efd !important;
+        background-color: #0d6efd !important;
         box-shadow: 0 5px 14px rgba(13, 110, 253, 0.3);
     }
 
     body.dark-mode #songList .list-group-item.selected .song-number {
-        background: rgba(255, 255, 255, 0.2);
+        background-color: rgba(255, 255, 255, 0.2);
         color: #fff !important;
     }
 
@@ -3498,7 +3515,7 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
 
     body.dark-mode #songList .empty-playlist {
         border-color: #4a515b !important;
-        background: #292d33;
+        background-color: #292d33;
     }
 }
 

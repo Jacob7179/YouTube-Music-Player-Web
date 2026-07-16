@@ -416,6 +416,8 @@ document.addEventListener('DOMContentLoaded', function() {
         showSongListBtn.classList.add('active');
         showSongListBtn.classList.remove('btn-outline-primary');
         showSongListBtn.classList.add('btn-primary');
+
+        revealRestoredPlaylistSelection();
         
         showLyricsBtn.classList.remove('active');
         showLyricsBtn.classList.remove('btn-primary');
@@ -602,32 +604,54 @@ function savePlaylist() {
     localStorage.setItem('youtubeMusicPlaylist', JSON.stringify(playlist));
 }
 
-// Helper function to scroll playlist without focusing the window
-function scrollToSelectedSong() {
+// Reveal the selected playlist item by scrolling only the playlist container.
+// This intentionally avoids focus() and scrollIntoView(), which can move the page.
+function scrollToSelectedSong({ behavior = "smooth", align = "nearest" } = {}) {
     const selectedSong = document.querySelector("#songList li.selected");
     const songList = document.getElementById("songList");
-    
-    if (!selectedSong || !songList) return;
-    
-    // Calculate positions relative to the playlist container
+
+    if (!selectedSong || !songList || songList.clientHeight <= 0) {
+        return false;
+    }
+
     const songRect = selectedSong.getBoundingClientRect();
     const listRect = songList.getBoundingClientRect();
-    
-    // Check if selected song is not fully visible in the playlist
-    const isNotFullyVisible = 
-        songRect.top < listRect.top || 
-        songRect.bottom > listRect.bottom;
-    
-    // Only scroll if the song is not visible in the playlist viewport
-    if (isNotFullyVisible) {
-        // Scroll the playlist container without focusing the window
-        const scrollTop = selectedSong.offsetTop - songList.offsetTop - (songList.clientHeight / 2) + (selectedSong.offsetHeight / 2);
-        
-        songList.scrollTo({
-            top: scrollTop,
-            behavior: "smooth"
-        });
+    const isFullyVisible =
+        songRect.top >= listRect.top &&
+        songRect.bottom <= listRect.bottom;
+
+    if (isFullyVisible) {
+        return true;
     }
+
+    let targetScrollTop = songList.scrollTop;
+
+    if (align === "center") {
+        targetScrollTop +=
+            songRect.top -
+            listRect.top -
+            (songList.clientHeight - songRect.height) / 2;
+    } else if (songRect.top < listRect.top) {
+        targetScrollTop += songRect.top - listRect.top;
+    } else {
+        targetScrollTop += songRect.bottom - listRect.bottom;
+    }
+
+    songList.scrollTo({
+        top: Math.max(0, targetScrollTop),
+        behavior
+    });
+
+    return true;
+}
+
+function revealRestoredPlaylistSelection() {
+    // Wait until layout and the saved playlist/lyrics view preference are applied.
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            scrollToSelectedSong({ behavior: "auto", align: "nearest" });
+        });
+    });
 }
 
 // In the renderPlaylist function, replace the list item creation with:
@@ -2043,6 +2067,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.body.style.opacity = "1";
 
     loadPlaylist();
+    revealRestoredPlaylistSelection();
 
     const firstSongElement = document.querySelector('#songList li.selected');
     const firstSong = getCurrentSongObject();
