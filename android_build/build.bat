@@ -7,6 +7,10 @@ REM ============================================================
 
 cd /d "%~dp0"
 
+REM Android application version applied to android\app\build.gradle.
+set "ANDROID_VERSION_CODE=2"
+set "ANDROID_VERSION_NAME=1.0.1-beta"
+
 echo.
 echo ==========================================
 echo Checking Node.js / npm...
@@ -349,6 +353,18 @@ echo Created:
 type "android\local.properties"
 
 REM ------------------------------------------------------------
+REM Generate a stable Android "Last Updated" date from the latest
+REM source change. This avoids WebView treating APK install time as
+REM the modification date on every build or launch.
+REM ------------------------------------------------------------
+echo.
+echo ==========================================
+echo Generating Android last updated date...
+echo ==========================================
+call node scripts\generate-build-date.js
+if errorlevel 1 goto :error
+
+REM ------------------------------------------------------------
 REM Sync latest web files into Android project.
 REM ------------------------------------------------------------
 echo.
@@ -358,6 +374,43 @@ echo ==========================================
 
 call npx cap sync android
 if errorlevel 1 goto :error
+
+REM ------------------------------------------------------------
+REM Set the Android app version in android\app\build.gradle.
+REM This runs after Capacitor sync so it works for both newly created
+REM and existing Android projects.
+REM ------------------------------------------------------------
+echo.
+echo ==========================================
+echo Setting Android app version...
+echo ==========================================
+
+set "APP_BUILD_GRADLE=%~dp0android\app\build.gradle"
+
+if not exist "%APP_BUILD_GRADLE%" (
+    echo ERROR: Android app build.gradle was not found:
+    echo %APP_BUILD_GRADLE%
+    goto :error
+)
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$ErrorActionPreference='Stop';" ^
+    "$path='%APP_BUILD_GRADLE%';" ^
+    "$content=Get-Content -LiteralPath $path -Raw;" ^
+    "$versionCodePattern='(?m)^(\s*)versionCode\s+\d+\s*$';" ^
+    "$versionNamePattern='(?m)^(\s*)versionName\s+.+$';" ^
+    "if(-not [regex]::IsMatch($content,$versionCodePattern)){ throw 'versionCode was not found in android\app\build.gradle.' };" ^
+    "if(-not [regex]::IsMatch($content,$versionNamePattern)){ throw 'versionName was not found in android\app\build.gradle.' };" ^
+    "$content=[regex]::Replace($content,$versionCodePattern,'${1}versionCode %ANDROID_VERSION_CODE%',1);" ^
+    "$versionNameReplacement='${1}versionName ' + [char]34 + '%ANDROID_VERSION_NAME%' + [char]34;" ^
+    "$content=[regex]::Replace($content,$versionNamePattern,$versionNameReplacement,1);" ^
+    "$content=$content.TrimStart([char]0xFEFF);" ^
+    "$utf8NoBom=New-Object System.Text.UTF8Encoding($false);" ^
+    "[System.IO.File]::WriteAllText($path,$content,$utf8NoBom);"
+if errorlevel 1 goto :error
+
+echo versionCode %ANDROID_VERSION_CODE%
+echo versionName "%ANDROID_VERSION_NAME%"
 
 echo.
 echo ==========================================

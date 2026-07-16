@@ -44,6 +44,8 @@ The application stores the playlist and most preferences in browser storage, so 
 - Play, pause, seek, previous, next, volume, autoplay, and repeat controls
 - Custom playlist with drag-and-drop reordering
 - Playlist search and filtering
+- Previous/next navigation stays within the visible filtered search results
+- Restores the last selected song after reopening or refreshing without auto-playing it
 - Automatic skipping of unavailable videos
 - Album-art modes: spinning artwork, static/hidden artwork, or embedded video
 - Persistent playlist, volume, display, and playback preferences
@@ -81,14 +83,18 @@ https://jacob7179.github.io/YouTube-Music-Player-Web/?add_song=YOUTUBE_VIDEO_LIN
   - 한국어
 - Import and export playlist data and compatible settings as JSON/TXT data
 - Adjustable title-scroll speed and spacing
+- Coordinated title and author slide animations when both lines overflow
+- Independent title or author animation when only one line overflows
 - Scroll-to-top control
 
 ### System and Android integration
 
 - Browser Media Session API integration where supported
 - Operating-system play, pause, previous, next, seek, metadata, and playback-position controls
+- Media-session title cleanup for titles formatted as `Author - Song Name`
 - Capacitor Android wrapper with native file picker, filesystem, sharing, and media-session plugins
 - Android notification, lock-screen, headset, and background-playback support where the device permits it
+- Android notification keeps the playlist position and app name visible without refreshing playback time every second
 - Wired-earphone center-button controls in the patched Android build:
   - 1 tap: play or pause
   - 2 taps: next song
@@ -222,7 +228,7 @@ cd android_build
 .\build.bat
 ```
 
-The script prepares portable Node.js, Java JDK 21, and Android SDK 35 tools when required, synchronizes Capacitor, applies the Android media-session patches, and builds a debug APK.
+The script prepares portable Node.js, Java JDK 21, and Android SDK 35 tools when required, restores locked npm dependencies, generates the Android last-updated date, synchronizes Capacitor, applies the Android media-session patches, writes the configured Android version, and builds a debug APK.
 
 Generated APK:
 
@@ -279,7 +285,7 @@ setTitleScrollSpeed(50);
 
 The app stores data locally in the browser, including:
 
-- Playlist and per-song lyric offsets
+- Playlist, last selected song, and per-song lyric offsets
 - Search cache
 - Lyrics and translation caches
 - Language and dark-mode preferences
@@ -299,10 +305,15 @@ YouTube-Music-Player-Web/
 │     └─ deploy.yml                 GitHub Pages deployment
 ├─ alpha/                           Experimental API-key version
 ├─ android_build/                   Capacitor Android wrapper
+│  ├─ .npmrc                        Public npm registry and retry settings
 │  ├─ build.bat                     Automated Windows APK build
 │  ├─ clean.bat                     Generated-folder cleanup
 │  ├─ capacitor.config.json         Capacitor application settings
 │  ├─ package.json                  Android dependencies and scripts
+│  ├─ package-lock.json             Locked dependency tree
+│  ├─ scripts/
+│  │  ├─ generate-build-date.js     Stable Android last-updated date
+│  │  └─ patch-media-session-plugin.js
 │  └─ README-APK.md                 Detailed Android documentation
 ├─ api/
 │  └─ getApiKey.js                  Vercel API-key endpoint
@@ -315,6 +326,16 @@ YouTube-Music-Player-Web/
 ├─ LICENSE                          AGPL-3.0 license
 └─ README.md                        Project documentation
 ```
+
+## Recent Implementation Notes
+
+- The last selected playlist item is stored and restored on the next launch without starting playback automatically.
+- When playlist search is active, previous, next, autoplay, and media-control navigation remain inside the filtered results.
+- Media-session metadata removes a matching author prefix from titles such as `Author - Song Name`.
+- Android exposes a seekable playback timeline internally without redrawing the notification every second.
+- The Android notification displays `Author • Track x of y • YouTube Music Player` and omits playback time.
+- The Android last-updated label comes from generated source-change information instead of the APK install date.
+- `build.bat` applies `ANDROID_VERSION_CODE` and `ANDROID_VERSION_NAME` to `android/app/build.gradle` using UTF-8 without a BOM.
 
 ## Troubleshooting
 

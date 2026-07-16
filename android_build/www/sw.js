@@ -1,4 +1,4 @@
-const CACHE_NAME = "youtube-music-player-v1-synced-title-author-slides";
+const CACHE_NAME = "youtube-music-player-v1-stable-build-date";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -44,6 +44,13 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request).catch(() => caches.match("./index.html"))
     );
+    return;
+  }
+
+  // Always read the generated Android build date from the current APK.
+  // Do not let an older service-worker cache keep a previous release date.
+  if (url.pathname.endsWith("/build-info.js")) {
+    event.respondWith(fetch(request, { cache: "no-store" }));
     return;
   }
 

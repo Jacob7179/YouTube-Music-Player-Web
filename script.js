@@ -5677,14 +5677,41 @@ function formatBuildDateByLanguage(date, lang = currentLang) {
     }).format(date);
 }
 
+function parseBuildDateValue(value) {
+    if (typeof value !== "string" || !value.trim()) return null;
+
+    // Parse a date-only build value in local time so it cannot shift to the
+    // previous/next day because of the device timezone.
+    const dateOnlyMatch = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dateOnlyMatch) {
+        const [, year, month, day] = dateOnlyMatch;
+        const localDate = new Date(Number(year), Number(month) - 1, Number(day));
+        return isNaN(localDate.getTime()) ? null : localDate;
+    }
+
+    const parsedDate = new Date(value);
+    return isNaN(parsedDate.getTime()) ? null : parsedDate;
+}
+
+function applyBuildDate(dateElement, date) {
+    if (!dateElement || !(date instanceof Date) || isNaN(date.getTime())) return;
+
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+
+    dateElement.setAttribute("data-build-date", `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+    dateElement.setAttribute("data-original-date", `${day}d ${month}m ${year}y`);
+}
+
 function refreshBuildDateLanguage() {
     const dateElement = document.getElementById("formattedDate");
     if (!dateElement) return;
 
-    const isoDate = dateElement.getAttribute("data-build-date");
-    if (!isoDate) return;
+    const buildDateValue = dateElement.getAttribute("data-build-date");
+    const date = parseBuildDateValue(buildDateValue);
+    if (!date) return;
 
-    const date = new Date(isoDate);
     dateElement.textContent = formatBuildDateByLanguage(date, currentLang);
 }
 
@@ -5692,7 +5719,20 @@ async function updateBuildDate() {
     const dateElement = document.getElementById('formattedDate');
     if (!dateElement) return;
 
-    // List of files to check (add/remove any core files)
+    // Android receives a fixed source-change date from build-info.js. Do not
+    // use document.lastModified or local HEAD responses there: WebView reports
+    // APK installation/build time, which makes every launch look newly updated.
+    const embeddedBuildDate = parseBuildDateValue(
+        window.YTMP_BUILD_INFO && window.YTMP_BUILD_INFO.lastUpdated
+    );
+
+    if (embeddedBuildDate) {
+        applyBuildDate(dateElement, embeddedBuildDate);
+        refreshBuildDateLanguage();
+        return;
+    }
+
+    // Web deployments can continue using server Last-Modified headers.
     const filesToCheck = [
         'index.html',
         'style.css',
@@ -5701,67 +5741,47 @@ async function updateBuildDate() {
 
     let latestDate = null;
 
-    // Start with the current HTML document's last modified as a baseline
     if (document.lastModified) {
-        const d = new Date(document.lastModified);
-        if (!isNaN(d.getTime())) latestDate = d;
+        const documentDate = new Date(document.lastModified);
+        if (!isNaN(documentDate.getTime())) latestDate = documentDate;
     }
 
     try {
-        // Fetch each file's HEAD to get Last-Modified header
         const fetchPromises = filesToCheck.map(async (file) => {
             try {
-                const response = await fetch(file, { method: 'HEAD' });
+                const response = await fetch(file, { method: 'HEAD', cache: 'no-store' });
                 if (response.ok) {
                     const lastModified = response.headers.get('Last-Modified');
                     if (lastModified) return new Date(lastModified);
                 }
-            } catch (e) {
-                // Silently ignore (file may not exist, CORS, network error)
-                console.warn(`Could not fetch Last-Modified for ${file}`, e);
+            } catch (error) {
+                console.warn(`Could not fetch Last-Modified for ${file}`, error);
             }
             return null;
         });
 
-        const dates = await Promise.all(fetchPromises);
+        const validDates = (await Promise.all(fetchPromises))
+            .filter(date => date && !isNaN(date.getTime()));
 
-        // Filter out invalid dates
-        const validDates = dates.filter(d => d && !isNaN(d.getTime()));
-        
-        // Add the document date again just to be safe
         if (document.lastModified) {
-            const docDate = new Date(document.lastModified);
-            if (!isNaN(docDate.getTime())) validDates.push(docDate);
+            const documentDate = new Date(document.lastModified);
+            if (!isNaN(documentDate.getTime())) validDates.push(documentDate);
         }
 
-        // Find the most recent date among all
         if (validDates.length > 0) {
-            const maxDate = new Date(Math.max(...validDates.map(d => d.getTime())));
-            if (!latestDate || maxDate > latestDate) {
-                latestDate = maxDate;
-            }
+            const newestDate = new Date(Math.max(...validDates.map(date => date.getTime())));
+            if (!latestDate || newestDate > latestDate) latestDate = newestDate;
         }
     } catch (error) {
         console.warn("Could not fetch file dates, using document.lastModified fallback", error);
     }
 
-    if (latestDate) {
-        dateElement.setAttribute("data-build-date", latestDate.toISOString());
-
-        // Keep old format also, in case your other code still uses data-original-date
-        const day = latestDate.getDate();
-        const month = latestDate.getMonth() + 1;
-        const year = latestDate.getFullYear();
-        dateElement.setAttribute("data-original-date", `${day}d ${month}m ${year}y`);
-    } else {
-        if (!dateElement.getAttribute("data-build-date")) {
-            const fallbackDate = new Date(2026, 5, 19); // 19 June 2026
-            dateElement.setAttribute("data-build-date", fallbackDate.toISOString());
-            dateElement.setAttribute("data-original-date", "19d 6m 2026y");
-        }
+    if (!latestDate) {
+        latestDate = parseBuildDateValue(dateElement.getAttribute("data-build-date"))
+            || new Date(2026, 5, 19);
     }
 
-    // Update date text using current selected language
+    applyBuildDate(dateElement, latestDate);
     refreshBuildDateLanguage();
 }
 
@@ -7752,7 +7772,15 @@ function setTitleGapFraction(value) {
         String(GAP_FRACTION)
     );
 
-    restartNowPlayingTextAnimations();
+    // Apply the new gap immediately to a scrolling title.
+    stopTitleAnimation();
+    stopAuthorAnimation();
+
+    requestAnimationFrame(() => {
+        startTitleAnimation();
+        startAuthorAnimation();
+    });
+
     return true;
 }
 
@@ -7775,160 +7803,209 @@ function setTitleScrollSpeed(value) {
         String(TITLE_SCROLL_SPEED)
     );
 
-    restartNowPlayingTextAnimations();
+    // Restart both animations so the new speed applies immediately.
+    stopTitleAnimation();
+    stopAuthorAnimation();
+
+    requestAnimationFrame(() => {
+        startTitleAnimation();
+        startAuthorAnimation();
+    });
+
     return true;
 }
 
 const titleContainer = document.querySelector("#nowPlaying .song-title");
 const titleInner = document.querySelector("#nowPlaying .song-title-inner");
-const authorContainer = document.querySelector("#nowPlaying .author-name");
-const authorInner = document.querySelector("#nowPlaying .author-name-inner");
-
-let resizeTimeout;
-let textAnimationRestartFrame = null;
 let titleAnimationRunning = false;
-let titleAnimationToken = 0;
-let authorAnimationRunning = false;
-let authorAnimationToken = 0;
-let synchronizedTextAnimationRunning = false;
-let synchronizedTextAnimationToken = 0;
 
-function resetAnimationTrack(inner, copySelector) {
-    if (!inner) return;
+function updateSongTitle(text) {
+    if (!titleInner) return;
+    const safeText = text || " ";
+    titleInner.innerHTML = '';
+    const span1 = document.createElement('span');
+    span1.className = 'title-copy first-copy';
+    span1.textContent = safeText;
+    titleInner.appendChild(span1);
+    const span2 = document.createElement('span');
+    span2.className = 'title-copy second-copy';
+    span2.textContent = safeText;
+    // margin-left will be set in startTitleAnimation after measuring
+    titleInner.appendChild(span2);
 
-    inner.style.transition = "none";
-    inner.style.transform = "translateX(0)";
-
-    const secondCopy = inner.querySelector(`${copySelector}.second-copy`);
-    if (secondCopy) {
-        secondCopy.style.marginLeft = "0";
-    }
-
-    void inner.offsetWidth;
-    inner.style.transition = "";
-}
-
-function cancelSynchronizedTextAnimation() {
-    synchronizedTextAnimationRunning = false;
-    synchronizedTextAnimationToken++;
+    stopTitleAnimation();
+    requestAnimationFrame(() => {
+        startTitleAnimation();
+    });
 }
 
 function stopTitleAnimation() {
     titleAnimationRunning = false;
-    titleAnimationToken++;
-    cancelSynchronizedTextAnimation();
-    resetAnimationTrack(titleInner, ".title-copy");
+    if (titleInner) {
+        titleInner.style.transition = 'none';
+        titleInner.style.transform = 'translateX(0)';
+        // Reset second copy's margin (will be recalculated on next start)
+        const secondCopy = titleInner.querySelector('.second-copy');
+        if (secondCopy) {
+            secondCopy.style.marginLeft = '0';
+        }
+        void titleInner.offsetWidth;
+        titleInner.style.transition = '';
+    }
 }
 
-function stopAuthorAnimation() {
-    authorAnimationRunning = false;
-    authorAnimationToken++;
-    cancelSynchronizedTextAnimation();
-    resetAnimationTrack(authorInner, ".author-copy");
-}
+function startTitleAnimation() {
+    if (!titleInner || !titleContainer) return;
+    const copies = titleInner.querySelectorAll('.title-copy');
+    if (copies.length < 2) return;
 
-function stopAllNowPlayingTextAnimations() {
-    titleAnimationRunning = false;
-    titleAnimationToken++;
-    authorAnimationRunning = false;
-    authorAnimationToken++;
-    cancelSynchronizedTextAnimation();
-
-    resetAnimationTrack(titleInner, ".title-copy");
-    resetAnimationTrack(authorInner, ".author-copy");
-}
-
-function scheduleNowPlayingTextAnimations() {
-    if (textAnimationRestartFrame !== null) {
-        cancelAnimationFrame(textAnimationRestartFrame);
+    const firstCopy = copies[0];
+    const secondCopy = copies[1];
+    const text = firstCopy.textContent.trim();
+    if (!text) {
+        titleInner.style.transform = 'translateX(0)';
+        return;
     }
 
-    textAnimationRestartFrame = requestAnimationFrame(() => {
-        textAnimationRestartFrame = null;
-        startNowPlayingTextAnimations();
-    });
+    const containerWidth = titleContainer.offsetWidth;
+    firstCopy.style.whiteSpace = 'nowrap';
+    const oneCopyWidth = firstCopy.offsetWidth;
+
+    if (oneCopyWidth <= containerWidth) {
+        secondCopy.style.display = 'none';
+        titleInner.style.transform = 'translateX(0)';
+        return;
+    }
+
+    secondCopy.style.display = 'inline-block';
+    const gap = Math.max(10, Math.min(containerWidth * GAP_FRACTION, oneCopyWidth * 0.5));
+    secondCopy.style.marginLeft = gap + 'px';
+
+    const totalSlideDistance = oneCopyWidth + gap;
+    const totalSlideDuration = totalSlideDistance / TITLE_SCROLL_SPEED;
+
+    if (titleAnimationRunning) return;
+    titleAnimationRunning = true;
+
+    let startTime = null;
+    let phase = 'initialPause';   // Changed
+    let pauseStartTime = null;
+
+    function animate(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = (timestamp - startTime) / 1000;
+
+        if (phase === 'initialPause') {
+            if (elapsed >= SLIDE_DURATION) {
+                phase = 'slide';
+                startTime = timestamp;
+            }
+            titleInner.style.transform = 'translateX(0)';
+        }
+        else if (phase === 'slide') {
+            const progress = Math.min(elapsed / totalSlideDuration, 1);
+            const translateX = -progress * totalSlideDistance;
+            titleInner.style.transform = `translateX(${translateX}px)`;
+
+            if (progress >= 1) {
+                phase = 'pause';
+                pauseStartTime = timestamp;
+            }
+        }
+        else if (phase === 'pause') {
+            const pauseElapsed = (timestamp - pauseStartTime) / 1000;
+            if (pauseElapsed >= PAUSE_DURATION) {
+                titleInner.style.transition = 'none';
+                titleInner.style.transform = 'translateX(0)';
+                void titleInner.offsetWidth;
+                titleInner.style.transition = '';
+                startTime = timestamp;
+                phase = 'slide';
+            }
+        }
+
+        if (titleAnimationRunning) {
+            requestAnimationFrame(animate);
+        }
+    }
+
+    requestAnimationFrame(animate);
 }
 
-function restartNowPlayingTextAnimations() {
-    stopAllNowPlayingTextAnimations();
-    scheduleNowPlayingTextAnimations();
-}
+let resizeTimeout;
+const authorContainer = document.querySelector("#nowPlaying .author-name");
+const authorInner = document.querySelector("#nowPlaying .author-name-inner");
 
-function updateSongTitle(text) {
-    if (!titleInner) return;
-
-    const safeText = text || " ";
-    titleInner.innerHTML = "";
-
-    const firstCopy = document.createElement("span");
-    firstCopy.className = "title-copy first-copy";
-    firstCopy.textContent = safeText;
-
-    const secondCopy = document.createElement("span");
-    secondCopy.className = "title-copy second-copy";
-    secondCopy.textContent = safeText;
-
-    titleInner.append(firstCopy, secondCopy);
-
-    stopTitleAnimation();
-    scheduleNowPlayingTextAnimations();
-}
+let authorAnimationRunning = false;
+let authorAnimationToken = 0;
 
 function updateAuthorName(text) {
     if (!authorContainer || !authorInner) return;
 
     const safeText = text || "";
+
     authorContainer.dataset.author = safeText;
 
     stopAuthorAnimation();
     authorInner.innerHTML = "";
 
-    if (safeText) {
-        const firstCopy = document.createElement("span");
-        firstCopy.className = "author-copy first-copy";
-        firstCopy.textContent = safeText;
+    if (!safeText) return;
 
-        const secondCopy = document.createElement("span");
-        secondCopy.className = "author-copy second-copy";
-        secondCopy.textContent = safeText;
+    const firstCopy = document.createElement("span");
+    firstCopy.className = "author-copy first-copy";
+    firstCopy.textContent = safeText;
 
-        authorInner.append(firstCopy, secondCopy);
-    }
+    const secondCopy = document.createElement("span");
+    secondCopy.className = "author-copy second-copy";
+    secondCopy.textContent = safeText;
 
-    scheduleNowPlayingTextAnimations();
+    authorInner.append(firstCopy, secondCopy);
+
+    requestAnimationFrame(startAuthorAnimation);
 }
 
-function prepareAnimationTrack(container, inner, copySelector) {
-    if (!container || !inner) return null;
+function stopAuthorAnimation() {
+    authorAnimationRunning = false;
+    authorAnimationToken++;
 
-    const copies = inner.querySelectorAll(copySelector);
-    if (copies.length < 2) {
-        inner.style.transform = "translateX(0)";
-        return null;
+    if (!authorInner) return;
+
+    authorInner.style.transition = "none";
+    authorInner.style.transform = "translateX(0)";
+
+    const secondCopy = authorInner.querySelector(".second-copy");
+    if (secondCopy) {
+        secondCopy.style.marginLeft = "0";
     }
+
+    void authorInner.offsetWidth;
+    authorInner.style.transition = "";
+}
+
+function startAuthorAnimation() {
+    if (!authorContainer || !authorInner) return;
+
+    const copies = authorInner.querySelectorAll(".author-copy");
+    if (copies.length < 2) return;
 
     const firstCopy = copies[0];
     const secondCopy = copies[1];
     const text = firstCopy.textContent.trim();
 
-    firstCopy.style.whiteSpace = "nowrap";
-    secondCopy.style.marginLeft = "0";
-    secondCopy.style.display = "inline-block";
-    inner.style.transform = "translateX(0)";
+    if (!text) return;
 
-    if (!text) {
-        secondCopy.style.display = "none";
-        return null;
-    }
-
-    const containerWidth = container.clientWidth || container.offsetWidth;
+    const containerWidth = authorContainer.offsetWidth;
     const oneCopyWidth = firstCopy.offsetWidth;
 
     if (oneCopyWidth <= containerWidth) {
         secondCopy.style.display = "none";
-        return null;
+        authorInner.style.transform = "translateX(0)";
+        return;
     }
 
+    secondCopy.style.display = "inline-block";
+
+    // Uses the same gap setting as the song title.
     const gap = Math.max(
         10,
         Math.min(containerWidth * GAP_FRACTION, oneCopyWidth * 0.5)
@@ -7936,71 +8013,47 @@ function prepareAnimationTrack(container, inner, copySelector) {
 
     secondCopy.style.marginLeft = `${gap}px`;
 
-    const distance = oneCopyWidth + gap;
+    const totalDistance = oneCopyWidth + gap;
+    const totalDuration = totalDistance / TITLE_SCROLL_SPEED;
 
-    return {
-        inner,
-        distance,
-        duration: distance / TITLE_SCROLL_SPEED
-    };
-}
+    const token = ++authorAnimationToken;
+    authorAnimationRunning = true;
 
-function setAnimationProgress(animation, progress) {
-    const clampedProgress = Math.max(0, Math.min(1, progress));
-    animation.inner.style.transform =
-        `translateX(${-clampedProgress * animation.distance}px)`;
-}
-
-function startIndependentTextAnimation(animation, type) {
-    const isTitle = type === "title";
-    const token = isTitle ? ++titleAnimationToken : ++authorAnimationToken;
-
-    if (isTitle) {
-        titleAnimationRunning = true;
-    } else {
-        authorAnimationRunning = true;
-    }
-
+    let startTime = null;
     let phase = "initialPause";
-    let phaseStartTime = null;
-
-    function isStillActive() {
-        return isTitle
-            ? titleAnimationRunning && token === titleAnimationToken
-            : authorAnimationRunning && token === authorAnimationToken;
-    }
+    let pauseStartTime = null;
 
     function animate(timestamp) {
-        if (!isStillActive()) return;
+        if (!authorAnimationRunning || token !== authorAnimationToken) return;
 
-        if (phaseStartTime === null) {
-            phaseStartTime = timestamp;
-        }
+        if (!startTime) startTime = timestamp;
 
-        const elapsed = (timestamp - phaseStartTime) / 1000;
+        const elapsed = (timestamp - startTime) / 1000;
 
         if (phase === "initialPause") {
-            setAnimationProgress(animation, 0);
+            authorInner.style.transform = "translateX(0)";
 
             if (elapsed >= SLIDE_DURATION) {
                 phase = "slide";
-                phaseStartTime = timestamp;
+                startTime = timestamp;
             }
         } else if (phase === "slide") {
-            const progress = Math.min(elapsed / animation.duration, 1);
-            setAnimationProgress(animation, progress);
+            const progress = Math.min(elapsed / totalDuration, 1);
+
+            authorInner.style.transform =
+                `translateX(${-progress * totalDistance}px)`;
 
             if (progress >= 1) {
                 phase = "pause";
-                phaseStartTime = timestamp;
+                pauseStartTime = timestamp;
             }
         } else if (phase === "pause") {
-            setAnimationProgress(animation, 1);
+            const pauseElapsed = (timestamp - pauseStartTime) / 1000;
 
-            if (elapsed >= PAUSE_DURATION) {
-                setAnimationProgress(animation, 0);
+            if (pauseElapsed >= PAUSE_DURATION) {
+                authorInner.style.transform = "translateX(0)";
+                startTime = timestamp;
                 phase = "slide";
-                phaseStartTime = timestamp;
             }
         }
 
@@ -8010,114 +8063,16 @@ function startIndependentTextAnimation(animation, type) {
     requestAnimationFrame(animate);
 }
 
-function startSynchronizedTextAnimations(titleAnimation, authorAnimation) {
-    const token = ++synchronizedTextAnimationToken;
-    synchronizedTextAnimationRunning = true;
-
-    let phase = "initialPause";
-    let phaseStartTime = null;
-
-    function animate(timestamp) {
-        if (
-            !synchronizedTextAnimationRunning ||
-            token !== synchronizedTextAnimationToken
-        ) {
-            return;
-        }
-
-        if (phaseStartTime === null) {
-            phaseStartTime = timestamp;
-        }
-
-        const elapsed = (timestamp - phaseStartTime) / 1000;
-
-        if (phase === "initialPause") {
-            setAnimationProgress(titleAnimation, 0);
-            setAnimationProgress(authorAnimation, 0);
-
-            if (elapsed >= SLIDE_DURATION) {
-                phase = "slide";
-                phaseStartTime = timestamp;
-            }
-        } else if (phase === "slide") {
-            const titleProgress = Math.min(
-                elapsed / titleAnimation.duration,
-                1
-            );
-            const authorProgress = Math.min(
-                elapsed / authorAnimation.duration,
-                1
-            );
-
-            setAnimationProgress(titleAnimation, titleProgress);
-            setAnimationProgress(authorAnimation, authorProgress);
-
-            // The shorter line stays at its endpoint until the longer line
-            // also completes. Only then can the next paired cycle begin.
-            if (titleProgress >= 1 && authorProgress >= 1) {
-                phase = "pause";
-                phaseStartTime = timestamp;
-            }
-        } else if (phase === "pause") {
-            setAnimationProgress(titleAnimation, 1);
-            setAnimationProgress(authorAnimation, 1);
-
-            if (elapsed >= PAUSE_DURATION) {
-                setAnimationProgress(titleAnimation, 0);
-                setAnimationProgress(authorAnimation, 0);
-                phase = "slide";
-                phaseStartTime = timestamp;
-            }
-        }
-
-        requestAnimationFrame(animate);
-    }
-
-    requestAnimationFrame(animate);
-}
-
-function startNowPlayingTextAnimations() {
-    stopAllNowPlayingTextAnimations();
-
-    const titleAnimation = prepareAnimationTrack(
-        titleContainer,
-        titleInner,
-        ".title-copy"
-    );
-    const authorAnimation = prepareAnimationTrack(
-        authorContainer,
-        authorInner,
-        ".author-copy"
-    );
-
-    if (titleAnimation && authorAnimation) {
-        startSynchronizedTextAnimations(titleAnimation, authorAnimation);
-        return;
-    }
-
-    // When only one line overflows, it runs independently.
-    if (titleAnimation) {
-        startIndependentTextAnimation(titleAnimation, "title");
-    }
-
-    if (authorAnimation) {
-        startIndependentTextAnimation(authorAnimation, "author");
-    }
-}
-
-// Keep these public helpers for existing calls and console usage.
-function startTitleAnimation() {
-    scheduleNowPlayingTextAnimations();
-}
-
-function startAuthorAnimation() {
-    scheduleNowPlayingTextAnimations();
-}
-
-window.addEventListener("resize", () => {
+window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
-        restartNowPlayingTextAnimations();
+        stopTitleAnimation();
+        stopAuthorAnimation();
+
+        requestAnimationFrame(() => {
+            startTitleAnimation();
+            startAuthorAnimation();
+        });
     }, 300);
 });
 
