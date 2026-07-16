@@ -7752,15 +7752,7 @@ function setTitleGapFraction(value) {
         String(GAP_FRACTION)
     );
 
-    // Apply the new gap immediately to a scrolling title.
-    stopTitleAnimation();
-    stopAuthorAnimation();
-
-    requestAnimationFrame(() => {
-        startTitleAnimation();
-        startAuthorAnimation();
-    });
-
+    restartNowPlayingTextAnimations();
     return true;
 }
 
@@ -7783,209 +7775,160 @@ function setTitleScrollSpeed(value) {
         String(TITLE_SCROLL_SPEED)
     );
 
-    // Restart both animations so the new speed applies immediately.
-    stopTitleAnimation();
-    stopAuthorAnimation();
-
-    requestAnimationFrame(() => {
-        startTitleAnimation();
-        startAuthorAnimation();
-    });
-
+    restartNowPlayingTextAnimations();
     return true;
 }
 
 const titleContainer = document.querySelector("#nowPlaying .song-title");
 const titleInner = document.querySelector("#nowPlaying .song-title-inner");
+const authorContainer = document.querySelector("#nowPlaying .author-name");
+const authorInner = document.querySelector("#nowPlaying .author-name-inner");
+
+let resizeTimeout;
+let textAnimationRestartFrame = null;
 let titleAnimationRunning = false;
+let titleAnimationToken = 0;
+let authorAnimationRunning = false;
+let authorAnimationToken = 0;
+let synchronizedTextAnimationRunning = false;
+let synchronizedTextAnimationToken = 0;
 
-function updateSongTitle(text) {
-    if (!titleInner) return;
-    const safeText = text || " ";
-    titleInner.innerHTML = '';
-    const span1 = document.createElement('span');
-    span1.className = 'title-copy first-copy';
-    span1.textContent = safeText;
-    titleInner.appendChild(span1);
-    const span2 = document.createElement('span');
-    span2.className = 'title-copy second-copy';
-    span2.textContent = safeText;
-    // margin-left will be set in startTitleAnimation after measuring
-    titleInner.appendChild(span2);
+function resetAnimationTrack(inner, copySelector) {
+    if (!inner) return;
 
-    stopTitleAnimation();
-    requestAnimationFrame(() => {
-        startTitleAnimation();
-    });
+    inner.style.transition = "none";
+    inner.style.transform = "translateX(0)";
+
+    const secondCopy = inner.querySelector(`${copySelector}.second-copy`);
+    if (secondCopy) {
+        secondCopy.style.marginLeft = "0";
+    }
+
+    void inner.offsetWidth;
+    inner.style.transition = "";
+}
+
+function cancelSynchronizedTextAnimation() {
+    synchronizedTextAnimationRunning = false;
+    synchronizedTextAnimationToken++;
 }
 
 function stopTitleAnimation() {
     titleAnimationRunning = false;
-    if (titleInner) {
-        titleInner.style.transition = 'none';
-        titleInner.style.transform = 'translateX(0)';
-        // Reset second copy's margin (will be recalculated on next start)
-        const secondCopy = titleInner.querySelector('.second-copy');
-        if (secondCopy) {
-            secondCopy.style.marginLeft = '0';
-        }
-        void titleInner.offsetWidth;
-        titleInner.style.transition = '';
-    }
-}
-
-function startTitleAnimation() {
-    if (!titleInner || !titleContainer) return;
-    const copies = titleInner.querySelectorAll('.title-copy');
-    if (copies.length < 2) return;
-
-    const firstCopy = copies[0];
-    const secondCopy = copies[1];
-    const text = firstCopy.textContent.trim();
-    if (!text) {
-        titleInner.style.transform = 'translateX(0)';
-        return;
-    }
-
-    const containerWidth = titleContainer.offsetWidth;
-    firstCopy.style.whiteSpace = 'nowrap';
-    const oneCopyWidth = firstCopy.offsetWidth;
-
-    if (oneCopyWidth <= containerWidth) {
-        secondCopy.style.display = 'none';
-        titleInner.style.transform = 'translateX(0)';
-        return;
-    }
-
-    secondCopy.style.display = 'inline-block';
-    const gap = Math.max(10, Math.min(containerWidth * GAP_FRACTION, oneCopyWidth * 0.5));
-    secondCopy.style.marginLeft = gap + 'px';
-
-    const totalSlideDistance = oneCopyWidth + gap;
-    const totalSlideDuration = totalSlideDistance / TITLE_SCROLL_SPEED;
-
-    if (titleAnimationRunning) return;
-    titleAnimationRunning = true;
-
-    let startTime = null;
-    let phase = 'initialPause';   // Changed
-    let pauseStartTime = null;
-
-    function animate(timestamp) {
-        if (!startTime) startTime = timestamp;
-        const elapsed = (timestamp - startTime) / 1000;
-
-        if (phase === 'initialPause') {
-            if (elapsed >= SLIDE_DURATION) {
-                phase = 'slide';
-                startTime = timestamp;
-            }
-            titleInner.style.transform = 'translateX(0)';
-        }
-        else if (phase === 'slide') {
-            const progress = Math.min(elapsed / totalSlideDuration, 1);
-            const translateX = -progress * totalSlideDistance;
-            titleInner.style.transform = `translateX(${translateX}px)`;
-
-            if (progress >= 1) {
-                phase = 'pause';
-                pauseStartTime = timestamp;
-            }
-        }
-        else if (phase === 'pause') {
-            const pauseElapsed = (timestamp - pauseStartTime) / 1000;
-            if (pauseElapsed >= PAUSE_DURATION) {
-                titleInner.style.transition = 'none';
-                titleInner.style.transform = 'translateX(0)';
-                void titleInner.offsetWidth;
-                titleInner.style.transition = '';
-                startTime = timestamp;
-                phase = 'slide';
-            }
-        }
-
-        if (titleAnimationRunning) {
-            requestAnimationFrame(animate);
-        }
-    }
-
-    requestAnimationFrame(animate);
-}
-
-let resizeTimeout;
-const authorContainer = document.querySelector("#nowPlaying .author-name");
-const authorInner = document.querySelector("#nowPlaying .author-name-inner");
-
-let authorAnimationRunning = false;
-let authorAnimationToken = 0;
-
-function updateAuthorName(text) {
-    if (!authorContainer || !authorInner) return;
-
-    const safeText = text || "";
-
-    authorContainer.dataset.author = safeText;
-
-    stopAuthorAnimation();
-    authorInner.innerHTML = "";
-
-    if (!safeText) return;
-
-    const firstCopy = document.createElement("span");
-    firstCopy.className = "author-copy first-copy";
-    firstCopy.textContent = safeText;
-
-    const secondCopy = document.createElement("span");
-    secondCopy.className = "author-copy second-copy";
-    secondCopy.textContent = safeText;
-
-    authorInner.append(firstCopy, secondCopy);
-
-    requestAnimationFrame(startAuthorAnimation);
+    titleAnimationToken++;
+    cancelSynchronizedTextAnimation();
+    resetAnimationTrack(titleInner, ".title-copy");
 }
 
 function stopAuthorAnimation() {
     authorAnimationRunning = false;
     authorAnimationToken++;
-
-    if (!authorInner) return;
-
-    authorInner.style.transition = "none";
-    authorInner.style.transform = "translateX(0)";
-
-    const secondCopy = authorInner.querySelector(".second-copy");
-    if (secondCopy) {
-        secondCopy.style.marginLeft = "0";
-    }
-
-    void authorInner.offsetWidth;
-    authorInner.style.transition = "";
+    cancelSynchronizedTextAnimation();
+    resetAnimationTrack(authorInner, ".author-copy");
 }
 
-function startAuthorAnimation() {
+function stopAllNowPlayingTextAnimations() {
+    titleAnimationRunning = false;
+    titleAnimationToken++;
+    authorAnimationRunning = false;
+    authorAnimationToken++;
+    cancelSynchronizedTextAnimation();
+
+    resetAnimationTrack(titleInner, ".title-copy");
+    resetAnimationTrack(authorInner, ".author-copy");
+}
+
+function scheduleNowPlayingTextAnimations() {
+    if (textAnimationRestartFrame !== null) {
+        cancelAnimationFrame(textAnimationRestartFrame);
+    }
+
+    textAnimationRestartFrame = requestAnimationFrame(() => {
+        textAnimationRestartFrame = null;
+        startNowPlayingTextAnimations();
+    });
+}
+
+function restartNowPlayingTextAnimations() {
+    stopAllNowPlayingTextAnimations();
+    scheduleNowPlayingTextAnimations();
+}
+
+function updateSongTitle(text) {
+    if (!titleInner) return;
+
+    const safeText = text || " ";
+    titleInner.innerHTML = "";
+
+    const firstCopy = document.createElement("span");
+    firstCopy.className = "title-copy first-copy";
+    firstCopy.textContent = safeText;
+
+    const secondCopy = document.createElement("span");
+    secondCopy.className = "title-copy second-copy";
+    secondCopy.textContent = safeText;
+
+    titleInner.append(firstCopy, secondCopy);
+
+    stopTitleAnimation();
+    scheduleNowPlayingTextAnimations();
+}
+
+function updateAuthorName(text) {
     if (!authorContainer || !authorInner) return;
 
-    const copies = authorInner.querySelectorAll(".author-copy");
-    if (copies.length < 2) return;
+    const safeText = text || "";
+    authorContainer.dataset.author = safeText;
+
+    stopAuthorAnimation();
+    authorInner.innerHTML = "";
+
+    if (safeText) {
+        const firstCopy = document.createElement("span");
+        firstCopy.className = "author-copy first-copy";
+        firstCopy.textContent = safeText;
+
+        const secondCopy = document.createElement("span");
+        secondCopy.className = "author-copy second-copy";
+        secondCopy.textContent = safeText;
+
+        authorInner.append(firstCopy, secondCopy);
+    }
+
+    scheduleNowPlayingTextAnimations();
+}
+
+function prepareAnimationTrack(container, inner, copySelector) {
+    if (!container || !inner) return null;
+
+    const copies = inner.querySelectorAll(copySelector);
+    if (copies.length < 2) {
+        inner.style.transform = "translateX(0)";
+        return null;
+    }
 
     const firstCopy = copies[0];
     const secondCopy = copies[1];
     const text = firstCopy.textContent.trim();
 
-    if (!text) return;
+    firstCopy.style.whiteSpace = "nowrap";
+    secondCopy.style.marginLeft = "0";
+    secondCopy.style.display = "inline-block";
+    inner.style.transform = "translateX(0)";
 
-    const containerWidth = authorContainer.offsetWidth;
+    if (!text) {
+        secondCopy.style.display = "none";
+        return null;
+    }
+
+    const containerWidth = container.clientWidth || container.offsetWidth;
     const oneCopyWidth = firstCopy.offsetWidth;
 
     if (oneCopyWidth <= containerWidth) {
         secondCopy.style.display = "none";
-        authorInner.style.transform = "translateX(0)";
-        return;
+        return null;
     }
 
-    secondCopy.style.display = "inline-block";
-
-    // Uses the same gap setting as the song title.
     const gap = Math.max(
         10,
         Math.min(containerWidth * GAP_FRACTION, oneCopyWidth * 0.5)
@@ -7993,47 +7936,71 @@ function startAuthorAnimation() {
 
     secondCopy.style.marginLeft = `${gap}px`;
 
-    const totalDistance = oneCopyWidth + gap;
-    const totalDuration = totalDistance / TITLE_SCROLL_SPEED;
+    const distance = oneCopyWidth + gap;
 
-    const token = ++authorAnimationToken;
-    authorAnimationRunning = true;
+    return {
+        inner,
+        distance,
+        duration: distance / TITLE_SCROLL_SPEED
+    };
+}
 
-    let startTime = null;
+function setAnimationProgress(animation, progress) {
+    const clampedProgress = Math.max(0, Math.min(1, progress));
+    animation.inner.style.transform =
+        `translateX(${-clampedProgress * animation.distance}px)`;
+}
+
+function startIndependentTextAnimation(animation, type) {
+    const isTitle = type === "title";
+    const token = isTitle ? ++titleAnimationToken : ++authorAnimationToken;
+
+    if (isTitle) {
+        titleAnimationRunning = true;
+    } else {
+        authorAnimationRunning = true;
+    }
+
     let phase = "initialPause";
-    let pauseStartTime = null;
+    let phaseStartTime = null;
+
+    function isStillActive() {
+        return isTitle
+            ? titleAnimationRunning && token === titleAnimationToken
+            : authorAnimationRunning && token === authorAnimationToken;
+    }
 
     function animate(timestamp) {
-        if (!authorAnimationRunning || token !== authorAnimationToken) return;
+        if (!isStillActive()) return;
 
-        if (!startTime) startTime = timestamp;
+        if (phaseStartTime === null) {
+            phaseStartTime = timestamp;
+        }
 
-        const elapsed = (timestamp - startTime) / 1000;
+        const elapsed = (timestamp - phaseStartTime) / 1000;
 
         if (phase === "initialPause") {
-            authorInner.style.transform = "translateX(0)";
+            setAnimationProgress(animation, 0);
 
             if (elapsed >= SLIDE_DURATION) {
                 phase = "slide";
-                startTime = timestamp;
+                phaseStartTime = timestamp;
             }
         } else if (phase === "slide") {
-            const progress = Math.min(elapsed / totalDuration, 1);
-
-            authorInner.style.transform =
-                `translateX(${-progress * totalDistance}px)`;
+            const progress = Math.min(elapsed / animation.duration, 1);
+            setAnimationProgress(animation, progress);
 
             if (progress >= 1) {
                 phase = "pause";
-                pauseStartTime = timestamp;
+                phaseStartTime = timestamp;
             }
         } else if (phase === "pause") {
-            const pauseElapsed = (timestamp - pauseStartTime) / 1000;
+            setAnimationProgress(animation, 1);
 
-            if (pauseElapsed >= PAUSE_DURATION) {
-                authorInner.style.transform = "translateX(0)";
-                startTime = timestamp;
+            if (elapsed >= PAUSE_DURATION) {
+                setAnimationProgress(animation, 0);
                 phase = "slide";
+                phaseStartTime = timestamp;
             }
         }
 
@@ -8043,16 +8010,114 @@ function startAuthorAnimation() {
     requestAnimationFrame(animate);
 }
 
-window.addEventListener('resize', () => {
+function startSynchronizedTextAnimations(titleAnimation, authorAnimation) {
+    const token = ++synchronizedTextAnimationToken;
+    synchronizedTextAnimationRunning = true;
+
+    let phase = "initialPause";
+    let phaseStartTime = null;
+
+    function animate(timestamp) {
+        if (
+            !synchronizedTextAnimationRunning ||
+            token !== synchronizedTextAnimationToken
+        ) {
+            return;
+        }
+
+        if (phaseStartTime === null) {
+            phaseStartTime = timestamp;
+        }
+
+        const elapsed = (timestamp - phaseStartTime) / 1000;
+
+        if (phase === "initialPause") {
+            setAnimationProgress(titleAnimation, 0);
+            setAnimationProgress(authorAnimation, 0);
+
+            if (elapsed >= SLIDE_DURATION) {
+                phase = "slide";
+                phaseStartTime = timestamp;
+            }
+        } else if (phase === "slide") {
+            const titleProgress = Math.min(
+                elapsed / titleAnimation.duration,
+                1
+            );
+            const authorProgress = Math.min(
+                elapsed / authorAnimation.duration,
+                1
+            );
+
+            setAnimationProgress(titleAnimation, titleProgress);
+            setAnimationProgress(authorAnimation, authorProgress);
+
+            // The shorter line stays at its endpoint until the longer line
+            // also completes. Only then can the next paired cycle begin.
+            if (titleProgress >= 1 && authorProgress >= 1) {
+                phase = "pause";
+                phaseStartTime = timestamp;
+            }
+        } else if (phase === "pause") {
+            setAnimationProgress(titleAnimation, 1);
+            setAnimationProgress(authorAnimation, 1);
+
+            if (elapsed >= PAUSE_DURATION) {
+                setAnimationProgress(titleAnimation, 0);
+                setAnimationProgress(authorAnimation, 0);
+                phase = "slide";
+                phaseStartTime = timestamp;
+            }
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+}
+
+function startNowPlayingTextAnimations() {
+    stopAllNowPlayingTextAnimations();
+
+    const titleAnimation = prepareAnimationTrack(
+        titleContainer,
+        titleInner,
+        ".title-copy"
+    );
+    const authorAnimation = prepareAnimationTrack(
+        authorContainer,
+        authorInner,
+        ".author-copy"
+    );
+
+    if (titleAnimation && authorAnimation) {
+        startSynchronizedTextAnimations(titleAnimation, authorAnimation);
+        return;
+    }
+
+    // When only one line overflows, it runs independently.
+    if (titleAnimation) {
+        startIndependentTextAnimation(titleAnimation, "title");
+    }
+
+    if (authorAnimation) {
+        startIndependentTextAnimation(authorAnimation, "author");
+    }
+}
+
+// Keep these public helpers for existing calls and console usage.
+function startTitleAnimation() {
+    scheduleNowPlayingTextAnimations();
+}
+
+function startAuthorAnimation() {
+    scheduleNowPlayingTextAnimations();
+}
+
+window.addEventListener("resize", () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
-        stopTitleAnimation();
-        stopAuthorAnimation();
-
-        requestAnimationFrame(() => {
-            startTitleAnimation();
-            startAuthorAnimation();
-        });
+        restartNowPlayingTextAnimations();
     }, 300);
 });
 
