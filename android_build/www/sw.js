@@ -1,4 +1,4 @@
-const CACHE_NAME = "youtube-music-player-v1-stable-build-date";
+const CACHE_NAME = "youtube-music-player-v1-mobile-playlist";
 const APP_SHELL = [
   "./",
   "./index.html",

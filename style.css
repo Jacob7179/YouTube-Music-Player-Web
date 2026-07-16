@@ -3246,3 +3246,285 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         width: 100%;
     }
 }
+/* ========================================================================== */
+/* Mobile playlist experience                                                 */
+/* ========================================================================== */
+@media (max-width: 575.98px) {
+    /* Use more of the phone width while keeping comfortable card spacing. */
+    .card2 .card-body {
+        padding: 0.85rem;
+    }
+
+    /* Make the Playlist/Lyrics switch easy to reach with either thumb. */
+    .card2 > .card-body > .d-flex.justify-content-center.mb-3,
+    .card2 > .card-body > .d-flex.justify-content-center.mb-3 > .btn-group,
+    .card2 > .card-body > .d-flex.justify-content-center.mb-3 .d-flex,
+    .card2 > .card-body > .d-flex.justify-content-center.mb-3 .btn-group {
+        width: 100%;
+        margin-bottom: 0 !important;
+    }
+
+    #showSongListBtn,
+    #showLyricsBtn {
+        flex: 1 1 50%;
+        min-height: 42px;
+        padding: 0.55rem 0.7rem;
+    }
+
+    /* Keep playlist search visually attached to the list. */
+    #playlistSearchContainer {
+        margin: 0.8rem 0 0.65rem !important;
+    }
+
+    #playlistSearchContainer .form-control,
+    #playlistSearchContainer .btn {
+        min-height: 44px;
+    }
+
+    #searchPlaylistInput {
+        font-size: 16px; /* Prevent iOS/Android WebView zoom on focus. */
+        padding-left: 0.85rem;
+    }
+
+    /* Desktop column labels do not fit a phone-width two-line layout. */
+    #songListContainer .playlist-headers {
+        display: none !important;
+    }
+
+    #songList {
+        max-height: min(56vh, 460px);
+        padding: 2px 0 8px;
+        margin: 0;
+        overflow-x: hidden;
+        overscroll-behavior: contain;
+        scroll-padding-block: 8px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /*
+     * Phone row layout:
+     * [number] [song title                 ] [drag] [delete]
+     * [number] [author                     ] [drag] [delete]
+     */
+    #songList .list-group-item:not(.empty-playlist) {
+        position: relative;
+        display: grid !important;
+        grid-template-columns: 32px minmax(0, 1fr) 40px 40px;
+        grid-template-rows: auto auto;
+        grid-template-areas:
+            "number title drag action"
+            "number author drag action";
+        column-gap: 8px;
+        row-gap: 2px;
+        align-items: center;
+        min-height: 64px;
+        margin: 0 0 7px;
+        padding: 8px 7px 8px 9px;
+        border: 1px solid #e7ebf0 !important;
+        border-radius: 12px !important;
+        background: #fff;
+        box-shadow: 0 2px 7px rgba(20, 35, 55, 0.055);
+        transition: transform 0.16s ease, box-shadow 0.16s ease,
+                    background-color 0.25s ease, border-color 0.25s ease;
+        touch-action: pan-y;
+    }
+
+    #songList .list-group-item:not(.empty-playlist)::before {
+        content: "";
+        position: absolute;
+        top: 10px;
+        bottom: 10px;
+        left: 0;
+        width: 3px;
+        border-radius: 0 4px 4px 0;
+        background: transparent;
+    }
+
+    #songList .list-group-item:not(.empty-playlist):active {
+        transform: scale(0.992);
+    }
+
+    #songList .list-group-item:not(.empty-playlist):last-child {
+        margin-bottom: 0;
+    }
+
+    #songList .song-number {
+        grid-area: number;
+        width: 28px !important;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        align-self: center;
+        padding: 0;
+        border-radius: 50%;
+        background: #eef3f8;
+        color: #52606d !important;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    #songList .song-name {
+        grid-area: title;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        white-space: normal !important;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+        text-overflow: ellipsis;
+        color: #17202a;
+        font-size: 14px;
+        font-weight: 650;
+        line-height: 1.25;
+    }
+
+    #songList .author-column {
+        grid-area: author;
+        width: auto;
+        color: #6b7785 !important;
+        font-size: 12px;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #songList .drag-handle {
+        grid-area: drag;
+        width: 40px;
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        align-self: center;
+        border-radius: 10px;
+        color: #718096;
+        font-size: 21px;
+        touch-action: none;
+    }
+
+    #songList .song-action {
+        grid-area: action;
+        width: 40px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        align-self: center;
+    }
+
+    #songList .remove-song-btn {
+        width: 40px;
+        height: 44px;
+        border-radius: 10px;
+        font-size: 15px;
+    }
+
+    /* Selected row: keep the layout readable instead of flattening all details. */
+    #songList .list-group-item.selected {
+        border-color: #0d6efd !important;
+        background: #0d6efd !important;
+        box-shadow: 0 5px 14px rgba(13, 110, 253, 0.22);
+    }
+
+    #songList .list-group-item.selected::before {
+        background: rgba(255, 255, 255, 0.9);
+    }
+
+    #songList .list-group-item.selected .song-number {
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff !important;
+    }
+
+    #songList .list-group-item.selected .song-name,
+    #songList .list-group-item.selected .author-column,
+    #songList .list-group-item.selected .drag-handle {
+        color: #fff !important;
+    }
+
+    #songList .list-group-item.selected .author-column {
+        opacity: 0.86;
+    }
+
+    #songList .empty-playlist {
+        min-height: 150px;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 18px !important;
+        border: 1px dashed #ccd4dd !important;
+        border-radius: 12px !important;
+        line-height: 1.45;
+    }
+
+    /* Dark-mode equivalents for the compact phone cards. */
+    body.dark-mode #songList .list-group-item:not(.empty-playlist) {
+        border-color: #404751 !important;
+        background: #2b2f35;
+        box-shadow: 0 2px 7px rgba(0, 0, 0, 0.16);
+    }
+
+    body.dark-mode #songList .song-number {
+        background: #3b424b;
+        color: #e5e9ef !important;
+    }
+
+    body.dark-mode #songList .song-name {
+        color: #fff;
+    }
+
+    body.dark-mode #songList .author-column,
+    body.dark-mode #songList .drag-handle {
+        color: #b8c0ca !important;
+    }
+
+    body.dark-mode #songList .list-group-item.selected {
+        border-color: #2684ff !important;
+        background: #0d6efd !important;
+        box-shadow: 0 5px 14px rgba(13, 110, 253, 0.3);
+    }
+
+    body.dark-mode #songList .list-group-item.selected .song-number {
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff !important;
+    }
+
+    body.dark-mode #songList .list-group-item.selected .song-name,
+    body.dark-mode #songList .list-group-item.selected .author-column,
+    body.dark-mode #songList .list-group-item.selected .drag-handle {
+        color: #fff !important;
+    }
+
+    body.dark-mode #songList .empty-playlist {
+        border-color: #4a515b !important;
+        background: #292d33;
+    }
+}
+
+/* Extra-tight phones: reclaim space without removing controls. */
+@media (max-width: 359.98px) {
+    #songList .list-group-item:not(.empty-playlist) {
+        grid-template-columns: 27px minmax(0, 1fr) 36px 36px;
+        column-gap: 6px;
+        padding-left: 7px;
+        padding-right: 5px;
+    }
+
+    #songList .song-number {
+        width: 24px !important;
+        height: 24px;
+        font-size: 11px;
+    }
+
+    #songList .drag-handle,
+    #songList .song-action,
+    #songList .remove-song-btn {
+        width: 36px !important;
+    }
+
+    #songList .drag-handle,
+    #songList .remove-song-btn {
+        height: 42px;
+    }
+}
