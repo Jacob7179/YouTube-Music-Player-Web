@@ -3545,3 +3545,23 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         height: 42px;
     }
 }
+
+@media (max-width: 575.98px) {
+    #youtubeSearchInput {
+        width: 100%;
+        min-height: 46px;
+        border-radius: 8px !important;
+    }
+
+    #youtubeSearchBtn {
+        width: 100%;
+        min-height: 46px;
+        margin-top: 8px;
+        border-radius: 8px !important;
+    }
+
+    #youtubeSearchInput,
+    #youtubeSearchBtn {
+        flex: 0 0 100%;
+    }
+}
