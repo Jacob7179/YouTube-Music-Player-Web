@@ -452,15 +452,15 @@ function loadPlaylist() {
     } else {
         // Default playlist if local storage is empty
         playlist = [
-            { videoId: 'oWRCXGvcU9s', songName: '愛くださいませ', authorName: 'NOT EQUAL ME', albumArt: 'https://i.ytimg.com/vi/oWRCXGvcU9s/hqdefault.jpg' },
-            { videoId: 'IBWxJxQxSHE', songName: '≠ME', authorName: 'NOT EQUAL ME', albumArt: 'https://i.ytimg.com/vi/IBWxJxQxSHE/hqdefault.jpg', lyricsTimeOffset: -3.0 },
-            { videoId: 'bi__z02xRgo', songName: 'チョコレートメランコリー', authorName: 'NOT EQUAL ME', albumArt: 'https://i.ytimg.com/vi/bi__z02xRgo/hqdefault.jpg' },
-            { videoId: '2RdTOBmz6jY', songName: '排他的ファイター', authorName: 'NOT EQUAL ME', albumArt: 'https://i.ytimg.com/vi/2RdTOBmz6jY/hqdefault.jpg', lyricsTimeOffset: -5.5 },
+            { videoId: 'sb_UQxk18Cc', songName: 'History Of The Band (OFFICIAL HIGE DANDISM LIVE at STADIUM 2025)', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/sb_UQxk18Cc/hqdefault.jpg', },
+            { videoId: 'uZtZ0Wvy3N8', songName: 'Official髭男dism - Stand By You [Official Live Video]', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/uZtZ0Wvy3N8/hqdefault.jpg', },
+            { videoId: 'Hkd6NqfJsXE', songName: 'ノーダウト (OFFICIAL HIGE DANDISM LIVE at STADIUM 2025)', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/Hkd6NqfJsXE/hqdefault.jpg', },
             { videoId: 'TQ8WlA2GXbk', songName: 'Official髭男dism - Pretender［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/TQ8WlA2GXbk/hqdefault.jpg' },
             { videoId: '0sDmhAItwbI', songName: 'Official髭男dism - Pretender (Acoustic ver.)［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/0sDmhAItwbI/hqdefault.jpg', lyricsTimeOffset: 17.5 },
             { videoId: '22mOCjkwQjM', songName: 'Official髭男dism - Stand By You［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/22mOCjkwQjM/hqdefault.jpg', lyricsTimeOffset: -2.0 },
             { videoId: '1oYzKnVG1Vk', songName: 'Official髭男dism - Stand By You (Acoustic ver.)［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/1oYzKnVG1Vk/hqdefault.jpg', lyricsTimeOffset: -2.0 },
             { videoId: 'pkoxFpmiCWo', songName: 'Official髭男dism - パラボラ［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/pkoxFpmiCWo/hqdefault.jpg' },
+            { videoId: '-kgOFJG881I', songName: 'Official髭男dism - 宿命［Official Video］', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/-kgOFJG881I/hqdefault.jpg' },
             { videoId: 'ArjJj4cuOVo', songName: 'Laughter (ONLINE LIVE 2020 - Arena Travelers -)', authorName: 'OFFICIAL HIGE DANDISM - Topic', albumArt: 'https://i.ytimg.com/vi/ArjJj4cuOVo/hqdefault.jpg' },
             { videoId: 'cqzyiJE4SQE', songName: '笑顔の待つ場所', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/cqzyiJE4SQE/hqdefault.jpg' },
             { videoId: 'P1iOKxg6JQk', songName: '明け方のゲッタウェイ (Live)', authorName: 'Official髭男dism', albumArt: 'https://i.ytimg.com/vi/P1iOKxg6JQk/hqdefault.jpg' },

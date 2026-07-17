@@ -526,6 +526,52 @@ echo Android icon and splash resources replaced.
 
 :skip_icon_replace
 REM ------------------------------------------------------------
+REM Prevent the splash image from being stretched into the top
+REM app title area while keeping the "YouTube Music Player" text.
+REM Changes only AppTheme.NoActionBarLaunch:
+REM android:background -> android:windowBackground
+REM ------------------------------------------------------------
+echo.
+echo ==========================================
+echo Configuring Android splash window...
+echo ==========================================
+
+set "APP_STYLES=%~dp0android\app\src\main\res\values\styles.xml"
+
+if not exist "%APP_STYLES%" (
+    echo ERROR: Android styles.xml was not found:
+    echo %APP_STYLES%
+    goto :error
+)
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$ErrorActionPreference='Stop';" ^
+    "$path='%APP_STYLES%';" ^
+    "$content=Get-Content -LiteralPath $path -Raw;" ^
+    "$stylePattern='(?s)(<style\s+name=' + [char]34 + 'AppTheme\.NoActionBarLaunch' + [char]34 + '[^>]*>)(.*?)(</style>)';" ^
+    "$match=[regex]::Match($content,$stylePattern);" ^
+    "if(-not $match.Success){ throw 'AppTheme.NoActionBarLaunch was not found in styles.xml.' };" ^
+    "$opening=$match.Groups[1].Value;" ^
+    "$body=$match.Groups[2].Value;" ^
+    "$closing=$match.Groups[3].Value;" ^
+    "$oldPattern='(?m)^(\s*)<item\s+name=' + [char]34 + 'android:background' + [char]34 + '>\s*@drawable/splash\s*</item>\s*$';" ^
+    "$newPattern='<item\s+name=' + [char]34 + 'android:windowBackground' + [char]34 + '>\s*@drawable/splash\s*</item>';" ^
+    "if([regex]::IsMatch($body,$oldPattern)){" ^
+    "  $body=[regex]::Replace($body,$oldPattern,('${1}<item name=' + [char]34 + 'android:windowBackground' + [char]34 + '>@drawable/splash</item>'),1);" ^
+    "} elseif(-not [regex]::IsMatch($body,$newPattern)){" ^
+    "  $indent='        ';" ^
+    "  $body=$body.TrimEnd() + [Environment]::NewLine + $indent + '<item name=' + [char]34 + 'android:windowBackground' + [char]34 + '>@drawable/splash</item>' + [Environment]::NewLine + '    ';" ^
+    "};" ^
+    "$replacement=$opening+$body+$closing;" ^
+    "$content=$content.Substring(0,$match.Index)+$replacement+$content.Substring($match.Index+$match.Length);" ^
+    "$content=$content.TrimStart([char]0xFEFF);" ^
+    "$utf8NoBom=New-Object System.Text.UTF8Encoding($false);" ^
+    "[System.IO.File]::WriteAllText($path,$content,$utf8NoBom);"
+if errorlevel 1 goto :error
+
+echo Splash window configured. App title text is kept.
+
+REM ------------------------------------------------------------
 REM Build debug APK.
 REM ------------------------------------------------------------
 echo.
