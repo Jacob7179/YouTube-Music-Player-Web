@@ -664,7 +664,7 @@ function renderPlaylist(songsToRender) {
     if (songsToRender.length === 0) {
         const emptyItem = document.createElement('li');
         emptyItem.classList.add('list-group-item', 'text-center', 'text-muted', 'empty-playlist');
-        emptyItem.textContent = 'No songs in playlist. Add some using the YouTube search below!';
+        emptyItem.textContent = translations[currentLang].noSongInPlaylist;
         songListElement.appendChild(emptyItem);
         return;
     }
@@ -4345,6 +4345,7 @@ const translations = {
     youtubeSearching: "Searching YouTube...",
     youtubeSearchError: "Unable to search YouTube. Please check your internet connection and try again.",
     youtubeApiKeyError: "YouTube API Key is not configured. Please ensure the key is set.",
+    noSongInPlaylist: "No songs in playlist. Add some using the YouTube search below!",
     removeSongTitle: "Remove song",
     settingsTitle: "Settings",
     searchYouTubeTitle: "Search YouTube",
@@ -4515,6 +4516,7 @@ const translations = {
     youtubeSearching: "正在搜索 YouTube...",
     youtubeSearchError: "无法搜索 YouTube，请检查网络连接后重试。",
     youtubeApiKeyError: "YouTube API 密钥未配置。请确保已设置密钥。。",
+    noSongInPlaylist: "播放列表中没有歌曲。请使用下面的 YouTube 搜索添加一些歌曲！",
     removeSongTitle: "移除歌曲",
     settingsTitle: "设置",
     searchYouTubeTitle: "搜索 YouTube",
@@ -4685,6 +4687,7 @@ const translations = {
     youtubeSearching: "YouTube を検索中...",
     youtubeSearchError: "YouTube を検索できません。インターネット接続を確認して、もう一度お試しください。",
     youtubeApiKeyError: "YouTube APIキーが設定されていません。キーが正しく設定されていることを確認してください。",
+    noSongInPlaylist: "プレイリストに曲がありません。下の YouTube 検索を使用して曲を追加してください！",
     removeSongTitle: "曲を削除",
     settingsTitle: "設定",
     searchYouTubeTitle: "YouTube を検索",
@@ -4854,6 +4857,7 @@ const translations = {
     youtubeSearching: "YouTube 검색 중...",
     youtubeSearchError: "YouTube를 검색할 수 없습니다. 인터넷 연결을 확인한 후 다시 시도하세요.",
     youtubeApiKeyError: "YouTube API 키가 설정되어 있지 않습니다. API 키가 설정되어 있는지 확인하십시오.",
+    noSongInPlaylist: "플레이리스트에 곡이 없습니다. 아래 YouTube 검색을 사용하여 곡을 추가하세요!",
     removeSongTitle: "곡 삭제",
     settingsTitle: "설정",
     searchYouTubeTitle: "YouTube 검색",
@@ -5025,6 +5029,7 @@ const translations = {
     youtubeSearching: "正在搜尋 YouTube...",
     youtubeSearchError: "無法搜尋 YouTube。請檢查你的網路連線後再試。",
     youtubeApiKeyError: "YouTube API 金鑰未配置。請確保已設定密鑰。。",
+    noSongInPlaylist: "播放列表中没有歌曲。请使用下面的 YouTube 搜索添加一些歌曲！",
     removeSongTitle: "移除歌曲",
     settingsTitle: "設定",
     searchYouTubeTitle: "搜尋 YouTube",
@@ -5274,6 +5279,12 @@ function applyLanguage(lang = currentLang) {
             // Fallback if no span element
             showSongListBtn.innerHTML = `<i class='bx bxs-playlist'></i> ${t.showPlaylist}`;
         }
+    }
+
+    const emptyPlaylistItem = document.querySelector("#songList .empty-playlist");
+
+    if (emptyPlaylistItem) {
+        emptyPlaylistItem.textContent = t.noSongInPlaylist;
     }
 
     if (showLyricsBtn) {

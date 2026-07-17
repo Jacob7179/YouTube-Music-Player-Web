@@ -4,3 +4,4 @@ node_modules
 local.properties
 tools
 apk-sha-reports
+build-info.js
