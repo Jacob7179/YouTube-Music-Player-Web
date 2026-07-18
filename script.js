@@ -288,36 +288,31 @@ function restoreLastSelectedSong() {
         return;
     }
 
-    let restoredIndex = -1;
+    let restoredIndex = 0;
 
     try {
         const savedSelection = JSON.parse(
             localStorage.getItem(LAST_SELECTED_SONG_STORAGE_KEY) || 'null'
         );
 
-        if (savedSelection && typeof savedSelection === 'object') {
-            const savedIndex = Number(savedSelection.index);
-            const savedVideoId = typeof savedSelection.videoId === 'string'
+        const savedVideoId = typeof savedSelection === 'string'
+            ? savedSelection
+            : savedSelection && typeof savedSelection === 'object' &&
+                typeof savedSelection.videoId === 'string'
                 ? savedSelection.videoId
                 : '';
 
-            if (
-                Number.isInteger(savedIndex) &&
-                savedIndex >= 0 &&
-                savedIndex < playlist.length &&
-                (!savedVideoId || playlist[savedIndex].videoId === savedVideoId)
-            ) {
-                restoredIndex = savedIndex;
-            } else if (savedVideoId) {
-                restoredIndex = playlist.findIndex(song => song.videoId === savedVideoId);
+        if (savedVideoId) {
+            const matchingIndex = playlist.findIndex(
+                song => song.videoId === savedVideoId
+            );
+
+            if (matchingIndex >= 0) {
+                restoredIndex = matchingIndex;
             }
         }
     } catch (error) {
         console.warn('Unable to restore the last selected song:', error);
-    }
-
-    if (restoredIndex < 0) {
-        restoredIndex = 0;
     }
 
     const restoredSong = playlist[restoredIndex];
@@ -1036,7 +1031,6 @@ function removeSong(videoIdToRemove) {
     }
 
     const selectedSongBeforeRemoval = getCurrentSongObject();
-    const selectedIndexBeforeRemoval = getCurrentPlaylistIndex();
     const removedCurrentSong = Boolean(
         selectedSongBeforeRemoval &&
         selectedSongBeforeRemoval.videoId === videoIdToRemove
@@ -1047,11 +1041,11 @@ function removeSong(videoIdToRemove) {
     playlist = playlist.filter(song => song.videoId !== videoIdToRemove);
 
     if (removedCurrentSong) {
-        currentPlaylistIndex = playlist.length > 0
-            ? Math.min(selectedIndexBeforeRemoval, playlist.length - 1)
-            : -1;
-        actualSelectedVideoId = null;
-        selectedVideoId = null;
+        // When the selected song is deleted, return to the beginning of the
+        // playlist instead of selecting the song that moved into its old index.
+        currentPlaylistIndex = playlist.length > 0 ? 0 : -1;
+        actualSelectedVideoId = playlist.length > 0 ? playlist[0].videoId : null;
+        selectedVideoId = actualSelectedVideoId;
     } else if (selectedSongBeforeRemoval) {
         currentPlaylistIndex = playlist.indexOf(selectedSongBeforeRemoval);
     } else {
