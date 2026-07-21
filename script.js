@@ -616,7 +616,9 @@ function scrollToSelectedSong({ behavior = "smooth", align = "nearest" } = {}) {
         songRect.top >= listRect.top &&
         songRect.bottom <= listRect.bottom;
 
-    if (isFullyVisible) {
+    // Keep normal navigation stable when the selected item is already visible.
+    // Restored selections still use center alignment, even when already visible.
+    if (isFullyVisible && align !== "center") {
         return true;
     }
 
@@ -633,8 +635,14 @@ function scrollToSelectedSong({ behavior = "smooth", align = "nearest" } = {}) {
         targetScrollTop += songRect.bottom - listRect.bottom;
     }
 
+    const maxScrollTop = Math.max(0, songList.scrollHeight - songList.clientHeight);
+    const clampedScrollTop = Math.min(
+        maxScrollTop,
+        Math.max(0, targetScrollTop)
+    );
+
     songList.scrollTo({
-        top: Math.max(0, targetScrollTop),
+        top: clampedScrollTop,
         behavior
     });
 
@@ -645,7 +653,8 @@ function revealRestoredPlaylistSelection() {
     // Wait until layout and the saved playlist/lyrics view preference are applied.
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-            scrollToSelectedSong({ behavior: "auto", align: "nearest" });
+            // Center the restored song where possible; list boundaries are clamped.
+            scrollToSelectedSong({ behavior: "auto", align: "center" });
         });
     });
 }
