@@ -2,6 +2,41 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 REM ============================================================
+REM Remove the previous Android platform before starting build
+REM ============================================================
+echo.
+echo ==========================================
+echo Removing previous Android folder...
+echo ==========================================
+
+set "ANDROID_FOLDER=%~dp0android"
+
+REM Stop the existing Gradle daemon first to avoid locked files.
+if exist "%ANDROID_FOLDER%\gradlew.bat" (
+    pushd "%ANDROID_FOLDER%"
+    call gradlew.bat --stop >nul 2>&1
+    popd
+)
+
+REM Remove read-only attributes that may prevent deletion.
+if exist "%ANDROID_FOLDER%" (
+    attrib -R -S -H "%ANDROID_FOLDER%\*" /S /D >nul 2>&1
+    rmdir /S /Q "%ANDROID_FOLDER%"
+)
+
+REM Confirm that the folder was deleted.
+if exist "%ANDROID_FOLDER%" (
+    echo ERROR: Unable to remove the Android folder:
+    echo %ANDROID_FOLDER%
+    echo.
+    echo Close Android Studio, File Explorer, Java, and Gradle processes,
+    echo then run build.bat again.
+    goto :error
+)
+
+echo Previous Android folder removed successfully.
+
+REM ============================================================
 REM  YouTube Music Player - Android APK Build Script
 REM ============================================================
 
@@ -548,50 +583,20 @@ if errorlevel 1 goto :error
 echo Launcher icon background set to #005495.
 
 REM ------------------------------------------------------------
-REM Prevent the splash image from being stretched into the top
-REM app title area while keeping the "YouTube Music Player" text.
-REM Changes only AppTheme.NoActionBarLaunch:
-REM android:background -> android:windowBackground
+REM Build a dedicated splash overlay so the title area uses a solid
+REM #6cc2ff background and the main image keeps its aspect ratio.
+REM The generated Android files are patched on every build.
 REM ------------------------------------------------------------
 echo.
 echo ==========================================
-echo Configuring Android splash window...
+echo Configuring Android splash layout...
 echo ==========================================
 
-set "APP_STYLES=%~dp0android\app\src\main\res\values\styles.xml"
-
-if not exist "%APP_STYLES%" (
-    echo ERROR: Android styles.xml was not found:
-    echo %APP_STYLES%
-    goto :error
-)
-
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$ErrorActionPreference='Stop';" ^
-    "$path='%APP_STYLES%';" ^
-    "$content=Get-Content -LiteralPath $path -Raw;" ^
-    "$stylePattern='(?s)(<style\s+name=' + [char]34 + 'AppTheme\.NoActionBarLaunch' + [char]34 + '[^>]*>)(.*?)(</style>)';" ^
-    "$match=[regex]::Match($content,$stylePattern);" ^
-    "if(-not $match.Success){ throw 'AppTheme.NoActionBarLaunch was not found in styles.xml.' };" ^
-    "$opening=$match.Groups[1].Value;" ^
-    "$body=$match.Groups[2].Value;" ^
-    "$closing=$match.Groups[3].Value;" ^
-    "$oldPattern='(?m)^(\s*)<item\s+name=' + [char]34 + 'android:background' + [char]34 + '>\s*@drawable/splash\s*</item>\s*$';" ^
-    "$newPattern='<item\s+name=' + [char]34 + 'android:windowBackground' + [char]34 + '>\s*@drawable/splash\s*</item>';" ^
-    "if([regex]::IsMatch($body,$oldPattern)){" ^
-    "  $body=[regex]::Replace($body,$oldPattern,('${1}<item name=' + [char]34 + 'android:windowBackground' + [char]34 + '>@drawable/splash</item>'),1);" ^
-    "} elseif(-not [regex]::IsMatch($body,$newPattern)){" ^
-    "  $indent='        ';" ^
-    "  $body=$body.TrimEnd() + [Environment]::NewLine + $indent + '<item name=' + [char]34 + 'android:windowBackground' + [char]34 + '>@drawable/splash</item>' + [Environment]::NewLine + '    ';" ^
-    "};" ^
-    "$replacement=$opening+$body+$closing;" ^
-    "$content=$content.Substring(0,$match.Index)+$replacement+$content.Substring($match.Index+$match.Length);" ^
-    "$content=$content.TrimStart([char]0xFEFF);" ^
-    "$utf8NoBom=New-Object System.Text.UTF8Encoding($false);" ^
-    "[System.IO.File]::WriteAllText($path,$content,$utf8NoBom);"
+call node scripts\configure-android-splash.js
 if errorlevel 1 goto :error
 
-echo Splash window configured. App title text is kept.
+echo Splash layout configured. Title background is #6cc2ff.
+echo.
 
 REM ------------------------------------------------------------
 REM Build debug APK.
