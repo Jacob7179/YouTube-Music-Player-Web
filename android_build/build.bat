@@ -526,6 +526,28 @@ echo Android icon and splash resources replaced.
 
 :skip_icon_replace
 REM ------------------------------------------------------------
+REM Force the Android launcher icon background color on every build.
+REM This runs after image_source resources are copied so the requested
+REM color always replaces the generated/copied value.
+REM ------------------------------------------------------------
+echo.
+echo ==========================================
+echo Configuring launcher icon background...
+echo ==========================================
+
+if not exist "%ANDROID_RES_DIR%\values" mkdir "%ANDROID_RES_DIR%\values"
+
+> "%ANDROID_RES_DIR%\values\ic_launcher_background.xml" (
+    echo ^<?xml version="1.0" encoding="utf-8"?^>
+    echo ^<resources^>
+    echo     ^<color name="ic_launcher_background"^>#005495^</color^>
+    echo ^</resources^>
+)
+if errorlevel 1 goto :error
+
+echo Launcher icon background set to #005495.
+
+REM ------------------------------------------------------------
 REM Prevent the splash image from being stretched into the top
 REM app title area while keeping the "YouTube Music Player" text.
 REM Changes only AppTheme.NoActionBarLaunch:
