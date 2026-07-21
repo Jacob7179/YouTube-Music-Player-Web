@@ -7105,7 +7105,9 @@ function syncLyricsToTime(currentTime) {
         const parent = el;
         const parentRect = parent.getBoundingClientRect();
         const childRect = toHighlight.getBoundingClientRect();
-        const offset = childRect.top - parentRect.top - parent.clientHeight / 2 + childRect.height / 2;
+
+        const topPadding = 8;
+        const offset = childRect.top - parentRect.top - topPadding;
         parent.scrollBy({ top: offset, behavior: "smooth" });
         }
     }
