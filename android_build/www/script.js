@@ -1276,6 +1276,36 @@ async function searchYouTube() {
     }
 }
 
+function removeAuthorPrefixFromNewSongTitle(songTitle, authorName) {
+    const title = String(songTitle || '').trim();
+    const author = String(authorName || '').trim();
+
+    if (!title || !author) {
+        return title;
+    }
+
+    // Topic channels usually use "Artist - Topic" as the author while the
+    // video title starts with only "Artist -".
+    const authorCandidates = [
+        author,
+        author.replace(/\s*-\s*Topic\s*$/i, '').trim()
+    ].filter((candidate, index, candidates) =>
+        candidate && candidates.indexOf(candidate) === index
+    );
+
+    for (const candidate of authorCandidates) {
+        const escapedAuthor = candidate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const authorPrefix = new RegExp(`^${escapedAuthor}\\s*[-–—]\\s*`, 'i');
+        const cleanedTitle = title.replace(authorPrefix, '').trim();
+
+        if (cleanedTitle && cleanedTitle !== title) {
+            return cleanedTitle;
+        }
+    }
+
+    return title;
+}
+
 // 🎵 Handle add_song URL param — Always fetch title + author, and alert user
 async function handleAddSongFromURL() {
     let apiKey;
@@ -1387,6 +1417,8 @@ async function handleAddSongFromURL() {
             console.warn("noembed.com fetch failed:", err);
         }
     }
+
+    title = removeAuthorPrefixFromNewSongTitle(title, author);
 
     // Add to playlist
     const newSong = { videoId, songName: title, authorName: author, albumArt, lyricsTimeOffset: 0};
@@ -1505,11 +1537,12 @@ function addSongFromSearch(event) {
         return;
     }
 
-    const newSong = { videoId, songName: songTitle, authorName, albumArt, lyricsTimeOffset: 0};
+    const cleanedSongTitle = removeAuthorPrefixFromNewSongTitle(songTitle, authorName);
+    const newSong = { videoId, songName: cleanedSongTitle, authorName, albumArt, lyricsTimeOffset: 0};
     playlist.push(newSong);
     savePlaylist();
     renderPlaylist(playlist);
-    alert(`${songTitle} by ${authorName}${translations[currentLang].songAdded}`);
+    alert(`${cleanedSongTitle} by ${authorName}${translations[currentLang].songAdded}`);
 
     // ✅ If playlist was empty before, autoplay the new song
     if (playlist.length === 1) {
