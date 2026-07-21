@@ -3990,6 +3990,11 @@ let lyricsData = null;
 let autoSyncEnabled = true;
 let lyricsAutoScroll = true;
 let syncInterval = null;
+let lastSyncedLyricIndex = null;
+
+function resetLyricsSyncTracking() {
+    lastSyncedLyricIndex = null;
+}
 
 function parseLrc(text) {
   const lines = [];
@@ -4006,6 +4011,8 @@ function parseLrc(text) {
 
 function renderLrcLines(lines) {
     const el = document.getElementById("lyricsText");
+
+    resetLyricsSyncTracking();
 
     el.innerHTML = lines.map((line, index) => {
         const lyric = (line.text || "").trim();
@@ -4304,6 +4311,16 @@ document.getElementById("toggleSyncBtn")?.addEventListener("click", () => {
     btn.textContent = autoSyncEnabled ? 
         translations[currentLang].autoSyncOn : 
         translations[currentLang].autoSyncOff;
+
+    // Re-align once when auto-sync is enabled again. After that, the user's
+    // manual scroll position is preserved until the active lyric changes.
+    if (autoSyncEnabled) {
+        resetLyricsSyncTracking();
+
+        if (player && typeof player.getCurrentTime === "function") {
+            syncLyricsToTime(player.getCurrentTime());
+        }
+    }
 });
 document.getElementById("toggleTranslationBtn")?.addEventListener("click", () => {
     showOriginalFirst = !showOriginalFirst;
@@ -6461,6 +6478,8 @@ function renderLrcLinesWithTranslation(lines, translatedLines = []) {
     const el = document.getElementById("lyricsText");
     const labels = getLyricsLabels();
 
+    resetLyricsSyncTracking();
+
     el.innerHTML = lines.map((line, index) => {
         const original = (line.text || "").trim();
         const translation = (translatedLines[index] || "").trim();
@@ -7131,28 +7150,37 @@ function syncLyricsToTime(currentTime) {
     }
 
     const el = document.getElementById("lyricsText");
-    const children = el.children;
-    if (!children || children.length === 0) return;
+    if (!el || el.children.length === 0) return;
 
-    // Remove previous highlight
-    for (let i = 0; i < children.length; i++) {
-        children[i].classList.remove("highlight");
+    const toHighlight = el.querySelector(`.lrc-line[data-index="${found}"]`);
+    if (!toHighlight) return;
+
+    // The sync interval runs frequently, but the DOM and scroll position only
+    // need to change when playback enters a different lyric line. This lets the
+    // user scroll elsewhere and read ahead without being pulled back repeatedly.
+    if (
+        lastSyncedLyricIndex === found &&
+        toHighlight.classList.contains("highlight")
+    ) {
+        return;
     }
 
-    // Highlight new line
-    const toHighlight = el.querySelector(`.lrc-line[data-index="${found}"]`);
-    if (toHighlight) {
-        toHighlight.classList.add("highlight");
+    el.querySelectorAll(".lrc-line.highlight").forEach(line => {
+        line.classList.remove("highlight");
+    });
 
-        if (lyricsAutoScroll) {
-        const parent = el;
-        const parentRect = parent.getBoundingClientRect();
+    toHighlight.classList.add("highlight");
+    lastSyncedLyricIndex = found;
+
+    // Auto-scroll once for this lyric. The next scroll occurs only after the
+    // active lyric index changes.
+    if (lyricsAutoScroll) {
+        const parentRect = el.getBoundingClientRect();
         const childRect = toHighlight.getBoundingClientRect();
-
         const topPadding = 8;
         const offset = childRect.top - parentRect.top - topPadding;
-        parent.scrollBy({ top: offset, behavior: "smooth" });
-        }
+
+        el.scrollBy({ top: offset, behavior: "smooth" });
     }
 }
 
