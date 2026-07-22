@@ -9,7 +9,7 @@ A responsive YouTube-based music player with playlists, synchronized lyrics, tra
 [![GitHub Stars](https://img.shields.io/github/stars/Jacob7179/YouTube-Music-Player-Web?style=for-the-badge)](https://github.com/Jacob7179/YouTube-Music-Player-Web/stargazers)
 [![Android](https://img.shields.io/badge/Android-Capacitor_7-3DDC84?style=for-the-badge&logo=android&logoColor=white)](android_build/README-APK.md)
 
-[Live Website](https://jacob7179.github.io/YouTube-Music-Player-Web/) · [Report a Bug](https://github.com/Jacob7179/YouTube-Music-Player-Web/issues) · [Android Build Guide](android_build/README-APK.md)
+[Live Website](https://jacob7179.github.io/YouTube-Music-Player-Web/) · [Report a Bug](https://github.com/Jacob7179/YouTube-Music-Player-Web/issues) · [Android Build Guide](android_build/README-APK.md) · [Version](VERSION.md)
 
 </div>
 
@@ -228,7 +228,7 @@ cd android_build
 .\build.bat
 ```
 
-The script prepares portable Node.js, Java JDK 21, and Android SDK 35 tools when required, restores locked npm dependencies, generates the Android last-updated date, synchronizes Capacitor, applies the Android media-session patches, writes the configured Android version, and builds a debug APK.
+The script prepares portable Node.js, Java JDK 21, and Android SDK 35 tools when required, restores locked npm dependencies, generates the Android last-updated date, synchronizes Capacitor, applies the Android media-session and native splash-screen configuration, writes the configured Android version, and builds a debug APK.
 
 Generated APK:
 
@@ -312,8 +312,10 @@ YouTube-Music-Player-Web/
 │  ├─ package.json                  Android dependencies and scripts
 │  ├─ package-lock.json             Locked dependency tree
 │  ├─ scripts/
+│  │  ├─ configure-android-background-playback.js
 │  │  ├─ generate-build-date.js     Stable Android last-updated date
-│  │  └─ patch-media-session-plugin.js
+│  │  ├─ patch-media-session-plugin.js
+│  │  └─ configure-android-splash.js
 │  └─ README-APK.md                 Detailed Android documentation
 ├─ api/
 │  └─ getApiKey.js                  Vercel API-key endpoint

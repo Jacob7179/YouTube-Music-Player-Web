@@ -44,7 +44,7 @@ cd /d "%~dp0"
 
 REM Android application version applied to android\app\build.gradle.
 set "ANDROID_VERSION_CODE=2"
-set "ANDROID_VERSION_NAME=1.0.1-beta"
+set "ANDROID_VERSION_NAME=1.0.1"
 
 echo.
 echo ==========================================

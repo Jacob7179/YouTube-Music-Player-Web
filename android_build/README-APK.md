@@ -4,7 +4,7 @@
 
 Build the web player as an Android APK with Capacitor 7, native media controls, file import/export, and Android background-playback support.
 
-[Main README](../README.md) · [Report an Issue](https://github.com/Jacob7179/YouTube-Music-Player-Web/issues)
+[Main README](../README.md) · [Report an Issue](https://github.com/Jacob7179/YouTube-Music-Player-Web/issues) · [Version](../VERSION.md)
 
 </div>
 
@@ -64,7 +64,8 @@ android_build/
 ├─ scripts/
 │  ├─ configure-android-background-playback.js
 │  ├─ generate-build-date.js
-│  └─ patch-media-session-plugin.js
+│  ├─ patch-media-session-plugin.js
+│  └─ configure-android-splash.js
 ├─ .npmrc                   Public npm registry and retry settings
 ├─ build.bat                Complete automatic APK build
 ├─ clean.bat                Generated-folder cleanup
@@ -92,8 +93,9 @@ The complete build performs these steps:
 11. Reapplies Android background-playback changes after synchronization.
 12. Adds the Android foreground media-playback permission.
 13. Copies icon and splash resources from `image_source/res`.
-14. Applies `ANDROID_VERSION_CODE` and `ANDROID_VERSION_NAME` to `android/app/build.gradle` using UTF-8 without a BOM.
-15. Stops old Gradle daemons, cleans the Android build, and creates the debug APK.
+14. Configures the native Android splash screen with background color `#005495` and removes any legacy delayed second splash-screen overlay.
+15. Applies `ANDROID_VERSION_CODE` and `ANDROID_VERSION_NAME` to `android/app/build.gradle` using UTF-8 without a BOM.
+16. Stops old Gradle daemons, cleans the Android build, and creates the debug APK.
 
 Use the complete build after changing dependencies, Capacitor configuration, native patches, Android resources, or generated Android files.
 
