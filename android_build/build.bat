@@ -583,19 +583,18 @@ if errorlevel 1 goto :error
 echo Launcher icon background set to #005495.
 
 REM ------------------------------------------------------------
-REM Build a dedicated splash overlay so the title area uses a solid
-REM #6cc2ff background and the main image keeps its aspect ratio.
-REM The generated Android files are patched on every build.
+REM Configure only the native Android launch screen.
 REM ------------------------------------------------------------
 echo.
 echo ==========================================
-echo Configuring Android splash layout...
+echo Configuring native Android splash screen...
 echo ==========================================
 
 call node scripts\configure-android-splash.js
 if errorlevel 1 goto :error
 
-echo Splash layout configured. Title background is #6cc2ff.
+echo Native splash background set to #005495.
+echo Extra startup overlay removed.
 echo.
 
 REM ------------------------------------------------------------
