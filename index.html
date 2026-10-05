@@ -48,19 +48,19 @@
                             <button id="nextBtn" class="btn btn-primary rounded-circle px-3"><i class='bx bx-skip-next' ></i></button>
                         </div>
     
-                        <div class="d-flex justify-content-between align-items-center mt-3">
-                            <div class="d-flex align-items-center gap-2">
-                                <button id="autoPlayToggle" class="btn btn-secondary rounded-circle">
+                        <div class="playback-mode-controls d-flex justify-content-between align-items-center mt-3">
+                            <div class="playback-mode-item d-flex align-items-center gap-2">
+                                <button id="autoPlayToggle" class="btn btn-secondary rounded-circle" type="button" aria-pressed="false" title="Auto-Play" aria-label="Auto-Play">
                                     <i class='bx bx-play-circle'></i>
                                 </button>
                                 <span class="fw-bold" id="autoPlayText">Auto-Play</span>
                             </div>
-                            
-                            <div class="d-flex align-items-center gap-2">
-                                <button id="repeatBtn" class="btn btn-secondary rounded-circle">
+
+                            <div class="playback-mode-item d-flex align-items-center gap-2">
+                                <button id="repeatBtn" class="btn btn-secondary rounded-circle" type="button" aria-pressed="false" title="Repeat" aria-label="Repeat">
                                     <i class='bx bx-repeat'></i>
                                 </button>
-                                <span class="fw-bold">Repeat</span>
+                                <span class="fw-bold" id="repeatText">Repeat</span>
                             </div>
                         </div>
     
@@ -312,7 +312,7 @@
                             <li data-translate="feature6">Export/Import playlists</li>
                             <li data-translate="feature7">Volume control & progress bar</li>
                             <li data-translate="feature8">Multi-language support (English/中文)</li>
-                            <li data-translate="feature9">Auto-play & repeat modes</li>
+                            <li data-translate="feature9">Auto-play, shuffle & repeat modes</li>
                         </ul>
                     </div>
                     
@@ -355,7 +355,7 @@
                     
                     <div class="about-section">
                         <h6><i class="bx bx-info-circle"></i> <span data-translate="versionInfoTitle">Version Information</span></h6>
-                        <small data-translate="version">Version: </small><small>1.6.1</small><br>
+                        <small data-translate="version">Version: </small><small>1.6.2</small><br>
                         <small data-translate="lastUpdated">Last Updated: </small><small id="formattedDate" data-original-date="{{BUILD_DATE}}">{{BUILD_DATE}}</small><br>
                         <small data-translate="languages">Languages: </small><small id="supportedLanguages"></small>
                     </div>

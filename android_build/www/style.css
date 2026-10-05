@@ -3565,3 +3565,85 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         flex: 0 0 100%;
     }
 }
+
+/* ========================================================================== */
+/* Playback modes: Auto-Play and combined Repeat / Shuffle                    */
+/* ========================================================================== */
+.playback-mode-controls {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px !important;
+}
+
+.playback-mode-controls .playback-mode-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start;
+    gap: 5px !important;
+    min-width: 0;
+}
+
+.playback-mode-controls .playback-mode-item span {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    line-height: 1.2;
+    text-align: center;
+}
+
+#autoPlayToggle,
+#repeatBtn {
+    width: 45px;
+    height: 45px;
+    min-width: 45px;
+    padding: 0;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 20px;
+    line-height: 1;
+    background: #6c757d;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+#autoPlayToggle i,
+#repeatBtn i {
+    pointer-events: none;
+}
+
+#autoPlayToggle.active,
+#repeatBtn.active {
+    background: #007bff;
+    transform: scale(1.08);
+}
+
+#autoPlayToggle:active,
+#repeatBtn:active {
+    transform: scale(0.92);
+}
+
+#autoPlayToggle:hover,
+#repeatBtn:hover {
+    background: #5c636a;
+}
+
+#autoPlayToggle.active:hover,
+#repeatBtn.active:hover {
+    background: #0056b3;
+}
+
+@media (max-width: 400px) {
+    .playback-mode-controls {
+        gap: 4px !important;
+    }
+
+    .playback-mode-controls .playback-mode-item span {
+        font-size: 10px;
+    }
+}

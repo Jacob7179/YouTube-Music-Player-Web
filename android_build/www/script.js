@@ -15,6 +15,18 @@ let isTranslating = false;
 let showTranslatedView = false;
 let repeatSong = localStorage.getItem("repeatSong") === "true";
 let autoPlayEnabled = localStorage.getItem("autoPlay") !== "false";
+let shuffleEnabled = localStorage.getItem("shufflePlay") === "true";
+
+// Repeat and shuffle share one three-state control, so they cannot both be active.
+if (repeatSong && shuffleEnabled) {
+    repeatSong = false;
+    localStorage.setItem("repeatSong", "false");
+}
+
+let shuffleQueue = [];
+let shuffleHistory = [];
+let shuffleHistoryPosition = -1;
+let shuffleNavigationSignature = "";
 
 // Tracks the real playlist position independently from the filtered DOM list.
 let currentPlaylistIndex = -1;
@@ -513,7 +525,7 @@ function updateRenderedPlaylistSelection(index) {
     }
 }
 
-function playPlaylistIndex(index) {
+function playPlaylistIndex(index, options = {}) {
     if (!playlist.length) return false;
 
     runMediaSessionPromise(
@@ -525,6 +537,10 @@ function playPlaylistIndex(index) {
     const song = playlist[normalizedIndex];
 
     if (!song) return false;
+
+    if (shuffleEnabled && !options.preserveShuffleHistory) {
+        recordShuffleSelection(normalizedIndex);
+    }
 
     currentPlaylistIndex = normalizedIndex;
     actualSelectedVideoId = song.videoId;
@@ -560,10 +576,140 @@ function getPlaylistNavigationIndexes() {
     return matchingIndexes;
 }
 
+function getShuffleNavigationSignature(navigationIndexes) {
+    return navigationIndexes
+        .map(index => `${index}:${playlist[index]?.videoId || ""}`)
+        .join("|");
+}
+
+function shuffleIndexes(indexes) {
+    const shuffled = [...indexes];
+
+    for (let index = shuffled.length - 1; index > 0; index--) {
+        const randomIndex = Math.floor(Math.random() * (index + 1));
+        [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+    }
+
+    return shuffled;
+}
+
+function resetShufflePlaybackState() {
+    shuffleQueue = [];
+    shuffleHistory = [];
+    shuffleHistoryPosition = -1;
+    shuffleNavigationSignature = "";
+}
+
+function rebuildShuffleQueue(navigationIndexes, currentIndex) {
+    shuffleQueue = shuffleIndexes(
+        navigationIndexes.filter(index => index !== currentIndex)
+    );
+}
+
+function initializeShufflePlaybackState(navigationIndexes, currentIndex) {
+    shuffleNavigationSignature = getShuffleNavigationSignature(navigationIndexes);
+    shuffleHistory = navigationIndexes.includes(currentIndex)
+        ? [currentIndex]
+        : [];
+    shuffleHistoryPosition = shuffleHistory.length - 1;
+    rebuildShuffleQueue(navigationIndexes, currentIndex);
+}
+
+function ensureShufflePlaybackState(navigationIndexes, currentIndex) {
+    const signature = getShuffleNavigationSignature(navigationIndexes);
+
+    if (signature !== shuffleNavigationSignature) {
+        initializeShufflePlaybackState(navigationIndexes, currentIndex);
+        return;
+    }
+
+    if (
+        shuffleHistoryPosition >= 0 &&
+        shuffleHistory[shuffleHistoryPosition] !== currentIndex
+    ) {
+        recordShuffleSelection(currentIndex);
+    }
+}
+
+function recordShuffleSelection(index) {
+    if (!shuffleEnabled || !Number.isInteger(index) || index < 0) {
+        return;
+    }
+
+    const navigationIndexes = getPlaylistNavigationIndexes();
+    if (!navigationIndexes.includes(index)) {
+        resetShufflePlaybackState();
+        return;
+    }
+
+    const signature = getShuffleNavigationSignature(navigationIndexes);
+    if (signature !== shuffleNavigationSignature) {
+        initializeShufflePlaybackState(navigationIndexes, index);
+        return;
+    }
+
+    if (shuffleHistory[shuffleHistoryPosition] === index) {
+        return;
+    }
+
+    shuffleHistory = shuffleHistory.slice(0, shuffleHistoryPosition + 1);
+    shuffleHistory.push(index);
+    shuffleHistoryPosition = shuffleHistory.length - 1;
+    shuffleQueue = shuffleQueue.filter(queueIndex => queueIndex !== index);
+}
+
+function takeShuffledQueueIndex(navigationIndexes, currentIndex) {
+    if (!shuffleQueue.length) {
+        rebuildShuffleQueue(navigationIndexes, currentIndex);
+    }
+
+    return shuffleQueue.shift();
+}
+
+function playShuffledPlaylistSong(direction, navigationIndexes) {
+    const currentIndex = getCurrentPlaylistIndex();
+
+    if (navigationIndexes.length === 1 && navigationIndexes[0] === currentIndex) {
+        return false;
+    }
+
+    ensureShufflePlaybackState(navigationIndexes, currentIndex);
+
+    let targetIndex;
+
+    if (direction < 0) {
+        if (shuffleHistoryPosition > 0) {
+            shuffleHistoryPosition--;
+            targetIndex = shuffleHistory[shuffleHistoryPosition];
+        } else {
+            targetIndex = takeShuffledQueueIndex(navigationIndexes, currentIndex);
+            if (!Number.isInteger(targetIndex)) return false;
+
+            shuffleHistory.unshift(targetIndex);
+            shuffleHistoryPosition = 0;
+        }
+    } else if (shuffleHistoryPosition < shuffleHistory.length - 1) {
+        shuffleHistoryPosition++;
+        targetIndex = shuffleHistory[shuffleHistoryPosition];
+    } else {
+        targetIndex = takeShuffledQueueIndex(navigationIndexes, currentIndex);
+        if (!Number.isInteger(targetIndex)) return false;
+
+        shuffleHistory.push(targetIndex);
+        shuffleHistoryPosition = shuffleHistory.length - 1;
+    }
+
+    return playPlaylistIndex(targetIndex, { preserveShuffleHistory: true });
+}
+
 function playAdjacentPlaylistSong(direction) {
     const navigationIndexes = getPlaylistNavigationIndexes();
 
     if (!navigationIndexes.length) return false;
+
+    if (shuffleEnabled) {
+        return playShuffledPlaylistSong(direction, navigationIndexes);
+    }
 
     const currentIndex = getCurrentPlaylistIndex();
     const currentPosition = navigationIndexes.indexOf(currentIndex);
@@ -749,6 +895,7 @@ function renderPlaylist(songsToRender) {
 
             currentPlaylistIndex = playlistIndex;
             actualSelectedVideoId = song.videoId;
+            recordShuffleSelection(playlistIndex);
 
             loadNewVideo(song.videoId, song.albumArt, song);
             scrollToSelectedSong();
@@ -3166,28 +3313,54 @@ function handlePlayerStateChange(event) {
     setupMediaSession();
 }
 
-// Initialize auto-play button
+// Update Auto-Play and the combined Repeat / Shuffle button.
+function updatePlaybackModeButtons() {
+    const autoPlayToggle = document.getElementById("autoPlayToggle");
+    const repeatBtn = document.getElementById("repeatBtn");
+    const repeatText = document.getElementById("repeatText");
+
+    if (autoPlayToggle) {
+        autoPlayToggle.classList.toggle("active", autoPlayEnabled);
+        autoPlayToggle.setAttribute("aria-pressed", String(autoPlayEnabled));
+        autoPlayToggle.innerHTML = autoPlayEnabled
+            ? '<i class="bx bx-play-circle"></i>'
+            : '<i class="bx bx-stop-circle"></i>';
+    }
+
+    if (!repeatBtn) {
+        return;
+    }
+
+    const repeatShuffleActive = repeatSong || shuffleEnabled;
+    const repeatShuffleLabel = shuffleEnabled
+        ? translations[currentLang].shuffle
+        : translations[currentLang].repeat;
+
+    repeatBtn.classList.toggle("active", repeatShuffleActive);
+    repeatBtn.classList.toggle("shuffle-mode", shuffleEnabled);
+    repeatBtn.setAttribute("aria-pressed", String(repeatShuffleActive));
+    repeatBtn.setAttribute(
+        "data-playback-mode",
+        shuffleEnabled ? "shuffle" : (repeatSong ? "repeat" : "off")
+    );
+    repeatBtn.setAttribute("title", repeatShuffleLabel);
+    repeatBtn.setAttribute("aria-label", repeatShuffleLabel);
+    repeatBtn.innerHTML = shuffleEnabled
+        ? '<i class="bx bx-shuffle"></i>'
+        : '<i class="bx bx-repeat"></i>';
+
+    if (repeatText) {
+        repeatText.textContent = repeatShuffleLabel;
+    }
+}
+
+// Initialize Auto-Play and the combined Repeat / Shuffle button.
 document.addEventListener("DOMContentLoaded", () => {
     const autoPlayToggle = document.getElementById("autoPlayToggle");
     const repeatBtn = document.getElementById("repeatBtn");
 
     if (!autoPlayToggle || !repeatBtn) {
         return;
-    }
-
-    function updatePlaybackModeButtons() {
-        autoPlayToggle.classList.toggle("active", autoPlayEnabled);
-        autoPlayToggle.setAttribute(
-            "aria-pressed",
-            String(autoPlayEnabled)
-        );
-
-        autoPlayToggle.innerHTML = autoPlayEnabled
-            ? '<i class="bx bx-play-circle"></i>'
-            : '<i class="bx bx-stop-circle"></i>';
-
-        repeatBtn.classList.toggle("active", repeatSong);
-        repeatBtn.setAttribute("aria-pressed", String(repeatSong));
     }
 
     autoPlayToggle.addEventListener("click", () => {
@@ -3197,13 +3370,36 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     repeatBtn.addEventListener("click", () => {
-        repeatSong = !repeatSong;
+        // Cycle: Repeat Off -> Repeat On -> Shuffle -> Repeat Off.
+        if (!repeatSong && !shuffleEnabled) {
+            repeatSong = true;
+            shuffleEnabled = false;
+        } else if (repeatSong) {
+            repeatSong = false;
+            shuffleEnabled = true;
+        } else {
+            repeatSong = false;
+            shuffleEnabled = false;
+        }
+
         localStorage.setItem("repeatSong", String(repeatSong));
+        localStorage.setItem("shufflePlay", String(shuffleEnabled));
+        resetShufflePlaybackState();
+
+        if (shuffleEnabled) {
+            const navigationIndexes = getPlaylistNavigationIndexes();
+            initializeShufflePlaybackState(
+                navigationIndexes,
+                getCurrentPlaylistIndex()
+            );
+        }
+
         updatePlaybackModeButtons();
     });
 
     updatePlaybackModeButtons();
 });
+
 
 document.addEventListener("DOMContentLoaded", function () {
     // Check if dark mode is enabled in local storage before page renders
@@ -3481,6 +3677,11 @@ async function exportPlaylist() {
         // Get current playlist and app settings.
         const exportData = {
             playlist: playlist,
+            autoPlayEnabled: autoPlayEnabled,
+            playbackMode: shuffleEnabled ? "shuffle" : (repeatSong ? "repeat" : "off"),
+            // Keep these fields for compatibility with builds that read booleans.
+            repeatSong: repeatSong,
+            shufflePlay: shuffleEnabled,
             albumArtDisplayMode: albumArtDisplayMode,
             darkMode: localStorage.getItem("darkMode") === "enabled",
             showLyrics: localStorage.getItem("showLyrics") === "true",
@@ -3652,6 +3853,10 @@ function importPlaylist(file) {
             let importTitleScrollSpeed = TITLE_SCROLL_SPEED;
             let importAllowLyricsFetchWhenHidden = allowLyricsFetchWhenHidden;
             let importAllowLyricsTranslationWhenHidden = allowLyricsTranslationWhenHidden;
+            let importAutoPlayEnabled = autoPlayEnabled;
+            let importPlaybackMode = shuffleEnabled
+                ? "shuffle"
+                : (repeatSong ? "repeat" : "off");
             
             if (Array.isArray(importedData)) {
                 // Old format - just the playlist array
@@ -3686,6 +3891,27 @@ function importPlaylist(file) {
                     importAllowLyricsTranslationWhenHidden =
                         importedData.allowLyricsTranslationWhenHidden;
                 }
+
+                if (typeof importedData.autoPlayEnabled === "boolean") {
+                    importAutoPlayEnabled = importedData.autoPlayEnabled;
+                } else if (typeof importedData.autoPlay === "boolean") {
+                    // Backward compatibility with alternate export field names.
+                    importAutoPlayEnabled = importedData.autoPlay;
+                }
+
+                if (["off", "repeat", "shuffle"].includes(importedData.playbackMode)) {
+                    importPlaybackMode = importedData.playbackMode;
+                } else if (importedData.shufflePlay === true || importedData.shuffleEnabled === true) {
+                    importPlaybackMode = "shuffle";
+                } else if (importedData.repeatSong === true) {
+                    importPlaybackMode = "repeat";
+                } else if (
+                    importedData.repeatSong === false ||
+                    importedData.shufflePlay === false ||
+                    importedData.shuffleEnabled === false
+                ) {
+                    importPlaybackMode = "off";
+                }
             } else {
                 throw new Error("Invalid playlist format");
             }
@@ -3705,6 +3931,24 @@ function importPlaylist(file) {
                 savePlaylist();
                 saveLastSelectedSong();
                 renderPlaylist(playlist);
+
+                // Restore Auto-Play and the combined Repeat / Shuffle mode.
+                autoPlayEnabled = importAutoPlayEnabled;
+                repeatSong = importPlaybackMode === "repeat";
+                shuffleEnabled = importPlaybackMode === "shuffle";
+
+                localStorage.setItem("autoPlay", String(autoPlayEnabled));
+                localStorage.setItem("repeatSong", String(repeatSong));
+                localStorage.setItem("shufflePlay", String(shuffleEnabled));
+
+                resetShufflePlaybackState();
+                if (shuffleEnabled && playlist.length > 0) {
+                    initializeShufflePlaybackState(
+                        getPlaylistNavigationIndexes(),
+                        getCurrentPlaylistIndex()
+                    );
+                }
+                updatePlaybackModeButtons();
                 
                 // Apply dark mode if included in export
                 if (importDarkMode !== undefined) {
@@ -4370,6 +4614,7 @@ const translations = {
     playerTitle: "YouTube Music Player",
     autoPlay: "Auto-Play",
     repeat: "Repeat",
+    shuffle: "Shuffle",
     lyrics: "Lyrics",
     lyricsNoLoad: "No lyrics loaded",
     lyricsSyncedFound: "Synced lyrics found for",
@@ -4467,7 +4712,7 @@ const translations = {
     feature6: "Export/Import playlists",
     feature7: "Volume control & progress bar",
     feature8: "Multi-language support ({languages})",
-    feature9: "Auto-play & repeat modes",
+    feature9: "Auto-play, shuffle & repeat modes",
     originalProjectTitle: "Original Project",
     originalCreator: "Original creator",
     contributorsTitle: "Contributors",
@@ -4541,6 +4786,7 @@ const translations = {
     playerTitle: "YouTube 音乐播放器",
     autoPlay: "自动播放",
     repeat: "重复播放",
+    shuffle: "随机播放",
     lyrics: "歌词",
     lyricsNoLoad: "尚未载入歌词",
     lyricsSyncedFound: "已找到同步歌词：",
@@ -4638,7 +4884,7 @@ const translations = {
     feature6: "导入/导出播放列表",
     feature7: "音量控制与进度条",
     feature8: "多语言支持（{languages}）",
-    feature9: "自动播放和重复模式",
+    feature9: "自动播放、随机播放和重复模式",
     originalProjectTitle: "原始项目",
     originalCreator: "原始创作者",
     contributorsTitle: "贡献者",
@@ -4712,6 +4958,7 @@ const translations = {
     playerTitle: "YouTube Music Player",
     autoPlay: "自動再生",
     repeat: "リピート",
+    shuffle: "シャッフル",
     lyrics: "歌詞",
     lyricsNoLoad: "歌詞が読み込まれていません",
     lyricsSyncedFound: "同期歌詞が見つかりました：",
@@ -4810,7 +5057,7 @@ const translations = {
     feature6: "プレイリストのエクスポート／インポート",
     feature7: "音量調整と再生進行バー",
     feature8: "多言語対応（{languages}）",
-    feature9: "自動再生とリピートモード",
+    feature9: "自動再生、シャッフル、リピートモード",
     originalProjectTitle: "オリジナルプロジェクト",
     originalCreator: "オリジナル制作者",
     contributorsTitle: "貢献者",
@@ -4882,6 +5129,7 @@ const translations = {
     playerTitle: "YouTube Music Player",
     autoPlay: "자동 재생",
     repeat: "반복",
+    shuffle: "셔플",
     lyrics: "가사",
     lyricsNoLoad: "불러온 가사가 없습니다",
     lyricsSyncedFound: "동기화된 가사를 찾았습니다:",
@@ -4980,7 +5228,7 @@ const translations = {
     feature6: "플레이리스트 내보내기/가져오기",
     feature7: "볼륨 조절 및 재생 진행 바",
     feature8: "다국어 지원 ({languages})",
-    feature9: "자동 재생 및 반복 모드",
+    feature9: "자동 재생, 셔플 및 반복 모드",
     originalProjectTitle: "원본 프로젝트",
     originalCreator: "원작자",
     contributorsTitle: "기여자",
@@ -5054,6 +5302,7 @@ const translations = {
     playerTitle: "YouTube 音樂播放器",
     autoPlay: "自動播放",
     repeat: "重複播放",
+    shuffle: "隨機播放",
     lyrics: "歌詞",
     lyricsNoLoad: "尚未載入歌詞",
     lyricsSyncedFound: "已找到同步歌詞：",
@@ -5151,7 +5400,7 @@ const translations = {
     feature6: "匯出/匯入播放清單",
     feature7: "音量控制與進度列",
     feature8: "多語言支援（{languages}）",
-    feature9: "自動播放與重複播放模式",
+    feature9: "自動播放、隨機播放與重複播放模式",
     originalProjectTitle: "原始專案",
     originalCreator: "原始創作者",
     contributorsTitle: "貢獻者",
@@ -5403,8 +5652,12 @@ function applyLanguage(lang = currentLang) {
 
     // Add this line to the applyLanguage function
     document.getElementById("autoPlayText") && (document.getElementById("autoPlayText").textContent = t.autoPlay);
-    document.querySelector("#repeatBtn")?.nextElementSibling && 
-    (document.querySelector("#repeatBtn").nextElementSibling.textContent = t.repeat);
+    const repeatShuffleLabel = shuffleEnabled ? t.shuffle : t.repeat;
+    document.getElementById("repeatText") && (document.getElementById("repeatText").textContent = repeatShuffleLabel);
+    document.getElementById("autoPlayToggle")?.setAttribute("title", t.autoPlay);
+    document.getElementById("autoPlayToggle")?.setAttribute("aria-label", t.autoPlay);
+    document.getElementById("repeatBtn")?.setAttribute("title", repeatShuffleLabel);
+    document.getElementById("repeatBtn")?.setAttribute("aria-label", repeatShuffleLabel);
 
     document.querySelector("#searchPlaylistInput")?.setAttribute("placeholder", t.searchPlaylist);
     document.querySelector(".fw-bold.border-bottom span:first-child")?.textContent && 
