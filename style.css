@@ -3297,7 +3297,11 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         padding: 2px 0 8px;
         margin: 0;
         overflow-x: hidden;
-        overscroll-behavior: contain;
+        /* Allow the page to keep scrolling when the playlist reaches its
+           first/last item instead of trapping the touch inside the list. */
+        overscroll-behavior-y: auto;
+        overscroll-behavior-x: contain;
+        touch-action: pan-y;
         scroll-padding-block: 8px;
         -webkit-overflow-scrolling: touch;
         background-color: transparent;
@@ -3425,6 +3429,8 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         align-items: center;
         justify-content: center;
         align-self: center;
+        /* Swiping from the action column should still scroll vertically. */
+        touch-action: pan-y;
     }
 
     #songList .remove-song-btn {
@@ -3432,6 +3438,7 @@ body.dark-mode .cache-list::-webkit-scrollbar-thumb:hover {
         height: 44px;
         border-radius: 10px;
         font-size: 15px;
+        touch-action: pan-y;
     }
 
     /* Selected row: keep the layout readable instead of flattening all details. */
