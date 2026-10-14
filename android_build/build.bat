@@ -598,23 +598,41 @@ echo Extra startup overlay removed.
 echo.
 
 REM ------------------------------------------------------------
-REM Build debug APK.
+REM Choose between a debug APK and a custom-keystore signed APK.
+REM The private keystore must NOT be stored in the regenerated android folder.
 REM ------------------------------------------------------------
 echo.
 echo ==========================================
-echo Building debug APK...
+echo Android APK signing mode
+echo 1. Debug APK ^(Android test key^)
+echo 2. Release APK ^(your custom keystore^)
 echo ==========================================
+choice /C 12 /N /M "Select 1 or 2: "
+if errorlevel 2 (set "BUILD_SIGNED_RELEASE=1") else (set "BUILD_SIGNED_RELEASE=0")
 
+echo.
 cd /d "%~dp0android"
 
 REM Stop any Gradle daemon that was started with an older Java version.
 call gradlew.bat --stop >nul 2>&1
-
 call gradlew.bat clean
 if errorlevel 1 goto :error
 
-call gradlew.bat assembleDebug
-if errorlevel 1 goto :error
+if "!BUILD_SIGNED_RELEASE!"=="1" (
+    echo Building release APK...
+    call gradlew.bat assembleRelease
+    if errorlevel 1 goto :error
+
+    REM The PowerShell helper prompts securely for passwords and uses SDK apksigner.
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\\sign-release-apk.ps1" -AndroidHome "%ANDROID_HOME%" -ProjectRoot "%~dp0."
+    if errorlevel 1 goto :error
+    set "FINAL_APK=%~dp0android\\app\\build\\outputs\\apk\\release\\app-release-signed.apk"
+) else (
+    echo Building debug APK...
+    call gradlew.bat assembleDebug
+    if errorlevel 1 goto :error
+    set "FINAL_APK=%~dp0android\\app\\build\\outputs\\apk\\debug\\app-debug.apk"
+)
 
 echo.
 echo ==========================================
@@ -622,7 +640,7 @@ echo BUILD SUCCESSFUL
 echo ==========================================
 echo.
 echo APK location:
-echo %~dp0android\app\build\outputs\apk\debug\app-debug.apk
+echo !FINAL_APK!
 echo.
 
 pause

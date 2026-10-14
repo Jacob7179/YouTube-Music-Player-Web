@@ -3727,7 +3727,7 @@ async function exportPlaylist() {
             allowLyricsFetchWhenHidden: allowLyricsFetchWhenHidden,
             allowLyricsTranslationWhenHidden: allowLyricsTranslationWhenHidden,
             exportDate: new Date().toISOString(),
-            version: "1.6"
+            version: "1.7"
         };
 
         const playlistData = JSON.stringify(exportData, null, 2);
