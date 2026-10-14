@@ -2393,16 +2393,24 @@ body.dark-mode .btn-info:hover {
 /* Add to style.css */
 
 /* Album Art Display Mode Toggle */
-.album-art-display-toggle {
-    margin-bottom: 15px;
-}
-
 .album-art-display-toggle .btn-group {
     width: 100%;
     margin-top: 5px;
 }
 
 .album-art-display-toggle .btn-group .btn {
+    font-size: 12px;
+    padding: 4px 8px;
+    flex: 1;
+}
+
+/* Dark Mode setting: Auto / On / Off */
+.dark-mode-setting .btn-group {
+    width: 100%;
+    margin-top: 5px;
+}
+
+.dark-mode-setting .btn-group .btn {
     font-size: 12px;
     padding: 4px 8px;
     flex: 1;

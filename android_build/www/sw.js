@@ -1,4 +1,4 @@
-const CACHE_NAME = "youtube-music-player-v1.0.3";
+const CACHE_NAME = "youtube-music-player-v1.1.0";
 const APP_SHELL = [
   "./",
   "./index.html",

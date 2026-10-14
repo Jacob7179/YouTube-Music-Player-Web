@@ -3401,59 +3401,96 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+function normalizeDarkModeMode(value) {
+    if (["auto", "on", "off"].includes(value)) return value;
+    if (value === "enabled" || value === true) return "on";
+    if (value === "disabled" || value === false) return "off";
+    return "off";
+}
+
+function getDarkModeMode() {
+    return normalizeDarkModeMode(localStorage.getItem("darkMode"));
+}
+
+function shouldEnableDarkMode(mode = getDarkModeMode()) {
+    if (mode === "on") return true;
+    if (mode === "auto") {
+        return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    }
+    return false;
+}
+
+function updateDarkModeModeButtons(mode) {
+    document.querySelectorAll("#darkModeModeToggle [data-dark-mode]").forEach(button => {
+        button.classList.toggle("active", button.dataset.darkMode === mode);
+        button.setAttribute("aria-pressed", button.dataset.darkMode === mode ? "true" : "false");
+    });
+}
+
+function applyDarkModeMode(mode, savePreference = true) {
+    const normalizedMode = normalizeDarkModeMode(mode);
+    const enable = shouldEnableDarkMode(normalizedMode);
+
+    document.documentElement.classList.toggle("dark-mode", enable);
+    document.body.classList.toggle("dark-mode", enable);
+
+    if (savePreference) {
+        localStorage.setItem("darkMode", normalizedMode);
+    }
+
+    applyDarkModeToElements(enable);
+    updateDarkModeModeButtons(normalizedMode);
+}
+
 document.addEventListener("DOMContentLoaded", function () {
-    // Check if dark mode is enabled in local storage before page renders
-    const isDarkMode = localStorage.getItem("darkMode") === "enabled";
-    const darkModeToggle = document.getElementById("darkModeToggle");
-    
-    if (isDarkMode) {
-        document.body.classList.add("dark-mode");
-        if (darkModeToggle) darkModeToggle.checked = true;
-        applyDarkModeToElements(true);
-    } else {
-        if (darkModeToggle) darkModeToggle.checked = false;
+    const mode = getDarkModeMode();
+
+    // Migrate legacy enabled/disabled values to the new three-state setting.
+    localStorage.setItem("darkMode", mode);
+    applyDarkModeMode(mode, false);
+
+    const darkModeModeToggle = document.getElementById("darkModeModeToggle");
+    if (darkModeModeToggle) {
+        darkModeModeToggle.addEventListener("click", function (event) {
+            const button = event.target.closest("[data-dark-mode]");
+            if (!button || darkModeToggleInProgress) return;
+
+            darkModeToggleInProgress = true;
+            applyDarkModeMode(button.dataset.darkMode);
+
+            document.querySelectorAll("#nowPlaying .song-title, #nowPlaying .author-name")
+                .forEach(elem => {
+                    elem.style.transition = "opacity 0.5s ease-in-out, color 0.8s ease-in-out";
+                    elem.style.opacity = "0";
+                    setTimeout(() => {
+                        elem.style.opacity = "1";
+                    }, 50);
+                });
+
+            setTimeout(() => {
+                darkModeToggleInProgress = false;
+            }, 300);
+        });
+    }
+
+    // In Auto mode, follow OS/browser theme changes live.
+    if (window.matchMedia) {
+        const colorSchemeMedia = window.matchMedia("(prefers-color-scheme: dark)");
+        const handleColorSchemeChange = () => {
+            if (getDarkModeMode() === "auto") {
+                applyDarkModeMode("auto", false);
+            }
+        };
+
+        if (typeof colorSchemeMedia.addEventListener === "function") {
+            colorSchemeMedia.addEventListener("change", handleColorSchemeChange);
+        } else if (typeof colorSchemeMedia.addListener === "function") {
+            colorSchemeMedia.addListener(handleColorSchemeChange);
+        }
     }
 
     // Ensure body opacity animation starts only after dark mode is set
     document.body.style.opacity = "1";
-});
-
-document.getElementById("darkModeToggle").addEventListener("change", function () {
-    if (darkModeToggleInProgress) {
-        // Revert the checkbox if toggle is in progress
-        this.checked = !this.checked;
-        return;
-    }
-    
-    darkModeToggleInProgress = true;
-
-    requestAnimationFrame(() => {
-        const isDarkMode = document.body.classList.toggle("dark-mode");
-        
-        // Update the checkbox state to match the actual dark mode state
-        this.checked = isDarkMode;
-
-        // Save the preference in local storage
-        localStorage.setItem("darkMode", isDarkMode ? "enabled" : "disabled");
-
-        // Toggle dark mode for relevant elements
-        applyDarkModeToElements(isDarkMode);
-
-        // Smooth transition for song title and author name
-        document.querySelectorAll("#nowPlaying .song-title, #nowPlaying .author-name")
-            .forEach(elem => {
-                elem.style.transition = "opacity 0.5s ease-in-out, color 0.8s ease-in-out";
-                elem.style.opacity = "0";
-                setTimeout(() => {
-                    elem.style.opacity = "1";
-                }, 50);
-            });
-
-        // Prevent rapid toggling
-        setTimeout(() => {
-            darkModeToggleInProgress = false;
-        }, 600);
-    });
 });
 
 function applyDarkModeToElements(enable) {
@@ -3476,11 +3513,6 @@ function applyDarkModeToElements(enable) {
             elem.style.transition = "color 0.8s ease-in-out";
             elem.style.color = enable ? "white" : "black";
         });
-    
-    const darkModeToggle = document.getElementById("darkModeToggle");
-    if (darkModeToggle) {
-        darkModeToggle.checked = enable;
-    }
 }
 
 // Prevent text selection
@@ -3683,7 +3715,9 @@ async function exportPlaylist() {
             repeatSong: repeatSong,
             shufflePlay: shuffleEnabled,
             albumArtDisplayMode: albumArtDisplayMode,
-            darkMode: localStorage.getItem("darkMode") === "enabled",
+            darkModeMode: getDarkModeMode(),
+            // Legacy boolean retained for older builds that only understand On/Off.
+            darkMode: shouldEnableDarkMode(getDarkModeMode()),
             showLyrics: localStorage.getItem("showLyrics") === "true",
             language: currentLang,
             translationEnabled: translationEnabled,
@@ -3845,7 +3879,7 @@ function importPlaylist(file) {
             
             // Handle both old format (array) and new format (object with playlist property)
             let importedPlaylist;
-            let importDarkMode;
+            let importDarkModeMode;
             let importLanguage = currentLang;
             let importTranslationEnabled = translationEnabled;
             let importShowOriginalFirst = showOriginalFirst;
@@ -3864,7 +3898,14 @@ function importPlaylist(file) {
             } else if (importedData.playlist && Array.isArray(importedData.playlist)) {
                 // New format - object with playlist and settings properties
                 importedPlaylist = importedData.playlist;
-                importDarkMode = importedData.darkMode === true;
+                if (["auto", "on", "off"].includes(importedData.darkModeMode)) {
+                    importDarkModeMode = importedData.darkModeMode;
+                } else if (["auto", "on", "off"].includes(importedData.darkMode)) {
+                    importDarkModeMode = importedData.darkMode;
+                } else if (typeof importedData.darkMode === "boolean") {
+                    // Backward compatibility with older boolean exports.
+                    importDarkModeMode = importedData.darkMode ? "on" : "off";
+                }
                 importLanguage = importedData.language || currentLang;
                 importTranslationEnabled = importedData.translationEnabled !== undefined ? importedData.translationEnabled : translationEnabled;
                 importShowOriginalFirst = importedData.showOriginalFirst !== undefined ? importedData.showOriginalFirst : showOriginalFirst;
@@ -3950,11 +3991,9 @@ function importPlaylist(file) {
                 }
                 updatePlaybackModeButtons();
                 
-                // Apply dark mode if included in export
-                if (importDarkMode !== undefined) {
-                    document.body.classList.toggle("dark-mode", importDarkMode);
-                    localStorage.setItem("darkMode", importDarkMode ? "enabled" : "disabled");
-                    applyDarkModeToElements(importDarkMode);
+                // Apply Dark Mode preference if included in export.
+                if (importDarkModeMode !== undefined) {
+                    applyDarkModeMode(importDarkModeMode);
                 }
                 
                 // Apply showLyrics setting if included in export
@@ -4049,10 +4088,7 @@ function importPlaylist(file) {
                     localStorage.setItem("translationEnabled", JSON.stringify(translationEnabled));
                     
                     // Update the translation toggle UI
-                    const translationToggle = document.getElementById("translationToggle");
-                    if (translationToggle) {
-                        translationToggle.checked = translationEnabled;
-                    }
+                    updateTranslationModeButtons();
                 }
 
                 allowLyricsFetchWhenHidden = importAllowLyricsFetchWhenHidden;
@@ -4136,8 +4172,8 @@ function importPlaylist(file) {
                 // Show import success message with settings applied
                 let message = translations[currentLang].importSuccess.replace('${count}', importedPlaylist.length);
                 
-                if (importDarkMode !== undefined) {
-                    const darkModeStatus = importDarkMode ? translations[currentLang].enabled : translations[currentLang].disabled;
+                if (importDarkModeMode !== undefined) {
+                    const darkModeStatus = translations[currentLang][importDarkModeMode] || importDarkModeMode;
                     message += ' ' + translations[currentLang].darkModeStatus.replace('${status}', darkModeStatus);
                 }
                 
@@ -4656,6 +4692,9 @@ const translations = {
     albumArtSpin: "Album Art Spin",
     showLyrics: "Lyrics",
     darkMode: "Dark Mode",
+    auto: "Auto",
+    on: "On",
+    off: "Off",
     toggleLyricsTooltip: "Toggle to show or hide lyrics",
     goTop: "Go to Top",
     creatorTitle: "Original Creator",
@@ -4828,6 +4867,9 @@ const translations = {
     albumArtSpin: "唱片旋转",
     showLyrics: "歌词",
     darkMode: "深色模式",
+    auto: "自动",
+    on: "开启",
+    off: "关闭",
     toggleLyricsTooltip: "切换以显示或隐藏歌词",
     goTop: "返回顶部",
     creatorTitle: "原始创作者",
@@ -5000,6 +5042,9 @@ const translations = {
     albumArtSpin: "アルバムアートを回転",
     showLyrics: "歌詞",
     darkMode: "ダークモード",
+    auto: "自動",
+    on: "オン",
+    off: "オフ",
     toggleLyricsTooltip: "歌詞の表示／非表示を切り替える",
     goTop: "先頭へ戻る",
     creatorTitle: "オリジナル制作者",
@@ -5171,6 +5216,9 @@ const translations = {
     albumArtSpin: "앨범 아트 회전",
     showLyrics: "가사",
     darkMode: "다크 모드",
+    auto: "자동",
+    on: "켜기",
+    off: "끄기",
     toggleLyricsTooltip: "가사 표시 또는 숨기기",
     goTop: "맨 위로",
     creatorTitle: "원작자",
@@ -5344,6 +5392,9 @@ const translations = {
     albumArtSpin: "專輯封面旋轉",
     showLyrics: "歌詞",
     darkMode: "深色模式",
+    auto: "自動",
+    on: "開啟",
+    off: "關閉",
     toggleLyricsTooltip: "切換顯示或隱藏歌詞",
     goTop: "回到頂端",
     creatorTitle: "原始創作者",
@@ -7455,31 +7506,31 @@ function setTranslationOrder(order) {
     toggleTranslationOrder();
 }
 
-// Load translation setting on startup
-translationEnabled = JSON.parse(localStorage.getItem("translationEnabled") || "false");
-if (document.getElementById("translationToggle")) {
-    document.getElementById("translationToggle").checked = translationEnabled;
+// Keep the translation preference compatible with existing exported JSON files.
+translationEnabled = localStorage.getItem("translationEnabled") === "true";
+
+function updateTranslationModeButtons() {
+    document.querySelectorAll('#translationModeToggle [data-translation]').forEach(button => {
+        const isActive = (button.dataset.translation === 'on') === translationEnabled;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-pressed', String(isActive));
+    });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    const translationToggle = document.getElementById("translationToggle");
+    const translationToggle = document.getElementById("translationModeToggle");
+    translationEnabled = localStorage.getItem("translationEnabled") === "true";
+    updateTranslationModeButtons();
+    if (!translationToggle) return;
 
-    translationEnabled =
-        localStorage.getItem("translationEnabled") === "true";
-
-    if (!translationToggle) {
-        return;
-    }
-
-    translationToggle.checked = translationEnabled;
-
-    translationToggle.addEventListener("change", function () {
-        translationEnabled = this.checked;
-
-        localStorage.setItem(
-            "translationEnabled",
-            String(translationEnabled)
-        );
+    translationToggle.addEventListener("click", function (event) {
+        const button = event.target.closest('[data-translation]');
+        if (!button || !translationToggle.contains(button)) return;
+        const nextEnabled = button.dataset.translation === 'on';
+        if (translationEnabled === nextEnabled) return;
+        translationEnabled = nextEnabled;
+        localStorage.setItem("translationEnabled", String(translationEnabled));
+        updateTranslationModeButtons();
 
         cancelActiveTranslation();
 
