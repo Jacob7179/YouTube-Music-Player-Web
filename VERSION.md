@@ -4,9 +4,9 @@
 
 | Component | Version |
 |---|---:|
-| Web application | `1.7.0` |
-| Android application | `1.1.0` |
-| Android version code | `5` |
+| Web application | `1.7.1` |
+| Android application | `1.1.1` |
+| Android version code | `6` |
 
 ## Files to Update for a New Release
 
@@ -15,7 +15,7 @@
 Update the version displayed in the **Version Information** section:
 
 ```html
-<small data-translate="version">Version: </small><small>1.7.0</small><br>
+<small data-translate="version">Version: </small><small>1.7.1</small><br>
 ```
 
 Files used by this project:
@@ -30,7 +30,7 @@ Keep both files on the same web version unless the Android package intentionally
 Update `CACHE_NAME` whenever releasing a new Android web bundle:
 
 ```javascript
-const CACHE_NAME = "youtube-music-player-v1.1.0";
+const CACHE_NAME = "youtube-music-player-v1.1.1";
 ```
 
 Changing the cache name makes the service worker discard the previous app-shell cache and store the files from the new release.
@@ -40,8 +40,8 @@ Changing the cache name makes the service worker discard the previous app-shell 
 Update these values near the top of the file:
 
 ```bat
-set "ANDROID_VERSION_CODE=5"
-set "ANDROID_VERSION_NAME=1.1.0"
+set "ANDROID_VERSION_CODE=6"
+set "ANDROID_VERSION_NAME=1.1.1"
 ```
 
 - `ANDROID_VERSION_NAME` is the version visible to users.
@@ -52,10 +52,10 @@ set "ANDROID_VERSION_NAME=1.1.0"
 The following files are currently configured for this release:
 
 ```text
-index.html                         -> 1.7.0
-android_build/www/index.html       -> 1.7.0
-android_build/www/sw.js            -> youtube-music-player-v1.1.0
-android_build/build.bat            -> versionCode 5 / versionName 1.1.0
+index.html                         -> 1.7.1
+android_build/www/index.html       -> 1.7.1
+android_build/www/sw.js            -> youtube-music-player-v1.1.1
+android_build/build.bat            -> versionCode 6 / versionName 1.1.1
 ```
 
 ## Release Checklist

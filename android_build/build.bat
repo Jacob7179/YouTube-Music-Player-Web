@@ -43,8 +43,8 @@ REM ============================================================
 cd /d "%~dp0"
 
 REM Android application version applied to android\app\build.gradle.
-set "ANDROID_VERSION_CODE=5"
-set "ANDROID_VERSION_NAME=1.1.0"
+set "ANDROID_VERSION_CODE=6"
+set "ANDROID_VERSION_NAME=1.1.1"
 
 echo.
 echo ==========================================
