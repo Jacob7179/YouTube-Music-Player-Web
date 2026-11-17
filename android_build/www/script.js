@@ -1923,6 +1923,60 @@ function initVolumeControls() {
 
 document.addEventListener("DOMContentLoaded", initVolumeControls);
 
+// Persist only the active player's position (not a history per song).
+const CURRENT_PLAYER_POSITION_KEY = "ytMusicCurrentPlayerPositionV1";
+let pendingPositionRestoreId = null;
+function saveCurrentPlayerPosition(completed = false) {
+    try {
+        const id = player?.getVideoData?.()?.video_id || actualSelectedVideoId || selectedVideoId;
+        if (!id || !player || typeof player.getCurrentTime !== "function") return;
+        const seconds = completed ? 0 : Number(player.getCurrentTime());
+        if (!Number.isFinite(seconds) || seconds < 0) return;
+        localStorage.setItem(CURRENT_PLAYER_POSITION_KEY, JSON.stringify({ videoId: id, seconds: Math.floor(seconds) }));
+    } catch (error) { console.debug("Could not save player position:", error); }
+}
+function restoreCurrentPlayerPosition(videoId) {
+    try {
+        const saved = JSON.parse(localStorage.getItem(CURRENT_PLAYER_POSITION_KEY) || "null");
+        if (!saved || saved.videoId !== videoId || !player?.seekTo) return;
+        const duration = Number(player.getDuration?.()) || 0;
+        if (!duration) return false; // Wait until metadata is ready.
+        const seconds = Math.min(Math.max(0, Number(saved.seconds) || 0), Math.max(0, duration - 1));
+        if (seconds > 0) {
+            // On initial load the video is CUED, not playing. seekTo() can
+            // cause YouTube to start playback from a cued state; cue at the
+            // saved offset instead so the timeline resumes while paused.
+            const state = player.getPlayerState?.();
+            if (state === YT.PlayerState.CUED || state === YT.PlayerState.UNSTARTED) {
+                player.cueVideoById({ videoId, startSeconds: seconds });
+            } else if (state === YT.PlayerState.PAUSED) {
+                player.seekTo(seconds, true);
+            } else {
+                // A user has already started playing; don't interrupt it.
+                return true;
+            }
+            refreshTimelineWhenMetadataReady();
+        }
+        return true;
+    } catch (error) { return true; }
+}
+function scheduleCurrentPlayerPositionRestore(videoId) {
+    if (!videoId) return;
+    pendingPositionRestoreId = videoId;
+    let attempts = 0;
+    const retry = () => {
+        if (pendingPositionRestoreId !== videoId) return;
+        if (restoreCurrentPlayerPosition(videoId) || ++attempts >= 40) {
+            pendingPositionRestoreId = null;
+        } else setTimeout(retry, 250);
+    };
+    retry();
+}
+window.addEventListener("pagehide", () => saveCurrentPlayerPosition());
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") saveCurrentPlayerPosition();
+});
+
 // Create exactly one YouTube iframe player. It remains the audio source in
 // Spin/None mode and becomes the visible video in Video mode.
 function createMainYouTubePlayer(videoId, autoplay = false) {
@@ -1954,6 +2008,8 @@ function createMainYouTubePlayer(videoId, autoplay = false) {
                 if (autoplay) {
                     event.target.playVideo();
                 }
+
+                scheduleCurrentPlayerPositionRestore(videoId);
 
                 // A cued video does not start playing, but its duration becomes
                 // available shortly after the iframe is ready. Refresh the
@@ -2144,6 +2200,10 @@ function loadNewVideo(videoId, albumArtUrl, songObject = null) {
 
     // ✅ Reset countdown interval if switching songs
     clearInterval(countdownInterval);
+
+    // Save only the newly selected player; previous tracks do not retain positions.
+    pendingPositionRestoreId = null;
+    try { localStorage.setItem(CURRENT_PLAYER_POSITION_KEY, JSON.stringify({ videoId, seconds: 0 })); } catch (_) {}
 
     // Load and play the new video through the single main iframe player.
     if (!player || typeof player.loadVideoById !== "function") {
@@ -3124,6 +3184,7 @@ function updateProgressBar() {
 
     progressInterval = setInterval(() => {
         updateTimelineFromPlayer(false);
+        if (playing) saveCurrentPlayerPosition();
     }, 1000);
 }
 
@@ -3237,6 +3298,7 @@ function handlePlayerStateChange(event) {
     }
 
     if (event.data === YT.PlayerState.ENDED) {
+        saveCurrentPlayerPosition(true);
         clearInterval(progressInterval);
         playing = false;
 
@@ -3262,6 +3324,7 @@ function handlePlayerStateChange(event) {
         systemMediaSessionActivated = false;
         setSystemMediaPlaybackState("none");
     } else if (event.data === 2) { // ✅ 2 means PAUSED
+        saveCurrentPlayerPosition();
         playPauseBtn.innerHTML = ICON_PLAY; // Use constant
         playing = false;
         pauseBrowserMediaSessionBridge();
@@ -4138,6 +4201,7 @@ function importPlaylist(file) {
                     actualSelectedVideoId = firstSong.videoId;
                     selectedVideoId = firstSong.videoId;
                     saveLastSelectedSong();
+                    try { localStorage.setItem(CURRENT_PLAYER_POSITION_KEY, JSON.stringify({ videoId: firstSong.videoId, seconds: 0 })); } catch (_) {}
                     if (player && player.loadVideoById) {
                         player.cueVideoById(firstSong.videoId); // cue = load but don't play
                     } else {
